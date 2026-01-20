@@ -11,7 +11,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
   const [inputText, setInputText] = useState('');
   const [selectedOptions, setSelectedOptions] = useState([]);
   
-  // 即時判定モード用のState
   const [showFeedback, setShowFeedback] = useState(false);
   const [currentResult, setCurrentResult] = useState(null);
 
@@ -76,11 +75,9 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
     setAnswers(newAnswers);
 
     if (immediateFeedback) {
-      // 即時判定モードの場合
       setCurrentResult(answerRecord);
       setShowFeedback(true);
     } else {
-      // 通常モードの場合
       if (currentQIndex < questionOrder.length - 1) {
         setCurrentQIndex(prev => prev + 1);
       } else {
@@ -100,7 +97,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
   };
 
   const toggleMultiSelect = (option) => {
-    if (showFeedback) return; // 判定後は変更不可
+    if (showFeedback) return;
     if (selectedOptions.includes(option)) {
       setSelectedOptions(selectedOptions.filter(o => o !== option));
     } else {
@@ -142,7 +139,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
         {currentQuestion.tableData && <div className="mb-8"><SimpleTable data={currentQuestion.tableData} /></div>}
         <div className="mb-4"></div>
 
-        {/* 選択肢・入力エリア */}
         <div className={showFeedback ? "opacity-80 pointer-events-none" : ""}>
           {currentQuestion.type === 'multiple' && (
             <div className="space-y-4">
@@ -195,13 +191,29 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
 
           {currentQuestion.type === 'input' && (
             <div className="space-y-4">
-              <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} disabled={showFeedback} className="w-full p-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-500 outline-none dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800" placeholder="回答を入力..." onKeyDown={(e) => { if (e.key === 'Enter' && inputText.trim() && !showFeedback) { handleAnswer(inputText); } }} />
+              <input 
+                type="text" 
+                value={inputText} 
+                onChange={(e) => setInputText(e.target.value)} 
+                disabled={showFeedback} 
+                className="w-full p-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-500 outline-none dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800" 
+                placeholder="回答を入力..." 
+                onKeyDown={(e) => { 
+                  // ★ バグ修正: 変換中(isComposing)は無視 & 確定時はpreventDefault
+                  if (e.key === 'Enter') {
+                    if (e.nativeEvent.isComposing) return;
+                    e.preventDefault();
+                    if (inputText.trim() && !showFeedback) { 
+                      handleAnswer(inputText); 
+                    }
+                  }
+                }} 
+              />
               <button onClick={() => handleAnswer(inputText)} disabled={!inputText.trim() || showFeedback} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow transition-colors">回答する</button>
             </div>
           )}
         </div>
 
-        {/* 即時判定フィードバックエリア */}
         {showFeedback && currentResult && (
           <div className="mt-8 animate-fade-in">
             <div className={`p-4 rounded-lg border-l-4 mb-4 ${currentResult.isCorrect ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'bg-red-50 dark:bg-red-900/20 border-red-500'}`}>
