@@ -6,12 +6,12 @@ import {
   Brain, Target, Trash2, Lock, Shuffle, Moon, Sun, Monitor, 
   GraduationCap, Plus, Edit3, Image as ImageIcon, X, Save, Type, List,
   BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle, Bell, Info,
-  Trophy, Star, Flame // ← アイコン追加
+  Trophy, Star, Flame
 } from 'lucide-react';
 
 import { normalizeData, generateId } from './utils/helpers';
 import { INITIAL_DATA } from './data/initialData';
-import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification'; // ← インポート追加
+import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
 
 import Breadcrumbs from './components/common/Breadcrumbs';
 import FolderListView from './components/course/FolderListView';
@@ -33,15 +33,15 @@ export default function App() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
 
-  // ★ ユーザーのゲーミフィケーション・ステータス (NEW)
+  // ★ ユーザーのゲーミフィケーション・ステータス
+  // 初期値を streak: 0, lastLogin: '' に変更 (初回は0日からスタート)
   const [userStats, setUserStats] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-stats');
-      return saved ? JSON.parse(saved) : { totalXp: 0, level: 1, streak: 1, lastLogin: new Date().toDateString() };
-    } catch (e) { return { totalXp: 0, level: 1, streak: 1, lastLogin: new Date().toDateString() }; }
+      return saved ? JSON.parse(saved) : { totalXp: 0, level: 1, streak: 0, lastLogin: '' };
+    } catch (e) { return { totalXp: 0, level: 1, streak: 0, lastLogin: '' }; }
   });
 
-  // レベル情報の計算
   const levelInfo = getLevelInfo(userStats.totalXp);
 
   const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
@@ -87,27 +87,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('study-master-data', JSON.stringify(courses)); }, [courses]);
   useEffect(() => { localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory)); }, [wrongHistory]);
   useEffect(() => { localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats)); }, [errorStats]);
-  useEffect(() => { localStorage.setItem('study-master-stats', JSON.stringify(userStats)); }, [userStats]); // ← ステータス保存
-
-  // ★ ログインボーナス (ストリーク) 判定
-  useEffect(() => {
-    const today = new Date().toDateString();
-    if (userStats.lastLogin !== today) {
-      const last = new Date(userStats.lastLogin);
-      const now = new Date();
-      const diffTime = Math.abs(now - last);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-
-      let newStreak = userStats.streak;
-      if (diffDays === 1) {
-        newStreak += 1; // 連続ログイン
-      } else if (diffDays > 1) {
-        newStreak = 1; // 途切れた
-      }
-
-      setUserStats(prev => ({ ...prev, streak: newStreak, lastLogin: today }));
-    }
-  }, []); // 初回起動時のみチェック
+  useEffect(() => { localStorage.setItem('study-master-stats', JSON.stringify(userStats)); }, [userStats]);
 
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
@@ -131,7 +111,6 @@ export default function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // ... (コース作成・インポート系の関数は変更なし) ...
   const handleCreateCourse = (title, desc) => {
     const newCourse = { id: `course-${generateId()}`, title, description: desc, quizzes: [] };
     setCourses([...courses, newCourse]);
@@ -199,31 +178,55 @@ export default function App() {
     setView('quiz_play');
   };
 
-  // ★ クイズ終了時の処理 (XP加算ロジック追加)
+  // ★ クイズ終了処理 (ストリーク判定ロジック修正)
   const finishQuiz = (answers, totalTime) => {
-    // 1. まずXPを計算
     const xpGained = calculateXpGain({ answers, totalTime });
     
-    // 2. ステータス更新
+    const today = new Date().toDateString();
+    let newStreak = userStats.streak;
+    let isStreakUpdated = false;
+
+    // 最終学習日が「今日」じゃない場合のみ判定
+    if (userStats.lastLogin !== today) {
+      // 初回(空文字) または 久しぶりの場合
+      if (!userStats.lastLogin) {
+        newStreak = 1; // 初めての学習なら1日目！
+      } else {
+        const last = new Date(userStats.lastLogin);
+        const now = new Date();
+        const diffTime = Math.abs(now - last);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+        if (diffDays === 1) {
+          newStreak += 1; // 連続
+        } else {
+          newStreak = 1; // 途切れたら1から再開
+        }
+      }
+      isStreakUpdated = true;
+    }
+
+    // ステータス更新
     setUserStats(prev => ({
       ...prev,
-      totalXp: prev.totalXp + xpGained
+      totalXp: prev.totalXp + xpGained,
+      streak: isStreakUpdated ? newStreak : prev.streak,
+      lastLogin: today
     }));
 
-    // 3. 結果データにXP情報を含める (ResultViewで表示するため)
+    // 結果データ作成
     const resultWithXp = { 
       answers, 
       totalTime,
       xpGained, 
       currentLevel: levelInfo.level,
-      // クイズ終了直後の合計XPで次のレベル判定をするため、ここで計算
-      isLevelUp: getLevelInfo(userStats.totalXp + xpGained).level > levelInfo.level 
+      isLevelUp: getLevelInfo(userStats.totalXp + xpGained).level > levelInfo.level,
+      streakInfo: isStreakUpdated ? { days: newStreak, isUpdated: true } : null
     };
 
     setResultData(resultWithXp);
     setView('result');
     
-    // 以下、復習リストの更新ロジック (既存)
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
     const isReview = selectedQuiz?.id === 'review-mode';
@@ -251,7 +254,6 @@ export default function App() {
     }
   };
 
-  // 現在の称号を取得 (一番いい称号を表示用)
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
@@ -260,7 +262,6 @@ export default function App() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           
-          {/* 左側: ロゴと称号 */}
           <div className="flex items-center space-x-3 cursor-pointer" onClick={goHome}>
             <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white p-2 rounded-lg shadow-md transform transition-transform hover:scale-105">
               <BookOpen size={24} />
@@ -273,10 +274,8 @@ export default function App() {
             </div>
           </div>
 
-          {/* 右側: ステータスバーとアイコン */}
           <div className="flex items-center space-x-4">
             
-            {/* ★ ゲーミフィケーション表示エリア (PCのみ) */}
             <div className="hidden sm:flex flex-col items-end mr-2">
               <div className="flex items-center text-sm font-bold text-gray-700 dark:text-gray-200">
                 <Trophy size={14} className="text-yellow-500 mr-1" />
@@ -285,7 +284,6 @@ export default function App() {
                 <Flame size={14} className="text-orange-500 mr-1" />
                 <span>{userStats.streak}日連続</span>
               </div>
-              {/* XPバー */}
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-400 to-indigo-500" 
@@ -310,7 +308,6 @@ export default function App() {
         <div className="animate-fade-in">
           {view === 'home' && (
             <>
-              {/* スマホ用ステータス表示 (ヘッダーに入りきらないためここに表示) */}
               <div className="sm:hidden mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center">
                 <div className="flex items-center">
                   <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400">
@@ -382,7 +379,6 @@ export default function App() {
             />
           )}
           
-          {/* ★ 結果画面にXP情報を渡す */}
           {view === 'result' && resultData && <ResultView resultData={resultData} onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} onBackToMenu={() => setView('course')} />}
         </div>
       </main>
