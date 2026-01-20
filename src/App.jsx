@@ -14,7 +14,7 @@ import { INITIAL_DATA } from './data/initialData';
 import Breadcrumbs from './components/common/Breadcrumbs';
 import FolderListView from './components/course/FolderListView';
 import QuizListView from './components/course/QuizListView';
-import CreateCourseModal from './components/course/CreateCourseModal';
+import CreateCourseModal from './components/course/CreateCourseModal'; // 名前はそのままだが中身は万能型
 import QuizEditor from './components/editor/QuizEditor';
 import QuizMenuView from './components/course/QuizMenuView';
 import GameView from './components/game/GameView';
@@ -26,10 +26,10 @@ export default function App() {
   const [view, setView] = useState('home');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-  // ↓ immediateFeedback を初期値に追加
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [courseToEdit, setCourseToEdit] = useState(null); // 編集対象のコースを保持するstate
 
   const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
 
@@ -103,6 +103,22 @@ export default function App() {
     setView('home');
   };
 
+  // コース編集開始
+  const handleEditCourseRequest = (course) => {
+    setCourseToEdit(course);
+    setView('edit_course');
+  };
+
+  // コース更新実行
+  const handleUpdateCourse = (title, desc) => {
+    const updatedCourses = courses.map(c => 
+      c.id === courseToEdit.id ? { ...c, title, description: desc } : c
+    );
+    setCourses(updatedCourses);
+    setCourseToEdit(null);
+    setView('home');
+  };
+
   const handleDeleteCourse = (id) => {
     if (confirm('このフォルダを削除しますか？中の問題もすべて消えます。')) {
       setCourses(courses.filter(c => c.id !== id));
@@ -137,7 +153,6 @@ export default function App() {
     setSelectedCourse(newCourses[courseIndex]);
   };
 
-  // ↓ 引数に immediateFeedback を追加して、stateに保存するように変更
   const startQuiz = (randomize, shuffleOptions, immediateFeedback) => {
     setGameSettings({ randomize, shuffleOptions, immediateFeedback });
     setView('quiz_play');
@@ -194,19 +209,41 @@ export default function App() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
-        {view !== 'home' && view !== 'settings' && view !== 'create_course' && (
+        {view !== 'home' && view !== 'settings' && view !== 'create_course' && view !== 'edit_course' && (
           <Breadcrumbs path={getPath()} onNavigate={handleBreadcrumbNavigate} />
         )}
 
         <div className="animate-fade-in">
-          {view === 'home' && <><h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2><FolderListView courses={courses} onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} onCreateCourse={() => setView('create_course')} onDeleteCourse={handleDeleteCourse} /></>}
+          {view === 'home' && (
+            <>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2>
+              <FolderListView 
+                courses={courses} 
+                onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} 
+                onCreateCourse={() => setView('create_course')} 
+                onDeleteCourse={handleDeleteCourse}
+                onEditCourse={handleEditCourseRequest} // ここを追加
+              />
+            </>
+          )}
           {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} />}
+          
+          {/* 新規作成モード */}
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}
+          
+          {/* 編集モード (CreateCourseModalを再利用) */}
+          {view === 'edit_course' && (
+            <CreateCourseModal 
+              onClose={goHome} 
+              onSave={handleUpdateCourse} 
+              initialData={courseToEdit} 
+            />
+          )}
+          
           {view === 'course' && selectedCourse && <><div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div><QuizListView course={selectedCourse} onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} wrongHistory={wrongHistory} onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} /></>}
           {view === 'edit_quiz' && <QuizEditor quiz={selectedQuiz} onSave={handleSaveQuiz} onCancel={() => { setView('course'); setSelectedQuiz(null); }} />}
           {view === 'quiz_menu' && selectedQuiz && <QuizMenuView quiz={selectedQuiz} onStart={startQuiz} isReviewMode={selectedQuiz.id === 'review-mode'} onClearHistory={clearHistory} onEdit={selectedQuiz.isMock || selectedQuiz.id === 'review-mode' ? null : () => setView('edit_quiz')} />}
           
-          {/* ↓ ここで immediateFeedback を GameView に渡す！これが抜けてたはずだ */}
           {view === 'quiz_play' && selectedQuiz && (
             <GameView 
               quiz={selectedQuiz} 
