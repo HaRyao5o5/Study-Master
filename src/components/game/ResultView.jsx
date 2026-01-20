@@ -1,6 +1,6 @@
 // src/components/game/ResultView.jsx
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, RotateCcw, Home, Clock, Trophy, Star, Flame, ArrowUpCircle, Sparkles } from 'lucide-react'; // Sparkles追加
+import { CheckCircle, XCircle, RotateCcw, Home, Clock, Trophy, Star, Flame, ArrowUpCircle, Sparkles } from 'lucide-react';
 
 const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   const { answers, totalTime, xpGained, isLevelUp, currentLevel, streakInfo } = resultData;
@@ -23,59 +23,45 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
+  // ★ スコアに応じたコメントを生成する関数 (復活！)
+  const getFeedbackMessage = (score) => {
+    if (score === 100) return "Perfect!! 完璧だ、言うことなし！";
+    if (score >= 90) return "Excellent! その調子、神がかってるね！";
+    if (score >= 80) return "Great Job! かなりイイ線いってるよ！";
+    if (score >= 60) return "Good! 合格点だ、次は満点を目指そう！";
+    if (score >= 40) return "Nice Try! 惜しい、復習すれば次は勝てる！";
+    return "Don't Give Up! 失敗は成功のもと、ここからが本番だ！";
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-10 relative">
       
-      {/* ★ ストリーク達成アニメーション (豪華版) */}
+      {/* ストリーク達成アニメーション */}
       {showStreakAnim && streakInfo && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-fade-in cursor-pointer overflow-hidden" 
           onClick={() => setShowStreakAnim(false)}
         >
-          {/* 背景の回転する光 (サンバースト) */}
+          {/* 背景エフェクト */}
           <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
             <div className="w-[800px] h-[800px] bg-gradient-to-r from-orange-500/0 via-orange-500/50 to-orange-500/0 animate-[spin_10s_linear_infinite]" style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 50%, 100% 100%, 0% 100%, 50% 50%)' }}></div>
             <div className="absolute w-[600px] h-[600px] bg-gradient-to-b from-red-500/0 via-red-500/30 to-red-500/0 animate-[spin_8s_linear_infinite_reverse]"></div>
           </div>
 
-          {/* 舞い散るパーティクル (簡易的な表現) */}
-          {[...Array(12)].map((_, i) => (
-             <div 
-               key={i}
-               className="absolute w-2 h-2 rounded-full bg-yellow-400 animate-pulse"
-               style={{
-                 top: `${Math.random() * 100}%`,
-                 left: `${Math.random() * 100}%`,
-                 animation: `bounce ${2 + Math.random()}s infinite`,
-                 opacity: Math.random()
-               }}
-             />
-          ))}
-
           <div className="text-center transform transition-all animate-bounce-in p-8 relative z-10">
-            {/* メインアイコン周辺 */}
             <div className="relative inline-block mb-6 group">
-              {/* 後ろのボヤッとした光 */}
               <div className="absolute inset-0 bg-orange-500 blur-[60px] opacity-80 animate-pulse rounded-full"></div>
-              <div className="absolute inset-0 bg-red-500 blur-[40px] opacity-60 animate-ping rounded-full" style={{ animationDuration: '2s' }}></div>
-              
-              {/* アイコン本体 */}
-              <div className="relative transform transition-transform group-hover:scale-110 duration-300">
+              <div className="absolute transform transition-transform group-hover:scale-110 duration-300">
                 <Flame size={140} className="text-orange-500 drop-shadow-[0_0_25px_rgba(255,69,0,1)] filter brightness-125 animate-[bounce_1s_infinite]" />
                 <Sparkles size={60} className="text-yellow-300 absolute -top-4 -right-4 animate-spin-slow" />
-                <Sparkles size={40} className="text-yellow-300 absolute -bottom-2 -left-4 animate-pulse" />
               </div>
             </div>
-
-            {/* テキスト */}
             <h2 className="text-4xl font-black text-white mb-2 tracking-widest uppercase italic transform -skew-x-6 text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
               Daily Streak!
             </h2>
-            
             <div className="text-8xl font-black text-white tracking-tighter mb-6 drop-shadow-[0_5px_15px_rgba(255,69,0,0.5)] scale-110">
               {streakInfo.days}<span className="text-3xl ml-2 font-bold text-orange-200">days</span>
             </div>
-            
             <div className="inline-block bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-6 py-2">
                <p className="text-orange-100 font-bold animate-pulse text-sm">画面をタップして閉じる</p>
             </div>
@@ -87,11 +73,20 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden text-center p-8 relative">
         <h2 className="text-gray-500 dark:text-gray-400 text-sm font-bold uppercase tracking-widest mb-4">Result</h2>
         
-        <div className="flex justify-center items-baseline space-x-2 mb-8">
+        {/* スコア表示 */}
+        <div className="flex justify-center items-baseline space-x-2 mb-2">
           <span className="text-7xl font-black text-gray-800 dark:text-white tracking-tighter">{percentage}</span>
           <span className="text-2xl font-bold text-gray-400 dark:text-gray-500">%</span>
         </div>
 
+        {/* ★ コメント表示エリア (復活！) */}
+        <div className="mb-8 h-8 flex items-center justify-center">
+          <p className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 animate-fade-in">
+            {getFeedbackMessage(percentage)}
+          </p>
+        </div>
+
+        {/* 3つのステータスカード */}
         <div className="grid grid-cols-3 gap-3 mb-8">
           <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-2xl flex flex-col items-center justify-center">
             <CheckCircle size={20} className="text-green-500 mb-1" />
@@ -99,7 +94,6 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
             <div className="text-[10px] text-gray-400 font-bold uppercase">Correct</div>
           </div>
           
-          {/* XP表示カード */}
           <div className="p-3 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-2xl border border-yellow-100 dark:border-yellow-900/30 flex flex-col items-center justify-center relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-1 opacity-20">
                <Trophy size={40} className="text-yellow-500 transform rotate-12" />
