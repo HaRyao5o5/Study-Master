@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Sun, Moon, Monitor } from 'lucide-react';
 
-const APP_VERSION = "v2.1.0";
+const APP_VERSION = "v2.2.0";
 
 const SettingsView = ({ theme, changeTheme, onBack }) => {
   return (
