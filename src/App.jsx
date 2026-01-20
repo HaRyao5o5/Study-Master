@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Folder, FileText, ChevronRight, Play, Settings, Clock, 
@@ -25,11 +26,11 @@ export default function App() {
   const [view, setView] = useState('home');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false });
+  // ↓ immediateFeedback を初期値に追加
+  const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
 
-  // Define nav functions BEFORE return and before other components might need them
   const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
 
   const getPath = () => {
@@ -136,8 +137,9 @@ export default function App() {
     setSelectedCourse(newCourses[courseIndex]);
   };
 
-  const startQuiz = (randomize, shuffleOptions) => {
-    setGameSettings({ randomize, shuffleOptions });
+  // ↓ 引数に immediateFeedback を追加して、stateに保存するように変更
+  const startQuiz = (randomize, shuffleOptions, immediateFeedback) => {
+    setGameSettings({ randomize, shuffleOptions, immediateFeedback });
     setView('quiz_play');
   };
 
@@ -203,8 +205,19 @@ export default function App() {
           {view === 'course' && selectedCourse && <><div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div><QuizListView course={selectedCourse} onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} wrongHistory={wrongHistory} onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} /></>}
           {view === 'edit_quiz' && <QuizEditor quiz={selectedQuiz} onSave={handleSaveQuiz} onCancel={() => { setView('course'); setSelectedQuiz(null); }} />}
           {view === 'quiz_menu' && selectedQuiz && <QuizMenuView quiz={selectedQuiz} onStart={startQuiz} isReviewMode={selectedQuiz.id === 'review-mode'} onClearHistory={clearHistory} onEdit={selectedQuiz.isMock || selectedQuiz.id === 'review-mode' ? null : () => setView('edit_quiz')} />}
-          {view === 'quiz_play' && selectedQuiz && <GameView quiz={selectedQuiz} isRandom={gameSettings.randomize} shuffleOptions={gameSettings.shuffleOptions} onFinish={finishQuiz} />}
-          {view === 'result' && resultData && <ResultView resultData={resultData} onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions)} onBackToMenu={() => setView('course')} />}
+          
+          {/* ↓ ここで immediateFeedback を GameView に渡す！これが抜けてたはずだ */}
+          {view === 'quiz_play' && selectedQuiz && (
+            <GameView 
+              quiz={selectedQuiz} 
+              isRandom={gameSettings.randomize} 
+              shuffleOptions={gameSettings.shuffleOptions} 
+              immediateFeedback={gameSettings.immediateFeedback}
+              onFinish={finishQuiz} 
+            />
+          )}
+          
+          {view === 'result' && resultData && <ResultView resultData={resultData} onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} onBackToMenu={() => setView('course')} />}
         </div>
       </main>
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}

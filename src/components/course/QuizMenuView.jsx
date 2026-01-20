@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Settings, Shuffle, ImageIcon, Type, CheckSquare, Play, Trash2, Edit3, Lock } from 'lucide-react';
+import { Settings, Shuffle, ImageIcon, Type, CheckSquare, Play, Trash2, Edit3, Lock, Zap } from 'lucide-react';
 
 const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) => {
   const [randomize, setRandomize] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [immediateFeedback, setImmediateFeedback] = useState(false);
   const isMock = quiz.isMock;
 
   return (
@@ -24,6 +25,10 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
               <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input type="checkbox" checked={shuffleOptions} onChange={(e) => setShuffleOptions(e.target.checked)} className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" />
                 <span className="text-gray-700 dark:text-gray-200 flex items-center"><Shuffle size={16} className="mr-2" /> 選択肢をシャッフルする</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <input type="checkbox" checked={immediateFeedback} onChange={(e) => setImmediateFeedback(e.target.checked)} className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" />
+                <span className="text-gray-700 dark:text-gray-200 flex items-center"><Zap size={16} className="mr-2" /> 1問ごとに答え合わせする (即時判定)</span>
               </label>
             </div>
           </div>
@@ -48,7 +53,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
           </div>
         )}
         <div className="flex flex-col gap-3">
-          <button onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={quiz.questions.length === 0}>
+          <button onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions, isMock ? false : immediateFeedback)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={quiz.questions.length === 0}>
             <Play size={24} className="mr-2 fill-current" />
             {quiz.questions.length > 0 ? "テストを開始する" : "問題がありません"}
           </button>
