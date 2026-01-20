@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Folder, FileText, ChevronRight, Play, Settings, Clock, CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, Brain, Target, Trash2, Lock, Shuffle } from 'lucide-react';
+import { Folder, FileText, ChevronRight, Play, Settings, Clock, CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, Brain, Target, Trash2, Lock, Shuffle, Moon, Sun } from 'lucide-react';
 
 // ==========================================
 // DATA SECTION
 // ==========================================
+// プレビュー環境での動作を保証するため、データを直接定義します。
 const RAW_DATA = [
   {
     "test_name": "第1回 小テスト",
@@ -395,78 +396,58 @@ const RAW_DATA = [
 const generateRealData = () => {
   const courseId = 'info-process-2';
   
-  // JSONデータをアプリの内部形式に変換
-  const quizzes = RAW_DATA.map((item, index) => {
-    // ID生成
-    const quizId = `quiz-${index + 1}`;
-    
-    // Questions変換
-    const questions = item.questions.map((q, qIndex) => {
-      // 選択肢オブジェクトを配列に変換 (ア, イ, ウ, エ の順を保証)
-      const options = [
-        q.options['ア'],
-        q.options['イ'],
-        q.options['ウ'],
-        q.options['エ']
-      ];
-      
-      // 正解文字をインデックスに変換
-      const correctMap = { 'ア': 0, 'イ': 1, 'ウ': 2, 'エ': 3 };
-      const correctIndex = correctMap[q.answer];
+  if (!RAW_DATA) return []; // データがない場合のガード
 
+  const quizzes = RAW_DATA.map((item, index) => {
+    const quizId = `quiz-${index + 1}`;
+    const questions = item.questions.map((q, qIndex) => {
+      const options = [q.options['ア'], q.options['イ'], q.options['ウ'], q.options['エ']];
+      const correctMap = { 'ア': 0, 'イ': 1, 'ウ': 2, 'エ': 3 };
       return {
-        id: `q${index + 1}-${q.question_number}`, // q1-1, q1-2...
+        id: `q${index + 1}-${q.question_number}`,
         text: q.question_text,
         options: options,
-        correctIndex: correctIndex,
-        tableData: q.table_data // 表データを追加で渡す
+        correctIndex: correctMap[q.answer],
+        tableData: q.table_data
       };
     });
 
     return {
       id: quizId,
       title: item.test_name,
-      description: `全${questions.length}問`, // 自動生成
+      description: `全${questions.length}問`,
       questions: questions
     };
   });
 
-  return [
-    {
-      id: courseId,
-      title: '情報処理入門２',
-      description: '2025年度 後期',
-      quizzes: quizzes
-    }
-  ];
+  return [{ id: courseId, title: '情報処理入門２', description: '2025年度 後期', quizzes: quizzes }];
 };
 
 const DATA = generateRealData();
 
 // --- COMPONENTS ---
 
-// Helper Component for Table Rendering
+// Helper: Table
 const SimpleTable = ({ data }) => {
   if (!data || data.length === 0) return null;
   const headers = Object.keys(data[0]);
-
   return (
-    <div className="overflow-x-auto my-4 border border-gray-200 rounded-lg shadow-sm">
-      <table className="min-w-full divide-y divide-gray-200 text-sm text-left">
-        <thead className="bg-gray-50">
+    <div className="overflow-x-auto my-4 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm text-left">
+        <thead className="bg-gray-50 dark:bg-gray-700">
           <tr>
             {headers.map((h, i) => (
-              <th key={i} className="px-4 py-2 font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap border-r border-gray-200 last:border-r-0">
+              <th key={i} className="px-4 py-2 font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider whitespace-nowrap border-r border-gray-200 dark:border-gray-600 last:border-r-0">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
           {data.map((row, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <tr key={i} className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-750'}>
               {headers.map((h, j) => (
-                <td key={j} className="px-4 py-2 text-gray-700 whitespace-nowrap border-r border-gray-200 last:border-r-0">
+                <td key={j} className="px-4 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap border-r border-gray-200 dark:border-gray-700 last:border-r-0">
                   {row[h]}
                 </td>
               ))}
@@ -478,10 +459,10 @@ const SimpleTable = ({ data }) => {
   );
 };
 
-// 1. Breadcrumbs Navigation
+// 1. Breadcrumbs
 const Breadcrumbs = ({ path, onNavigate }) => (
-  <nav className="flex items-center text-sm text-gray-500 mb-6 overflow-x-auto whitespace-nowrap pb-2">
-    <button onClick={() => onNavigate('home')} className="hover:text-blue-600 flex items-center">
+  <nav className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-6 overflow-x-auto whitespace-nowrap pb-2">
+    <button onClick={() => onNavigate('home')} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors">
       <Home size={16} className="mr-1" /> Home
     </button>
     {path.map((item, index) => (
@@ -489,7 +470,7 @@ const Breadcrumbs = ({ path, onNavigate }) => (
         <ChevronRight size={16} className="mx-2" />
         <button 
           onClick={() => onNavigate(item.type, item.id)}
-          className={`hover:text-blue-600 ${index === path.length - 1 ? 'font-bold text-gray-800' : ''}`}
+          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${index === path.length - 1 ? 'font-bold text-gray-800 dark:text-gray-100' : ''}`}
         >
           {item.title}
         </button>
@@ -498,19 +479,19 @@ const Breadcrumbs = ({ path, onNavigate }) => (
   </nav>
 );
 
-// 2. Folder/Course List View
+// 2. Folder List
 const FolderListView = ({ courses, onSelectCourse }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
     {courses.map(course => (
       <div 
         key={course.id}
         onClick={() => onSelectCourse(course)}
-        className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md border border-gray-100 cursor-pointer transition-all hover:border-blue-300 flex flex-col items-center justify-center h-48 group"
+        className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700 cursor-pointer transition-all hover:border-blue-300 dark:hover:border-blue-500 flex flex-col items-center justify-center h-48 group"
       >
-        <Folder size={64} className="text-blue-200 group-hover:text-blue-400 mb-4 transition-colors" />
-        <h3 className="text-lg font-bold text-gray-800 text-center">{course.title}</h3>
-        <p className="text-xs text-gray-400 mt-2">{course.description}</p>
-        <span className="mt-4 text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full">
+        <Folder size={64} className="text-blue-200 dark:text-blue-900 group-hover:text-blue-400 dark:group-hover:text-blue-500 mb-4 transition-colors" />
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 text-center">{course.title}</h3>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{course.description}</p>
+        <span className="mt-4 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
           {course.quizzes.length} フォルダ
         </span>
       </div>
@@ -518,15 +499,13 @@ const FolderListView = ({ courses, onSelectCourse }) => (
   </div>
 );
 
-// 3. Quiz List View (Inside a Course)
+// 3. Quiz List
 const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) => {
   const [mockCount, setMockCount] = useState(10);
-  
-  // 全問取得
   const allQuestions = useMemo(() => course.quizzes.flatMap(quiz => quiz.questions), [course]);
   const totalQ = allQuestions.length;
+  const wrongQuestions = allQuestions.filter(q => wrongHistory.includes(q.id));
 
-  // 総合テスト（全問）
   const createAllQuestionsQuiz = () => ({
     id: 'all-questions',
     title: '全範囲 総合テスト',
@@ -535,73 +514,57 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) =>
     isMock: false
   });
 
-  // 模試（ランダムN問）
   const createMockExamQuiz = () => {
-    // 全問をシャッフルして指定数だけ抽出
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, Math.min(mockCount, totalQ));
-    
     return {
       id: 'mock-exam',
       title: `実力診断模試 (${selected.length}問)`,
-      description: `全範囲からランダムに${selected.length}問を出題します。本番形式のため、開始するまで問題は見えません。`,
+      description: `全範囲からランダムに${selected.length}問を出題します。`,
       questions: selected,
-      isMock: true // 模試フラグ
+      isMock: true
     };
   };
 
-  // 復習モード（間違えた問題）
-  const wrongQuestions = allQuestions.filter(q => wrongHistory.includes(q.id));
-
   return (
     <div className="space-y-8">
-      
-      {/* 総合テスト & 模試セクション */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-          <Layers className="mr-2 text-blue-600" /> 総合演習メニュー
+      {/* 総合テスト & 模試 */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+          <Layers className="mr-2 text-blue-600 dark:text-blue-400" /> 総合演習メニュー
         </h3>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* 全問テスト */}
-          <div className="border rounded-lg p-4 hover:bg-blue-50 cursor-pointer transition-colors border-blue-100" onClick={() => onSelectQuiz(createAllQuestionsQuiz())}>
-            <h4 className="font-bold text-blue-700 mb-1">全範囲一括テスト</h4>
-            <p className="text-xs text-gray-500">収録された全{totalQ}問を順番に解きます。</p>
+          <div className="border dark:border-gray-600 rounded-lg p-4 hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors border-blue-100 dark:border-blue-900" onClick={() => onSelectQuiz(createAllQuestionsQuiz())}>
+            <h4 className="font-bold text-blue-700 dark:text-blue-400 mb-1">全範囲一括テスト</h4>
+            <p className="text-xs text-gray-500 dark:text-gray-400">収録された全{totalQ}問を順番に解きます。</p>
           </div>
-
-          {/* 模試モード */}
-          <div className="border rounded-lg p-4 bg-gray-50">
+          <div className="border dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
             <div className="flex justify-between items-start mb-2">
-              <h4 className="font-bold text-gray-700">実力診断模試</h4>
-              <span className="text-xs bg-gray-200 px-2 py-1 rounded text-gray-600">ランダム</span>
+              <h4 className="font-bold text-gray-700 dark:text-gray-200">実力診断模試</h4>
+              <span className="text-xs bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded text-gray-600 dark:text-gray-300">ランダム</span>
             </div>
-            
             <div className="flex items-center space-x-3 mb-4">
               <input 
                 type="range" 
-                min="1" 
-                max={totalQ} 
-                step="1" 
+                min="1" max={totalQ} step="1" 
                 value={mockCount} 
                 onChange={(e) => setMockCount(parseInt(e.target.value))}
-                className="flex-grow h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+                className="flex-grow h-2 bg-gray-300 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
               />
-              <div className="flex items-center bg-white border border-gray-300 rounded px-2 py-1">
+              <div className="flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded px-2 py-1">
                 <input
                   type="number"
-                  min="1"
-                  max={totalQ}
+                  min="1" max={totalQ}
                   value={mockCount}
                   onChange={(e) => {
                      const val = parseInt(e.target.value);
                      if (!isNaN(val) && val >= 1) setMockCount(val > totalQ ? totalQ : val);
                   }}
-                  className="w-10 text-center font-bold text-gray-700 outline-none"
+                  className="w-10 text-center font-bold text-gray-700 dark:text-gray-200 bg-transparent outline-none"
                 />
-                <span className="text-xs text-gray-500 ml-1">/{totalQ}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">/{totalQ}</span>
               </div>
             </div>
-
             <button 
               onClick={() => onSelectQuiz(createMockExamQuiz())}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold py-2 px-4 rounded transition-colors flex items-center justify-center"
@@ -612,18 +575,18 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) =>
         </div>
       </div>
 
-      {/* 復習モードセクション */}
+      {/* 復習モード */}
       {wrongHistory.length > 0 && (
-        <div className="bg-red-50 rounded-xl p-6 shadow-sm border border-red-100">
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 shadow-sm border border-red-100 dark:border-red-900/50">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-bold text-red-800 flex items-center">
-              <Brain className="mr-2" /> 弱点克服（復習モード）
+            <h3 className="text-lg font-bold text-red-800 dark:text-red-300 flex items-center">
+              <Brain className="mr-2" /> 弱点克服
             </h3>
-            <span className="bg-red-200 text-red-800 text-xs font-bold px-2 py-1 rounded-full">
+            <span className="bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-100 text-xs font-bold px-2 py-1 rounded-full">
               {wrongHistory.length}問
             </span>
           </div>
-          <p className="text-sm text-red-600 mb-4">過去に間違えた問題が蓄積されています。</p>
+          <p className="text-sm text-red-600 dark:text-red-400 mb-4">過去に間違えた問題が蓄積されています。</p>
           <button 
             onClick={() => onSelectReview({
               id: 'review-mode',
@@ -632,33 +595,33 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) =>
               questions: wrongQuestions,
               isMock: false
             })}
-            className="w-full bg-white border border-red-200 text-red-600 hover:bg-red-100 font-bold py-3 px-6 rounded-lg shadow-sm transition-colors flex items-center justify-center"
+            className="w-full bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold py-3 px-6 rounded-lg shadow-sm transition-colors flex items-center justify-center"
           >
             <RotateCcw size={18} className="mr-2" /> 間違えた問題を解き直す
           </button>
         </div>
       )}
 
-      {/* 通常のフォルダリスト */}
+      {/* リスト */}
       <div>
-        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">各回小テスト</h3>
+        <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">各回小テスト</h3>
         <div className="grid grid-cols-1 gap-3">
           {course.quizzes.map(quiz => (
             <div 
               key={quiz.id}
               onClick={() => onSelectQuiz(quiz)}
-              className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 hover:border-blue-400 cursor-pointer flex items-center justify-between transition-all"
+              className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-100 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer flex items-center justify-between transition-all"
             >
               <div className="flex items-center">
-                <div className="bg-yellow-100 p-3 rounded-lg mr-4 text-yellow-600">
+                <div className="bg-yellow-100 dark:bg-yellow-900/50 p-3 rounded-lg mr-4 text-yellow-600 dark:text-yellow-400">
                   <FileText size={24} />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="font-bold text-gray-800 truncate">{quiz.title}</h4>
-                  <p className="text-sm text-gray-500 truncate">{quiz.description}</p>
+                  <h4 className="font-bold text-gray-800 dark:text-gray-100 truncate">{quiz.title}</h4>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{quiz.description}</p>
                 </div>
               </div>
-              <ChevronRight className="text-gray-300 flex-shrink-0" />
+              <ChevronRight className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
             </div>
           ))}
         </div>
@@ -667,48 +630,44 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) =>
   );
 };
 
-// 4. Quiz Detail/Menu View
+// 4. Quiz Menu
 const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
   const [randomize, setRandomize] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
-  const isMock = quiz.isMock; // 模試かどうか
-
-  // 模試の場合は強制的にランダム（データ自体が既にランダムだが、UI上も制御）
-  // 復習モードなどでランダム設定を変えたい場合はここで制御
+  const isMock = quiz.isMock;
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="bg-gray-50 p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">{quiz.title}</h2>
-        <p className="text-gray-600">{quiz.description}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{quiz.title}</h2>
+        <p className="text-gray-600 dark:text-gray-300">{quiz.description}</p>
       </div>
 
       <div className="p-6">
-        {/* 設定エリア：模試の場合は非表示 */}
         {!isMock && (
           <div className="mb-8">
-            <h3 className="font-bold text-gray-700 mb-4 flex items-center">
+            <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
               <Settings size={18} className="mr-2" /> 設定
             </h3>
             <div className="space-y-2">
-              <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+              <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input 
                   type="checkbox" 
                   checked={randomize} 
                   onChange={(e) => setRandomize(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" 
+                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" 
                 />
-                <span className="text-gray-700">出題順をランダムにする</span>
+                <span className="text-gray-700 dark:text-gray-200">出題順をランダムにする</span>
               </label>
               
-              <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+              <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <input 
                   type="checkbox" 
                   checked={shuffleOptions} 
                   onChange={(e) => setShuffleOptions(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" 
+                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" 
                 />
-                <span className="text-gray-700 flex items-center">
+                <span className="text-gray-700 dark:text-gray-200 flex items-center">
                   <Shuffle size={16} className="mr-2" /> 選択肢をシャッフルする
                 </span>
               </label>
@@ -716,24 +675,23 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
           </div>
         )}
 
-        {/* 問題リストエリア：模試の場合は非表示（シークレット） */}
         {!isMock ? (
           <div className="mb-8">
-            <h3 className="font-bold text-gray-700 mb-4">収録されている問題 ({quiz.questions.length}問)</h3>
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+            <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">収録されている問題 ({quiz.questions.length}問)</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
               {quiz.questions.map((q, idx) => (
-                <div key={q.id} className="text-sm p-3 bg-gray-50 rounded border border-gray-100 text-gray-600">
-                  <span className="font-bold text-blue-500 mr-2">Q{idx + 1}.</span>
+                <div key={q.id} className="text-sm p-3 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300">
+                  <span className="font-bold text-blue-500 dark:text-blue-400 mr-2">Q{idx + 1}.</span>
                   {q.text}
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div className="mb-8 bg-gray-100 p-8 rounded-xl border border-gray-200 text-center flex flex-col items-center justify-center">
-            <Lock size={48} className="text-gray-400 mb-3" />
-            <h3 className="font-bold text-gray-600 text-lg">Question List Hidden</h3>
-            <p className="text-sm text-gray-500 mt-2">
+          <div className="mb-8 bg-gray-100 dark:bg-gray-700 p-8 rounded-xl border border-gray-200 dark:border-gray-600 text-center flex flex-col items-center justify-center">
+            <Lock size={48} className="text-gray-400 dark:text-gray-500 mb-3" />
+            <h3 className="font-bold text-gray-600 dark:text-gray-300 text-lg">Question List Hidden</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               本番形式の模試のため、問題内容は開始するまで表示されません。<br/>
               出題順序は自動的にシャッフルされます。
             </p>
@@ -742,7 +700,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
 
         <div className="flex flex-col gap-3">
           <button 
-            onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)} // 模試の場合は強制的にシャッフルONでもいいかもしれないが、一旦デフォルトは維持
+            onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg"
           >
             <Play size={24} className="mr-2 fill-current" />
@@ -752,7 +710,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
           {isReviewMode && (
             <button 
               onClick={onClearHistory}
-              className="w-full bg-white border border-gray-300 text-gray-500 hover:text-red-600 hover:border-red-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"
+              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800 font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"
             >
               <Trash2 size={16} className="mr-2" /> 履歴をリセット（全て覚えた）
             </button>
@@ -763,44 +721,28 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
   );
 };
 
-// 5. Game Loop View
+// 5. Game View
 const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [answers, setAnswers] = useState([]); // { questionId, selectedIndex, timeTaken }
+  const [answers, setAnswers] = useState([]); 
   const [startTime, setStartTime] = useState(null);
   const [qStartTime, setQStartTime] = useState(null);
 
-  // 実際の出題順序を決定 & 選択肢のシャッフル処理
   const questionOrder = useMemo(() => {
     let order = [...quiz.questions];
-    
-    // 1. 問題順のシャッフル
-    if (isRandom) {
-      order = order.sort(() => Math.random() - 0.5);
-    }
+    if (isRandom) order = order.sort(() => Math.random() - 0.5);
 
-    // 2. 選択肢のシャッフル
     if (shuffleOptions) {
       order = order.map(q => {
-        // 現在の選択肢とインデックスのペアを作成
         const optionsWithIndex = q.options.map((opt, i) => ({ text: opt, originalIndex: i }));
-        // シャッフル
         const shuffledOptions = [...optionsWithIndex].sort(() => Math.random() - 0.5);
-        
-        // 新しい選択肢配列
-        const newOptions = shuffledOptions.map(o => o.text);
-        // 新しい正解インデックス（元の正解インデックスを持つ要素がどこに移動したか）
-        const newCorrectIndex = shuffledOptions.findIndex(o => o.originalIndex === q.correctIndex);
-
         return {
           ...q,
-          options: newOptions,
-          correctIndex: newCorrectIndex,
-          // 元のデータも保持しておくとデバッグに便利かもしれないが、今回は上書きで動作させる
+          options: shuffledOptions.map(o => o.text),
+          correctIndex: shuffledOptions.findIndex(o => o.originalIndex === q.correctIndex),
         };
       });
     }
-
     return order;
   }, [quiz, isRandom, shuffleOptions]);
 
@@ -810,7 +752,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   }, []);
 
   useEffect(() => {
-    // 問題が変わるたびに計測開始
     setQStartTime(Date.now());
   }, [currentQIndex]);
 
@@ -823,7 +764,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
       selectedIndex: optionIndex,
       isCorrect: optionIndex === currentQ.correctIndex,
       timeTaken: now - qStartTime,
-      id: currentQ.id // 重要: 履歴保存用にIDを記録
+      id: currentQ.id 
     };
 
     const newAnswers = [...answers, answerRecord];
@@ -832,7 +773,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
     if (currentQIndex < questionOrder.length - 1) {
       setCurrentQIndex(prev => prev + 1);
     } else {
-      // Finish
       const totalTime = now - startTime;
       onFinish(newAnswers, totalTime);
     }
@@ -843,30 +783,27 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Progress Bar */}
       <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-500 mb-1">
+        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
           <span>Question {currentQIndex + 1} / {questionOrder.length}</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
           <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-800 mb-4 leading-relaxed whitespace-pre-line">
+      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 leading-relaxed whitespace-pre-line">
           {currentQuestion.text}
         </h2>
 
-        {/* 表データがある場合は表示 */}
         {currentQuestion.tableData && (
           <div className="mb-8">
             <SimpleTable data={currentQuestion.tableData} />
           </div>
         )}
         
-        {/* 通常の間隔調整（表がない場合用） */}
         {!currentQuestion.tableData && <div className="mb-8"></div>}
 
         <div className="space-y-4">
@@ -874,12 +811,12 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
             <button
               key={idx}
               onClick={() => handleAnswer(idx)}
-              className="w-full text-left p-4 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all group flex items-center"
+              className="w-full text-left p-4 rounded-xl border-2 border-gray-100 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all group flex items-center bg-white dark:bg-gray-800"
             >
-              <span className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">
+              <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">
                 {['A', 'B', 'C', 'D'][idx]}
               </span>
-              <span className="text-gray-700 font-medium">{option}</span>
+              <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
             </button>
           ))}
         </div>
@@ -896,7 +833,6 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   const accuracy = Math.round((correctCount / totalCount) * 100);
   const formattedTime = `${Math.floor(totalTime / 1000)}秒`;
 
-  // 評価コメント
   let comment = "もう一歩！";
   let color = "text-yellow-500";
   if (accuracy === 100) {
@@ -911,33 +847,32 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="p-8 text-center bg-gray-50 border-b border-gray-200">
-        <h2 className="text-lg text-gray-500 font-bold mb-2">RESULT</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div className="p-8 text-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+        <h2 className="text-lg text-gray-500 dark:text-gray-400 font-bold mb-2">RESULT</h2>
         <div className={`text-4xl font-black mb-2 ${color}`}>{accuracy}%</div>
-        <p className="text-2xl font-bold text-gray-800 mb-4">{correctCount} / {totalCount} 問正解</p>
-        <p className="text-gray-600 font-medium mb-4">{comment}</p>
+        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{correctCount} / {totalCount} 問正解</p>
+        <p className="text-gray-600 dark:text-gray-300 font-medium mb-4">{comment}</p>
         
-        <div className="flex justify-center items-center text-gray-500 text-sm">
+        <div className="flex justify-center items-center text-gray-500 dark:text-gray-400 text-sm">
           <Clock size={16} className="mr-1" /> かかった時間: {formattedTime}
         </div>
       </div>
 
-      <div className="p-6 bg-gray-50/50">
-        <h3 className="font-bold text-gray-700 mb-4">詳細レポート</h3>
+      <div className="p-6 bg-gray-50/50 dark:bg-gray-900/50">
+        <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">詳細レポート</h3>
         <div className="space-y-4">
           {answers.map((ans, idx) => (
-            <div key={idx} className={`bg-white p-4 rounded-lg border-l-4 shadow-sm ${ans.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
+            <div key={idx} className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 shadow-sm ${ans.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
               <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-sm text-gray-500">Q{idx + 1}</span>
+                <span className="font-bold text-sm text-gray-500 dark:text-gray-400">Q{idx + 1}</span>
                 {ans.isCorrect ? 
                   <span className="flex items-center text-green-600 text-sm font-bold"><CheckCircle size={16} className="mr-1"/> 正解</span> : 
                   <span className="flex items-center text-red-600 text-sm font-bold"><XCircle size={16} className="mr-1"/> 不正解</span>
                 }
               </div>
-              <p className="text-gray-800 font-medium mb-2 whitespace-pre-line">{ans.question.text}</p>
+              <p className="text-gray-800 dark:text-gray-200 font-medium mb-2 whitespace-pre-line">{ans.question.text}</p>
               
-              {/* 結果画面でも表を表示 */}
               {ans.question.tableData && (
                 <div className="mb-4">
                   <SimpleTable data={ans.question.tableData} />
@@ -945,12 +880,12 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
               )}
 
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
                   <span className="text-xs opacity-70 block">あなたの回答</span>
                   {['A', 'B', 'C', 'D'][ans.selectedIndex]}. {ans.question.options[ans.selectedIndex]}
                 </div>
                 {!ans.isCorrect && (
-                  <div className="bg-blue-50 text-blue-800 p-2 rounded">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded">
                     <span className="text-xs opacity-70 block">正解</span>
                     {['A', 'B', 'C', 'D'][ans.question.correctIndex]}. {ans.question.options[ans.question.correctIndex]}
                   </div>
@@ -961,16 +896,16 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
         </div>
       </div>
 
-      <div className="p-6 border-t border-gray-200 flex flex-col sm:flex-row gap-4 justify-center bg-white sticky bottom-0">
+      <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-center bg-white dark:bg-gray-800 sticky bottom-0">
         <button 
           onClick={onRetry}
-          className="flex-1 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
+          className="flex-1 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
         >
           <RotateCcw size={18} className="mr-2" /> もう一度挑戦
         </button>
         <button 
           onClick={onBackToMenu}
-          className="flex-1 bg-white border-2 border-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 flex items-center justify-center transition-colors"
+          className="flex-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
         >
           <ArrowLeft size={18} className="mr-2" /> メニューに戻る
         </button>
@@ -979,16 +914,73 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   );
 };
 
+// 7. Settings View (New)
+const SettingsView = ({ theme, toggleTheme, onBack }) => {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex items-center">
+        <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <ArrowLeft size={24} />
+        </button>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">アプリ設定</h2>
+      </div>
+
+      <div className="p-6 space-y-6">
+        {/* テーマ設定 */}
+        <div className="flex items-center justify-between p-4 border rounded-xl border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+          <div className="flex items-center">
+            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 mr-4">
+              {theme === 'dark' ? <Moon size={24} /> : <Sun size={24} />}
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 dark:text-gray-100">ダークモード</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {theme === 'dark' ? '目に優しいダークテーマを使用中' : '明るいライトテーマを使用中'}
+              </p>
+            </div>
+          </div>
+          
+          <button 
+            onClick={toggleTheme}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              theme === 'dark' ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                theme === 'dark' ? 'translate-x-7' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* 将来的な設定項目があればここに追加 */}
+        <div className="text-center text-sm text-gray-400 mt-8">
+          Study Master v1.2.0
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- MAIN APP COMPONENT ---
 
 export default function App() {
-  const [view, setView] = useState('home'); // home, course, quiz_menu, quiz_play, result
+  const [view, setView] = useState('home'); // home, course, quiz_menu, quiz_play, result, settings
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false });
   const [resultData, setResultData] = useState(null);
   
-  // 間違えた問題のIDリスト（復習用リスト）
+  // Theme State
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('study-master-theme') || 'light';
+    }
+    return 'light';
+  });
+
+  // History State
   const [wrongHistory, setWrongHistory] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-wrong-history');
@@ -998,7 +990,6 @@ export default function App() {
     }
   });
 
-  // 間違えた回数の記録（統計用・非表示）
   const [errorStats, setErrorStats] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-error-stats');
@@ -1008,6 +999,16 @@ export default function App() {
     }
   });
 
+  // Effects
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('study-master-theme', theme);
+  }, [theme]);
+
   useEffect(() => {
     localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory));
   }, [wrongHistory]);
@@ -1016,11 +1017,21 @@ export default function App() {
     localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats));
   }, [errorStats]);
 
+  // Handlers
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   const goHome = () => {
     setView('home');
     setSelectedCourse(null);
     setSelectedQuiz(null);
     setResultData(null);
+  };
+
+  const goToSettings = () => {
+    // 現在のビューを保存しておくロジックもアリだが、今回はシンプルに
+    setView('settings');
   };
 
   const selectCourse = (course) => {
@@ -1046,7 +1057,6 @@ export default function App() {
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
     const isReview = selectedQuiz?.id === 'review-mode';
 
-    // 1. 統計データの更新 (間違えた回数をカウントアップ)
     if (currentWrongs.length > 0) {
       setErrorStats(prev => {
         const newStats = { ...prev };
@@ -1057,28 +1067,20 @@ export default function App() {
       });
     }
 
-    // 2. 復習リスト(wrongHistory)の更新
     setWrongHistory(prev => {
       let newHistory = [...prev];
-
-      // 不正解だった問題は、無条件でリストに追加 (重複は防ぐ)
       currentWrongs.forEach(id => {
-        if (!newHistory.includes(id)) {
-          newHistory.push(id);
-        }
+        if (!newHistory.includes(id)) newHistory.push(id);
       });
-
-      // 復習モードでプレイし、かつ正解した問題はリストから削除
       if (isReview) {
         newHistory = newHistory.filter(id => !currentCorrects.includes(id));
       }
-
       return newHistory;
     });
   };
   
   const clearHistory = () => {
-    if (confirm('復習リストをリセットしますか？（統計データは保持されます）')) {
+    if (confirm('復習リストをリセットしますか？')) {
       setWrongHistory([]);
       goHome();
     }
@@ -1086,12 +1088,8 @@ export default function App() {
 
   const getPath = () => {
     const path = [];
-    if (selectedCourse) {
-      path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
-    }
-    if (selectedQuiz && view !== 'course') {
-      path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
-    }
+    if (selectedCourse) path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
+    if (selectedQuiz && view !== 'course') path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
     return path;
   };
 
@@ -1104,39 +1102,57 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans text-gray-800">
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+    <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 transition-colors duration-200`}>
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2" onClick={goHome} role="button">
+          <div className="flex items-center space-x-2 cursor-pointer" onClick={goHome}>
             <div className="bg-blue-600 text-white p-1.5 rounded-lg">
               <FileText size={20} />
             </div>
-            <h1 className="text-xl font-black tracking-tight text-gray-900">Study Master</h1>
+            <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white">Study Master</h1>
           </div>
-          <div className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-            Test Prep Mode
+          
+          <div className="flex items-center space-x-2">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hidden sm:block">
+              Test Prep Mode
+            </div>
+            <button 
+              onClick={goToSettings}
+              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title="設定"
+            >
+              <Settings size={20} />
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
-        {view !== 'home' && (
+        {view !== 'home' && view !== 'settings' && (
           <Breadcrumbs path={getPath()} onNavigate={handleBreadcrumbNavigate} />
         )}
 
         <div className="animate-fade-in">
           {view === 'home' && (
             <>
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">科目の選択</h2>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2>
               <FolderListView courses={DATA} onSelectCourse={selectCourse} />
             </>
+          )}
+
+          {view === 'settings' && (
+            <SettingsView 
+              theme={theme} 
+              toggleTheme={toggleTheme} 
+              onBack={goHome} 
+            />
           )}
 
           {view === 'course' && selectedCourse && (
             <>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">{selectedCourse.title}</h2>
-                <p className="text-gray-500">{selectedCourse.description}</p>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2>
+                <p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p>
               </div>
               <QuizListView 
                 course={selectedCourse} 
