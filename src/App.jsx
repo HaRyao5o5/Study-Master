@@ -4,13 +4,14 @@ import {
   CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, 
   Brain, Target, Trash2, Lock, Shuffle, Moon, Sun, Monitor, 
   GraduationCap, Plus, Edit3, Image as ImageIcon, X, Save, Type, List,
-  BookOpen, Zap
+  BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle
 } from 'lucide-react';
 
 // ==========================================
 // INITIAL DATA (FULL CONVERTED)
 // ==========================================
 // ユーザーから提供されたJSONデータを新システム用に変換済み
+// 外部ファイル読み込みのエラーを避けるため、ここに直接記述します。
 const INITIAL_DATA = [
   {
     id: 'course-info-process-2',
@@ -27,28 +28,28 @@ const INITIAL_DATA = [
             "text": "1.5Mビット/秒の伝送路を用いて12Mバイトのデータを転送するために必要な伝送時間は何秒か。ここで、伝送路の伝送効率を50%とする。(H30秋)",
             "type": "multiple",
             "options": ["16", "32", "64", "128"],
-            "correctAnswer": "128"
+            "correctAnswer": ["128"] // 配列で統一
           },
           {
             "id": "q1-2",
             "text": "100Mビット/秒のLANを使用し、1件のレコード長が1,000バイトの電文を1,000件連続して伝送するとき、伝送時間は何秒か。ここで、LANの伝送効率は50%とする。(R3)",
             "type": "multiple",
             "options": ["0.02", "0.08", "0.16", "1.6"],
-            "correctAnswer": "0.16"
+            "correctAnswer": ["0.16"]
           },
           {
             "id": "q1-3",
             "text": "10Mビット/秒の回線で接続された端末間で、平均1Mバイトのファイルを、10秒ごとに転送するときの回線利用率は何%か。ここで、ファイル転送時には、転送量の20%が制御情報として付加されるものとし、1Mビット=10^6ビットとする。(R1秋)",
             "type": "multiple",
             "options": ["1.2", "6.4", "8.0", "9.6"],
-            "correctAnswer": "9.6"
+            "correctAnswer": ["9.6"]
           },
           {
             "id": "q1-4",
             "text": "符号化速度が192kビット/秒の音声データ2.4Mバイトを、通信速度が128kビット/秒のネットワークを用いてダウンロードしながら途切れることなく再生するには、再生開始前のデータのバッファリング時間として最低何秒間が必要か。(H29秋)",
             "type": "multiple",
             "options": ["50", "100", "150", "250"],
-            "correctAnswer": "50"
+            "correctAnswer": ["50"]
           }
         ]
       },
@@ -62,28 +63,28 @@ const INITIAL_DATA = [
             "text": "OSI基本参照モデルにおいて、エンドシステム間のデータ伝送の中継と経路制御の機能をもつ層はどれか。(H24)",
             "type": "multiple",
             "options": ["セッション層", "データリンク層", "トランスポート層", "ネットワーク層"],
-            "correctAnswer": "ネットワーク層"
+            "correctAnswer": ["ネットワーク層"]
           },
           {
             "id": "q2-2",
             "text": "OSI基本参照モデルの各層で中継する装置を、物理層で中継する装置、データリンク層で中継する装置、ネットワーク層で中継する装置の順に並べたものはどれか。(R3)",
             "type": "multiple",
             "options": ["ブリッジ, リピータ, ルータ", "ブリッジ, ルータ, リピータ", "リピータ, ブリッジ, ルータ", "リピータ, ルータ, ブリッジ"],
-            "correctAnswer": "リピータ, ブリッジ, ルータ"
+            "correctAnswer": ["リピータ, ブリッジ, ルータ"]
           },
           {
             "id": "q2-3",
             "text": "イーサネットで使用されるメディアアクセス制御方式であるCSMA/CDに関する記述として、適切なものはどれか。(R2秋)",
             "type": "multiple",
             "options": ["それぞれのステーションがキャリア検知を行うとともに、送信データの衝突が起きた場合は再送する。", "タイムスロットと呼ばれる単位で分割して、同一周波数において複数の通信を可能にする。", "データ送受信の開始時にデータ送受信のネゴシエーションとしてRTS/CTS方式を用い、受信の確認はACKを使用する。", "伝送路上にトークンを巡回させ、トークンを受け取った端末だけがデータ送信できる。"],
-            "correctAnswer": "それぞれのステーションがキャリア検知を行うとともに、送信データの衝突が起きた場合は再送する。"
+            "correctAnswer": ["それぞれのステーションがキャリア検知を行うとともに、送信データの衝突が起きた場合は再送する。"]
           },
           {
             "id": "q2-4",
             "text": "ルータの機能に関する記述のうち、適切なものはどれか。(R4秋)",
             "type": "multiple",
             "options": ["MACアドレステーブルの登録情報によって、データフレームをあるポートだけに中継するか、全てのポートに中継するか判断する。", "OSI基本参照モデルのデータリンク層において、ネットワーク同士を接続する。", "OSI基本参照モデルのトランスポート層からアプリケーション層までの階層で、プロトコルの変換を行う。", "伝送媒体やアクセス制御方式の異なるネットワークの接続が可能であり、送信データのIPアドレスを識別し、データの転送経路を決定する。"],
-            "correctAnswer": "伝送媒体やアクセス制御方式の異なるネットワークの接続が可能であり、送信データのIPアドレスを識別し、データの転送経路を決定する。"
+            "correctAnswer": ["伝送媒体やアクセス制御方式の異なるネットワークの接続が可能であり、送信データのIPアドレスを識別し、データの転送経路を決定する。"]
           }
         ]
       },
@@ -97,28 +98,28 @@ const INITIAL_DATA = [
             "text": "TCP/IP階層モデルにおいて、TCPが属する層はどれか。(H23秋)",
             "type": "multiple",
             "options": ["アプリケーション層", "インターネット層", "トランスポート層", "リンク層"],
-            "correctAnswer": "トランスポート層"
+            "correctAnswer": ["トランスポート層"]
           },
           {
             "id": "q3-2",
             "text": "次のネットワークアドレスとサブネットマスクをもつネットワークがある。このネットワークをあるPCが利用する場合、そのPCに割り振ってはいけないIPアドレスはどれか。\nネットワークアドレス: 200.170.70.16\nサブネットマスク: 255.255.255.240",
             "type": "multiple",
             "options": ["200.170.70.17", "200.170.70.20", "200.170.70.30", "200.170.70.31"],
-            "correctAnswer": "200.170.70.31"
+            "correctAnswer": ["200.170.70.31"]
           },
           {
             "id": "q3-3",
             "text": "クライアントAがポート番号8080のHTTPプロキシサーバBを経由してポート番号80のWebサーバCにアクセスしているとき、宛先ポート番号が常に8080になるTCPパケットはどれか。(R1秋)",
             "type": "multiple",
             "options": ["AからBへのHTTP要求及びCからBへのHTTP応答。", "AからBへのHTTP要求だけ。", "BからAへのHTTP要求だけ。", "BからCへのHTTP要求及びCからBへのHTTP応答。"],
-            "correctAnswer": "AからBへのHTTP要求だけ。"
+            "correctAnswer": ["AからBへのHTTP要求だけ。"]
           },
           {
             "id": "q3-4",
             "text": "DHCPの説明として、適切なものはどれか。(R3)",
             "type": "multiple",
             "options": ["IPアドレスの設定を自動化するためのプロトコルである。", "ディレクトリサービスにアクセスするためのプロトコルである。", "電子メールを転送するためのプロトコルである。", "プライベートIPアドレスをグローバルIPアドレスに変換するためのプロトコルである。"],
-            "correctAnswer": "IPアドレスの設定を自動化するためのプロトコルである。"
+            "correctAnswer": ["IPアドレスの設定を自動化するためのプロトコルである。"]
           }
         ]
       },
@@ -132,28 +133,28 @@ const INITIAL_DATA = [
             "text": "LANに接続されているプリンターのMACアドレスを, 同一LAN上のPCから調べるときに使用するコマンドはどれか。ここで, PCはこのプリンターを直前に使用しており, プリンターのIPアドレスは分かっているものとする。(H30春)",
             "type": "multiple",
             "options": ["arp", "ipconfig", "netstat", "ping"],
-            "correctAnswer": "arp"
+            "correctAnswer": ["arp"]
           },
           {
             "id": "q5-2",
             "text": "ONF (Open Networking Foundation) が標準化を進めているOpenFlowプロトコルを用いたSDN (Software-Defined Networking) の説明として, 適切なものはどれか。(R4)",
             "type": "multiple",
             "options": ["管理ステーションから定期的にネットワーク機器のMIB (Management Information Base) 情報を取得して, 稼働監視や性能管理を行うためのネットワーク管理手法", "データ転送機能をもつネットワーク機器同士が経路情報を交換して, ネットワーク全体のデータ転送経路を決定する方式", "ネットワーク制御機能とデータ転送機能を実装したソフトウェアを, 仮想環境で利用するための技術", "ネットワーク制御機能とデータ転送機能を論理的に分離し, コントローラと呼ばれるソフトウェアで, データ転送機能をもつネットワーク機器の集中制御を可能とするアーキテクチャ"],
-            "correctAnswer": "ネットワーク制御機能とデータ転送機能を論理的に分離し, コントローラと呼ばれるソフトウェアで, データ転送機能をもつネットワーク機器の集中制御を可能とするアーキテクチャ"
+            "correctAnswer": ["ネットワーク制御機能とデータ転送機能を論理的に分離し, コントローラと呼ばれるソフトウェアで, データ転送機能をもつネットワーク機器の集中制御を可能とするアーキテクチャ"]
           },
           {
             "id": "q5-3",
             "text": "SMTPの説明として, 適切なものはどれか。(H17秋)",
             "type": "multiple",
             "options": ["Webサーバに格納されている情報をアクセスするためのプロトコルである。", "電子化された文字, 図形, イメージが混在した文書の作成や編集を行うシステムである。", "電子メールを転送するためのプロトコルである。", "文書の構造表現が可能な文書記述用言語の一つである。"],
-            "correctAnswer": "電子メールを転送するためのプロトコルである。"
+            "correctAnswer": ["電子メールを転送するためのプロトコルである。"]
           },
           {
             "id": "q5-4",
             "text": "Webサーバにおいて, クライアントからの要求に応じてアプリケーションプログラムを実行して, その結果をWebブラウザに返すなどのインタラクティブなページを実現するために, Webサーバと外部プログラムを連携させる仕組みはどれか。(H30春)",
             "type": "multiple",
             "options": ["CGI", "HTML", "MIME", "URL"],
-            "correctAnswer": "CGI"
+            "correctAnswer": ["CGI"]
           }
         ]
       },
@@ -167,28 +168,28 @@ const INITIAL_DATA = [
             "text": "スパイウェアに該当するものはどれか。(H28春)",
             "type": "multiple",
             "options": ["Webサイトへの不正な入力を排除するために, Webサイトの入力フォームの入力データから, HTMLタグ, JavaScript, SQL文などを検出し, それらを他の文字列に置き換えるプログラム", "サーバへの侵入口となる脆弱なポートを探すために, 攻撃者のPCからサーバのTCPポートに順にアクセスするプログラム", "利用者の意図に反してPCにインストールされ, 利用者の個人情報やアクセス履歴などの情報を収集するプログラム", "利用者のパスワードを調べるために, サーバにアクセスし, 辞書に載っている単語を総当たりで試すプログラム"],
-            "correctAnswer": "利用者の意図に反してPCにインストールされ, 利用者の個人情報やアクセス履歴などの情報を収集するプログラム"
+            "correctAnswer": ["利用者の意図に反してPCにインストールされ, 利用者の個人情報やアクセス履歴などの情報を収集するプログラム"]
           },
           {
             "id": "q6-2",
             "text": "マルウェアについて, トロイの木馬とワームを比較したとき, ワームの特徴はどれか。(H29秋)",
             "type": "multiple",
             "options": ["勝手にファイルを暗号化して正常に読めなくする", "単独のプログラムとして不正な動作を行う", "特定の条件になるまで活動できずに待機する", "ネットワークやリムーバブルメディアを媒介として自ら感染を広げる"],
-            "correctAnswer": "ネットワークやリムーバブルメディアを媒介として自ら感染を広げる"
+            "correctAnswer": ["ネットワークやリムーバブルメディアを媒介として自ら感染を広げる"]
           },
           {
             "id": "q6-3",
             "text": "SQLインジェクション攻撃の説明として, 適切なものはどれか。(R2)",
             "type": "multiple",
             "options": ["Webアプリケーションのデータ操作言語の呼び出し方に不備がある場合に, 攻撃者が悪意をもって構成した文字列を入力することによって, データベースのデータの不正な取得, 改ざん及び削除をする攻撃", "Webサイトに対して, 他のサイトを介して大量のパケットを送り付け, そのネットワークトラフィックの異常を高めてサービスを提供不能にする攻撃", "確保されているメモリ空間の下限又は上限を超えてデータの書き込みと読み出しを行うことによって, プログラムを異常終了させたりデータエリアに挿入された不正なコードを実行させたりする攻撃", "攻撃者が罠を仕掛けたWebページを利用者が閲覧し, 当該ページ内のリンクをクリックしたときに, 不正スクリプトを含む文字列が脆弱なWebサーバに送り込まれ, レスポンスに埋め込まれた不正スクリプトの実行によって, 情報漏洩をもたらす攻撃"],
-            "correctAnswer": "Webアプリケーションのデータ操作言語の呼び出し方に不備がある場合に, 攻撃者が悪意をもって構成した文字列を入力することによって, データベースのデータの不正な取得, 改ざん及び削除をする攻撃"
+            "correctAnswer": ["Webアプリケーションのデータ操作言語の呼び出し方に不備がある場合に, 攻撃者が悪意をもって構成した文字列を入力することによって, データベースのデータの不正な取得, 改ざん及び削除をする攻撃"]
           },
           {
             "id": "q6-4",
             "text": "攻撃者が用意したサーバXのIPアドレスが, A社WebサーバのFQDNに対応するIPアドレスとして, B社DNSキャッシュサーバに記憶された。これによって, 意図せずサーバXに誘導されてしまう利用者はどれか。ここで, A社, B社の従業員は自社のDNSキャッシュサーバを利用して名前解決を行う。(R1)",
             "type": "multiple",
             "options": ["A社WebサーバにアクセスしようとするA社従業員", "A社WebサーバにアクセスしようとするB社従業員", "B社WebサーバにアクセスしようとするA社従業員", "B社WebサーバにアクセスしようとするB社従業員"],
-            "correctAnswer": "A社WebサーバにアクセスしようとするB社従業員"
+            "correctAnswer": ["A社WebサーバにアクセスしようとするB社従業員"]
           }
         ]
       },
@@ -202,28 +203,28 @@ const INITIAL_DATA = [
             "text": "ファイアウォールのパケットフィルタリング機能を利用して実現できるものはどれか。(H18春)",
             "type": "multiple",
             "options": ["インターネットから受け取ったパケットに改ざんがある場合は修正し, 改ざんが修正できない場合には, ログを取って内部ネットワークへの通過を阻止する", "インターネットから受け取ったパケットのヘッダー部分及びデータ部分に, 改ざんがあるかどうかをチェックし, 改ざんがあった場合にはそのパケットを除去する", "動的に割り当てられたTCPポート番号をもったパケットを, 受信側で固定値のTCPポート番号をもったパケットに変更して, 内部のネットワークへの通過を許可する", "特定のTCPポート番号をもったパケットだけに, インターネットから内部ネットワークへの通過を許可する"],
-            "correctAnswer": "特定のTCPポート番号をもったパケットだけに, インターネットから内部ネットワークへの通過を許可する"
+            "correctAnswer": ["特定のTCPポート番号をもったパケットだけに, インターネットから内部ネットワークへの通過を許可する"]
           },
           {
             "id": "q7-2",
             "text": "WAFの説明はどれか。(H28秋)",
             "type": "multiple",
             "options": ["Webアクセスに対するアクセス内容を監視し, 攻撃とみなされるパターンを検知したときに当該するアクセスを遮断する", "Wi-Fiアライアンスが認定した無線LANの暗号化方式の規格であり, AES暗号に対応している", "様々なシステムの動作ログを一元的に蓄積, 管理し, セキュリティ上の脅威となる事象をいち早く検知, 分析する", "ファイアウォール機能を有し, ウイルス対策, 侵入検知などを連携させ, 複数のセキュリティ機能を統合的に管理する"],
-            "correctAnswer": "Webアクセスに対するアクセス内容を監視し, 攻撃とみなされるパターンを検知したときに当該するアクセスを遮断する"
+            "correctAnswer": ["Webアクセスに対するアクセス内容を監視し, 攻撃とみなされるパターンを検知したときに当該するアクセスを遮断する"]
           },
           {
             "id": "q7-3",
             "text": "公開鍵暗号方式の用法に関する記述のうち, 送信者が間違いなく本人であることを受信者が確認できるのはどれか。(H17春)",
             "type": "multiple",
             "options": ["送信者は自分の公開鍵で暗号化し, 受信者は自分の秘密鍵で復号する", "送信者は自分の秘密鍵で暗号化し, 受信者は送信者の公開鍵で復号する", "送信者は受信者の公開鍵で暗号化し, 受信者は自分の秘密鍵で復号する", "送信者は受信者の秘密鍵で暗号化し, 受信者は自分の公開鍵で復号する"],
-            "correctAnswer": "送信者は自分の秘密鍵で暗号化し, 受信者は送信者の公開鍵で復号する"
+            "correctAnswer": ["送信者は自分の秘密鍵で暗号化し, 受信者は送信者の公開鍵で復号する"]
           },
           {
             "id": "q7-4",
             "text": "メッセージにRSA方式のデジタル署名を付与して2者間で送受信する。そのときのデジタル署名の検証鍵と使用方法はどれか。(R1秋)",
             "type": "multiple",
             "options": ["受信者の公開鍵であり, 送信者がメッセージダイジェストからデジタル署名を作成する際に使用する", "受信者の秘密鍵であり, 受信者がデジタル署名からメッセージダイジェストを算出する際に使用する", "送信者の公開鍵であり, 受信者がデジタル署名からメッセージダイジェストを算出する際に使用する", "送信者の秘密鍵であり, 送信者がメッセージダイジェストからデジタル署名を作成する際に使用する"],
-            "correctAnswer": "送信者の公開鍵であり, 受信者がデジタル署名からメッセージダイジェストを算出する際に使用する"
+            "correctAnswer": ["送信者の公開鍵であり, 受信者がデジタル署名からメッセージダイジェストを算出する際に使用する"]
           }
         ]
       },
@@ -237,28 +238,28 @@ const INITIAL_DATA = [
             "text": "リスクアセスメントを構成するプロセスの組み合わせはどれか。(H29秋)",
             "type": "multiple",
             "options": ["リスク特定, リスク評価, リスク受容", "リスク特定, リスク分析, リスク評価", "リスク分析, リスク対応, リスク受容", "リスク分析, リスク評価, リスク対応"],
-            "correctAnswer": "リスク特定, リスク分析, リスク評価"
+            "correctAnswer": ["リスク特定, リスク分析, リスク評価"]
           },
           {
             "id": "q8-2",
             "text": "リスク対応のうち, リスクファイナンシングに該当するものはどれか。(H31春)",
             "type": "multiple",
             "options": ["システムが被害を受けるリスクを想定して, 保険を掛ける。", "システムの被害につながるリスクの顕在化を抑える対策に資金を投入する。", "リスクが大きいと評価されたシステムを廃止し, 新たなセキュアなシステムの構築に資金を投入する。", "リスクが顕在化した場合のシステムの被害を小さくする設備に資金を投入する。"],
-            "correctAnswer": "システムが被害を受けるリスクを想定して, 保険を掛ける。"
+            "correctAnswer": ["システムが被害を受けるリスクを想定して, 保険を掛ける。"]
           },
           {
             "id": "q8-3",
             "text": "ペネトレーションテストに該当するものはどれか。(R6)",
             "type": "multiple",
             "options": ["検査対象の実行プログラムの設計書, ソースコードに着目し, 開発プロセスの各程にセキュリティ上の問題がないかどうかをツールや目視で確認する。", "公開Webサーバの各コンテンツファイルのハッシュ値を管理し, 定期的に各ファイルから生成したハッシュ値と一致するかどうかを確認する。", "公開Webサーバや組織のネットワークの脆弱性を探索し, サーバに実際に侵入できるかどうかを確認する。", "内部ネットワークのサーバやネットワーク機器のIPFIX情報から, 各PCの通信に異常な振る舞いがないかどうかを確認する。"],
-            "correctAnswer": "公開Webサーバや組織のネットワークの脆弱性を探索し, サーバに実際に侵入できるかどうかを確認する。"
+            "correctAnswer": ["公開Webサーバや組織のネットワークの脆弱性を探索し, サーバに実際に侵入できるかどうかを確認する。"]
           },
           {
             "id": "q8-4",
             "text": "ファジングで得られるセキュリティ上の効果はどれか。(H31春)",
             "type": "multiple",
             "options": ["ソフトウェアの脆弱性を自動的に修正できる。", "ソフトウェアの脆弱性を検出できる。", "複数のログデータを相関分析し, 不正アクセスを検知できる。", "利用者IDを統合的に管理し, 統一したパスワードポリシーを適用できる。"],
-            "correctAnswer": "ソフトウェアの脆弱性を検出できる。"
+            "correctAnswer": ["ソフトウェアの脆弱性を検出できる。"]
           }
         ]
       },
@@ -272,28 +273,28 @@ const INITIAL_DATA = [
             "text": "デジタルフォレンジックスの説明として, 適切なものはどれか。(R3)",
             "type": "multiple",
             "options": ["あらかじめ設定した運用基準に従って, メールサーバを通過する送受信メールをフィルタリングすること", "外部からの攻撃や不正なアクセスからサーバを防御すること", "磁気ディスクなどの書き換え可能な記憶媒体を単に初期化するだけではデータを復元できる可能性があるので, 任意のデータ列で上書きすること", "不正アクセスなどコンピュータに関する犯罪の法的な証拠性を確保できるように, 原因究明に必要な情報を保全, 収集, 分析をすること"],
-            "correctAnswer": "不正アクセスなどコンピュータに関する犯罪の法的な証拠性を確保できるように, 原因究明に必要な情報を保全, 収集, 分析をすること"
+            "correctAnswer": ["不正アクセスなどコンピュータに関する犯罪の法的な証拠性を確保できるように, 原因究明に必要な情報を保全, 収集, 分析をすること"]
           },
           {
             "id": "q9-2",
             "text": "HTTPS (HTTP over SSL/TLS) の機能を用いて実現できるものはどれか。(H26秋)",
             "type": "multiple",
             "options": ["SQLインジェクションによるWebサーバへの攻撃を防ぐ。", "TCPポート80番と443番以外の通信を遮断する。", "Webサーバとブラウザの間の通信を暗号化する。", "Webサーバへの不正なアクセスをネットワーク層でのパケットフィルタリングによって制限する。"],
-            "correctAnswer": "Webサーバとブラウザの間の通信を暗号化する。"
+            "correctAnswer": ["Webサーバとブラウザの間の通信を暗号化する。"]
           },
           {
             "id": "q9-3",
             "text": "インターネットに接続された利用者のPCから, DMZ上の公開Webサイトにアクセスし, 利用者の個人情報を入力すると, その個人情報が内部ネットワークのデータベース (DB) サーバに蓄積されるシステムがある。このシステムにおいて, 利用者個人のデジタル証明書を用いたTLS通信を行うことによって期待できるセキュリティ上の効果はどれか。(R2)",
             "type": "multiple",
             "options": ["PCとDBサーバ間の通信データを暗号化するとともに, 正当なDBサーバであるかを検証することができるようになる。", "PCとDBサーバ間の通信データを暗号化するとともに, 利用者を認証することができるようになる。", "PCとWebサーバ間の通信データを暗号化するとともに, 正当なDBサーバであるかを検証することができるようになる。", "PCとWebサーバ間の通信データを暗号化するとともに, 利用者を認証することができるようになる。"],
-            "correctAnswer": "PCとWebサーバ間の通信データを暗号化するとともに, 利用者を認証することができるようになる。"
+            "correctAnswer": ["PCとWebサーバ間の通信データを暗号化するとともに, 利用者を認証することができるようになる。"]
           },
           {
             "id": "q9-4",
             "text": "電子メールに用いられるS/MIMEの機能はどれか。(H20春)",
             "type": "multiple",
             "options": ["内容の圧縮", "内容の暗号化と署名", "内容の開封通知", "内容の再送"],
-            "correctAnswer": "内容の暗号化と署名"
+            "correctAnswer": ["内容の暗号化と署名"]
           }
         ]
       },
@@ -307,28 +308,28 @@ const INITIAL_DATA = [
             "text": "関係モデルとその実装である関係データベースの対応に関する記述のうち, 適切なものはどれか。(R2)",
             "type": "multiple",
             "options": ["関係は, 表に対応付けられる", "属性も列も, 左から右に順序付けられる", "タプルも行も, ともに重複しない", "定義域は, 文字型又は文字列型に対応付けられる"],
-            "correctAnswer": "関係は, 表に対応付けられる"
+            "correctAnswer": ["関係は, 表に対応付けられる"]
           },
           {
             "id": "q10-2",
             "text": "DBMSにおいて, スキーマを決める機能はどれか。(H27秋)",
             "type": "multiple",
             "options": ["機密保護機能", "障害回復機能", "定義機能", "保全機能"],
-            "correctAnswer": "定義機能"
+            "correctAnswer": ["定義機能"]
           },
           {
             "id": "q10-3",
             "text": "DBMSが, 3層スキーマアーキテクチャを採用する目的として, 適切なものはどれか。(H27春)",
             "type": "multiple",
             "options": ["関係演算によって元の表から新たな表を導出し, それが実在しているように見せる。", "対話的に使われるSQL文を, アプリケーションプログラムからも使えるようにする。", "データの物理的な格納構造を変更しても, アプリケーションプログラムに影響が及ばないようにする。", "プログラム言語を限定して, アプリケーションプログラムとDBMSを緊密に結合する。"],
-            "correctAnswer": "データの物理的な格納構造を変更しても, アプリケーションプログラムに影響が及ばないようにする。"
+            "correctAnswer": ["データの物理的な格納構造を変更しても, アプリケーションプログラムに影響が及ばないようにする。"]
           },
           {
             "id": "q10-4",
             "text": "データベースを記録媒体にどのように格納するかを記述したものはどれか。(H18秋)",
             "type": "multiple",
             "options": ["概念スキーマ", "外部スキーマ", "サブスキーマ", "内部スキーマ"],
-            "correctAnswer": "内部スキーマ"
+            "correctAnswer": ["内部スキーマ"]
           }
         ]
       },
@@ -342,28 +343,28 @@ const INITIAL_DATA = [
             "text": "データモデルにおいて, データの関係を木構造で表すものはどれか。(H17秋)",
             "type": "multiple",
             "options": ["E-Rモデル", "階層モデル", "関係モデル", "ネットワークモデル"],
-            "correctAnswer": "階層モデル"
+            "correctAnswer": ["階層モデル"]
           },
           {
             "id": "q11-2",
             "text": "関係データモデルにおいて, 属性が取り得る値の集合を意味する用語はどれか。(H18秋)",
             "type": "multiple",
             "options": ["関係 (リレーション)", "実現値", "タプル (組)", "定義域"],
-            "correctAnswer": "定義域"
+            "correctAnswer": ["定義域"]
           },
           {
             "id": "q11-3",
             "text": "データベースの概念設計に用いられ, 対象世界を, 実体と実体間の関連という2つの概念で表現するデータモデルはどれか。(H20秋)",
             "type": "multiple",
             "options": ["E-Rモデル", "階層モデル", "関係モデル", "ネットワークモデル"],
-            "correctAnswer": "E-Rモデル"
+            "correctAnswer": ["E-Rモデル"]
           },
           {
             "id": "q11-4",
             "text": "E-R図に関する記述として, 適切なものはどれか。(H28秋)",
             "type": "multiple",
             "options": ["関係データベースの表として実装することを前提に表現する", "業務で扱う情報をエンティティ及びエンティティ間のリレーションシップとして表現する", "データの生成から消滅に至るデータ操作を表現する", "リレーションシップは, 業務上の手順を表現する"],
-            "correctAnswer": "業務で扱う情報をエンティティ及びエンティティ間のリレーションシップとして表現する"
+            "correctAnswer": ["業務で扱う情報をエンティティ及びエンティティ間のリレーションシップとして表現する"]
           }
         ]
       },
@@ -377,28 +378,28 @@ const INITIAL_DATA = [
             "text": "SQL文において FOREIGN KEY と REFERENCES を用いて指定する制約はどれか。(H29秋)",
             "type": "multiple",
             "options": ["キー制約", "検査制約", "参照制約", "表明"],
-            "correctAnswer": "参照制約"
+            "correctAnswer": ["参照制約"]
           },
           {
             "id": "q12-2",
             "text": "関係データベースにおいて, 外部キーを定義する目的として, 適切なものはどれか。(H28春)",
             "type": "multiple",
             "options": ["関連する相互のテーブルにおいて, レコード間の参照一貫性が維持される制約をもたせる。", "関連する相互テーブルの格納場所を近くに配置することによって, 検索, 更新を高速に行う。", "障害によって破壊されたレコードを, テーブル間の相互の関係から可能な限り復旧させる。", "レコードの削除, 追加の繰返しによる, レコードの格納エリアのフラグメンテーションを防止する。"],
-            "correctAnswer": "関連する相互のテーブルにおいて, レコード間の参照一貫性が維持される制約をもたせる。"
+            "correctAnswer": ["関連する相互のテーブルにおいて, レコード間の参照一貫性が維持される制約をもたせる。"]
           },
           {
             "id": "q12-3",
             "text": "関係データベースの主キー制約の条件として, キー値が重複していないことの他に, 主キーを構成する列に必要な条件はどれか。(H25秋)",
             "type": "multiple",
             "options": ["キー値が空でないこと", "構成する列が1つであること", "表の先頭に定義されている列であること", "別の表の候補キーとキー値が一致していること"],
-            "correctAnswer": "キー値が空でないこと"
+            "correctAnswer": ["キー値が空でないこと"]
           },
           {
             "id": "q12-4",
             "text": "関係データベースの主キーの性質として, 適切なものはどれか。(H21秋)",
             "type": "multiple",
             "options": ["主キーとした列に対して検索条件を指定しなければ, 行の検索はできない。", "数値型の列を主キーに指定すると, その列は算術演算の対象としては使えない。", "1つの表の中に, 主キーの値が同じ行が複数存在することはできない。", "複数の列からなる主キーを構成することはできない。"],
-            "correctAnswer": "1つの表の中に, 主キーの値が同じ行が複数存在することはできない。"
+            "correctAnswer": ["1つの表の中に, 主キーの値が同じ行が複数存在することはできない。"]
           }
         ]
       },
@@ -412,28 +413,28 @@ const INITIAL_DATA = [
             "text": "関係データモデルにおいて, 関係から特定の属性だけを取り出す演算はどれか。(R1秋)",
             "type": "multiple",
             "options": ["結合 (Join)", "射影 (Projection)", "選択 (Selection)", "和 (Union)"],
-            "correctAnswer": "射影 (Projection)"
+            "correctAnswer": ["射影 (Projection)"]
           },
           {
             "id": "q13-2",
             "text": "関係代数の演算のうち, 関係 R, S の直積 R × S に対応する SELECT 文はどれか。ここで, 関係 R, S を表 R, S に対応させ, 表 R 及び S にそれぞれ行の重複はないものとする。(H28秋)",
             "type": "multiple",
             "options": ["SELECT * FROM R, S", "SELECT * FROM R EXCEPT SELECT * FROM S", "SELECT * FROM R UNION SELECT * FROM S", "SELECT * FROM R INTERSECT SELECT * FROM S"],
-            "correctAnswer": "SELECT * FROM R, S"
+            "correctAnswer": ["SELECT * FROM R, S"]
           },
           {
             "id": "q13-3",
             "text": "列 A1-A5 から成る R 表に対する次の SQL 文は, 関係代数のどの演算に対応するか。(H25春)\nSELECT A1, A2, A3 FROM R WHERE A4='a'",
             "type": "multiple",
             "options": ["結合と射影", "差と選択", "選択と射影", "和と射影"],
-            "correctAnswer": "選択と射影"
+            "correctAnswer": ["選択と射影"]
           },
           {
             "id": "q13-4",
             "text": "同じ属性から成る関係 R と S がある。R と S の属性値の一部が一致する場合, 関係演算 R - (R - S) と同じ結果が得られるものはどれか。ここで, - は差集合, ∩ は共通集合, ∪ は和集合, × は直積, ÷ は商の演算を表す (H26春)",
             "type": "multiple",
             "options": ["R ∩ S", "R ∪ S", "R × S", "R ÷ S"],
-            "correctAnswer": "R ∩ S"
+            "correctAnswer": ["R ∩ S"]
           }
         ]
       },
@@ -447,28 +448,28 @@ const INITIAL_DATA = [
             "text": "“発注伝票” 表を第三正規形に書き換えたものはどれか。ここで, 下線部はキーを示す (R6)\n発注伝票 (注文番号, 商品番号, 商品名, 注文数量)",
             "type": "multiple",
             "options": ["発注 (注文番号, 注文数量), 商品 (商品番号, 商品名)", "発注 (注文番号, 注文数量), 商品 (注文番号, 商品番号, 商品名)", "発注 (注文番号, 商品番号, 注文数量), 商品 (商品番号, 商品名)", "発注 (注文番号, 商品番号, 注文数量), 商品 (商品番号, 商品名, 注文番号)"],
-            "correctAnswer": "発注 (注文番号, 商品番号, 注文数量), 商品 (商品番号, 商品名)"
+            "correctAnswer": ["発注 (注文番号, 商品番号, 注文数量), 商品 (商品番号, 商品名)"]
           },
           {
             "id": "q14-2",
             "text": "関係, 注文記録 (注文番号, 注文日, 顧客番号, 顧客名, 商品番号, 商品名, 数量, 販売単価) の属性間に, {注文番号 → 注文日, 注文番号 → 顧客番号, 顧客番号 → 顧客名, {注文番号, 商品番号} → 数量, {注文番号, 商品番号} → 販売単価, 商品番号 → 商品名 } の関係がある。それに基づいて第三正規形までの正規化を行って, “商品”, “顧客”, “注文”, “注文明細” の各関係に分解した。関係 “注文明細” として, 適切なものはどれか。ここで, 実線の下線は主キーを表す。(R3)",
             "type": "multiple",
             "options": ["注文明細 (注文番号, 顧客番号, 商品番号, 数量, 販売単価)", "注文明細 (注文番号, 顧客番号, 数量, 販売単価)", "注文明細 (注文番号, 商品番号, 数量, 販売単価)", "注文明細 (注文番号, 数量, 販売単価)"],
-            "correctAnswer": "注文明細 (注文番号, 商品番号, 数量, 販売単価)"
+            "correctAnswer": ["注文明細 (注文番号, 商品番号, 数量, 販売単価)"]
           },
           {
             "id": "q14-3",
             "text": "関係を第三正規形まで正規化して設計する目的はどれか。(H26秋)",
             "type": "multiple",
             "options": ["値の重複をなくすことによって, 格納効率を向上させる。", "関係を細かく分解することによって, 整合性制約を排除する。", "冗長性を排除することによって, 更新時異状を回避する。", "属性間の結合度を低下させることによって, 更新時のロック待ちを減らす。"],
-            "correctAnswer": "冗長性を排除することによって, 更新時異状を回避する。"
+            "correctAnswer": ["冗長性を排除することによって, 更新時異状を回避する。"]
           },
           {
             "id": "q14-4",
             "text": "次の表はどこまで正規化されたものか。(R2春)",
             "type": "multiple",
             "options": ["第二正規形", "第三正規形", "第四正規形", "非正規形"],
-            "correctAnswer": "第二正規形",
+            "correctAnswer": ["第二正規形"],
             "tableData": [
               { "従業員番号": "12345", "氏名": "情報 太郎", "入社年": "1991", "職位": "部長", "職位手当": "90,000" },
               { "従業員番号": "12346", "氏名": "処理 次郎", "入社年": "2005", "職位": "課長", "職位手当": "50,000" },
@@ -485,7 +486,6 @@ const INITIAL_DATA = [
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// 画像をBase64に変換するヘルパー
 const convertImageToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -495,9 +495,37 @@ const convertImageToBase64 = (file) => {
   });
 };
 
+// --- DATA ADAPTER ---
+// 古いデータ形式や外部JSONを新仕様（correctAnswerが配列など）に適合させる
+const normalizeData = (rawData) => {
+  if (!rawData) return [];
+  return rawData.map(course => ({
+    ...course,
+    quizzes: course.quizzes.map(quiz => ({
+      ...quiz,
+      questions: quiz.questions.map(q => {
+        // correctAnswerを配列に統一
+        let normalizedCorrect = q.correctAnswer;
+        if (!Array.isArray(normalizedCorrect)) {
+          normalizedCorrect = [normalizedCorrect];
+        }
+        
+        // typeがない場合はmultipleとする
+        const type = q.type || 'multiple';
+
+        return {
+          ...q,
+          type,
+          correctAnswer: normalizedCorrect,
+          options: q.options || []
+        };
+      })
+    }))
+  }));
+};
+
 // --- COMPONENTS ---
 
-// Helper: Table
 const SimpleTable = ({ data }) => {
   if (!data || data.length === 0) return null;
   const headers = Object.keys(data[0]);
@@ -529,14 +557,13 @@ const SimpleTable = ({ data }) => {
   );
 };
 
-// 1. Breadcrumbs
 const Breadcrumbs = ({ path, onNavigate }) => (
   <nav className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-6 overflow-x-auto whitespace-nowrap pb-2">
     <button onClick={() => onNavigate('home')} className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center transition-colors">
       <Home size={16} className="mr-1" /> Home
     </button>
     {path.map((item, index) => (
-      <React.Fragment key={`${item.id}-${index}`}>
+      <React.Fragment key={`crumb-${item.type}-${item.id}`}>
         <ChevronRight size={16} className="mx-2" />
         <button 
           onClick={() => onNavigate(item.type, item.id)}
@@ -549,15 +576,10 @@ const Breadcrumbs = ({ path, onNavigate }) => (
   </nav>
 );
 
-// 2. Folder List (Home View)
 const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCourse }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-    {/* 既存のコース */}
     {courses.map(course => (
-      <div 
-        key={course.id}
-        className="relative group"
-      >
+      <div key={course.id} className="relative group">
         <div 
           onClick={() => onSelectCourse(course)}
           className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700 cursor-pointer transition-all hover:border-blue-300 dark:hover:border-blue-500 flex flex-col items-center justify-center h-48"
@@ -569,7 +591,6 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
             {course.quizzes.length} フォルダ
           </span>
         </div>
-        {/* 削除ボタン */}
         <button 
           onClick={(e) => { e.stopPropagation(); onDeleteCourse(course.id); }}
           className="absolute top-2 right-2 p-1 bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -579,8 +600,6 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
         </button>
       </div>
     ))}
-    
-    {/* 新規作成ボタン */}
     <button 
       onClick={onCreateCourse}
       className="bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 p-6 rounded-xl flex flex-col items-center justify-center h-48 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-gray-400 dark:text-gray-500 hover:text-blue-500"
@@ -591,7 +610,6 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
   </div>
 );
 
-// 3. Quiz List (Course View)
 const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCreateQuiz, onDeleteQuiz }) => {
   const [mockCount, setMockCount] = useState(10);
   const allQuestions = useMemo(() => course.quizzes.flatMap(quiz => quiz.questions), [course]);
@@ -620,7 +638,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
 
   return (
     <div className="space-y-8">
-      {/* 総合テスト & 模試 */}
       {totalQ > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
@@ -660,7 +677,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
         </div>
       )}
 
-      {/* 復習モード */}
       {wrongHistory.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 shadow-sm border border-red-100 dark:border-red-900/50">
           <div className="flex items-center justify-between mb-2">
@@ -686,7 +702,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
         </div>
       )}
 
-      {/* テストリスト */}
       <div>
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">問題セット一覧</h3>
@@ -733,7 +748,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
   );
 };
 
-// 4. Create/Edit Screens (Modals)
 const CreateCourseModal = ({ onClose, onSave }) => {
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -779,20 +793,19 @@ const CreateCourseModal = ({ onClose, onSave }) => {
   );
 };
 
-// 5. Quiz Editor (Complex)
 const QuizEditor = ({ quiz, onSave, onCancel }) => {
   const [title, setTitle] = useState(quiz ? quiz.title : '');
   const [desc, setDesc] = useState(quiz ? quiz.description : '');
   const [questions, setQuestions] = useState(quiz ? quiz.questions : []);
-  const [editingQ, setEditingQ] = useState(null); // null for list, object for editor
+  const [editingQ, setEditingQ] = useState(null);
 
   const addQuestion = () => {
     setEditingQ({
       id: generateId(),
       text: '',
-      type: 'multiple', // 'multiple' or 'input'
-      options: ['', '', '', ''],
-      correctAnswer: '',
+      type: 'multiple', // default
+      options: ['', '', '', ''], // default 4 options
+      correctAnswer: [], // Array for all types
       image: null
     });
   };
@@ -865,10 +878,10 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
                 <div className="flex-1 min-w-0 mr-4">
                   <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-1">
                     <span className="font-bold mr-2">Q{idx + 1}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase ${q.type === 'input' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}`}>
-                      {q.type === 'input' ? '記述' : '選択'}
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] uppercase mr-2 ${q.type === 'input' ? 'bg-purple-100 text-purple-600' : q.type === 'multi-select' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
+                      {q.type === 'input' ? '記述' : q.type === 'multi-select' ? '複数選択' : '単一選択'}
                     </span>
-                    {q.image && <ImageIcon size={12} className="ml-2" />}
+                    {q.image && <ImageIcon size={12} className="ml-1" />}
                   </div>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{q.text}</p>
                 </div>
@@ -899,8 +912,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      // 簡易的なサイズチェック
-      if (file.size > 500000) { // 500KB limit logic could be added
+      if (file.size > 500000) { 
         alert("画像サイズが大きすぎます。読み込みが遅くなる可能性があります。");
       }
       try {
@@ -918,9 +930,50 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
     setQ({ ...q, options: newOptions });
   };
 
-  // 4択モード: 正解を選択肢の中から選ぶ
-  // 記述モード: 正解をテキストで入力する
-  // 共通の correctAnswer フィールドを使う
+  const addOption = () => {
+    setQ({ ...q, options: [...q.options, ''] });
+  };
+
+  const removeOption = (idx) => {
+    if (q.options.length <= 2) {
+      alert('選択肢は最低2つ必要です');
+      return;
+    }
+    const optionToRemove = q.options[idx];
+    const newOptions = q.options.filter((_, i) => i !== idx);
+    const newCorrect = q.correctAnswer.filter(ans => ans !== optionToRemove);
+    setQ({ ...q, options: newOptions, correctAnswer: newCorrect });
+  };
+
+  const toggleCorrectAnswer = (optionValue) => {
+    let newCorrect;
+    if (q.type === 'multiple') {
+      newCorrect = [optionValue];
+    } else {
+      if (q.correctAnswer.includes(optionValue)) {
+        newCorrect = q.correctAnswer.filter(c => c !== optionValue);
+      } else {
+        newCorrect = [...q.correctAnswer, optionValue];
+      }
+    }
+    setQ({ ...q, correctAnswer: newCorrect });
+  };
+
+  const addInputAnswer = () => {
+    setQ({ ...q, correctAnswer: [...q.correctAnswer, ''] });
+  };
+  
+  const updateInputAnswer = (idx, val) => {
+    const newCorrect = [...q.correctAnswer];
+    newCorrect[idx] = val;
+    setQ({ ...q, correctAnswer: newCorrect });
+  };
+
+  const removeInputAnswer = (idx) => {
+    if (q.correctAnswer.length <= 1) return;
+    const newCorrect = q.correctAnswer.filter((_, i) => i !== idx);
+    setQ({ ...q, correctAnswer: newCorrect });
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 min-h-screen">
@@ -930,33 +983,37 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
         <button 
           onClick={() => onSave(q)} 
           className="text-blue-600 font-bold disabled:opacity-50"
-          disabled={!q.text || !q.correctAnswer}
+          disabled={!q.text || q.correctAnswer.length === 0 || (q.correctAnswer.length === 1 && q.correctAnswer[0] === '')}
         >
           完了
         </button>
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-6">
-        {/* 出題形式 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">出題形式</label>
           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
             <button 
-              className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center ${q.type === 'multiple' ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setQ({ ...q, type: 'multiple', correctAnswer: q.options[0] || '' })}
+              className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center transition-all ${q.type === 'multiple' ? 'bg-white dark:bg-gray-600 shadow text-blue-600 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}`}
+              onClick={() => setQ({ ...q, type: 'multiple', correctAnswer: [] })}
             >
-              <List size={16} className="mr-2" /> 4択問題
+              <List size={16} className="mr-2" /> 単一選択
             </button>
             <button 
-              className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center ${q.type === 'input' ? 'bg-white dark:bg-gray-600 shadow text-purple-600 dark:text-purple-300' : 'text-gray-500 dark:text-gray-400'}`}
-              onClick={() => setQ({ ...q, type: 'input', correctAnswer: '' })}
+              className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center transition-all ${q.type === 'multi-select' ? 'bg-white dark:bg-gray-600 shadow text-orange-600 dark:text-orange-300' : 'text-gray-500 dark:text-gray-400'}`}
+              onClick={() => setQ({ ...q, type: 'multi-select', correctAnswer: [] })}
             >
-              <Type size={16} className="mr-2" /> 記述(入力)
+              <CheckSquare size={16} className="mr-2" /> 複数選択
+            </button>
+            <button 
+              className={`flex-1 py-2 rounded-md text-sm font-bold flex items-center justify-center transition-all ${q.type === 'input' ? 'bg-white dark:bg-gray-600 shadow text-purple-600 dark:text-purple-300' : 'text-gray-500 dark:text-gray-400'}`}
+              onClick={() => setQ({ ...q, type: 'input', correctAnswer: [''] })}
+            >
+              <Type size={16} className="mr-2" /> 記述
             </button>
           </div>
         </div>
 
-        {/* 問題文 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">問題文</label>
           <textarea 
@@ -967,7 +1024,6 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
           />
         </div>
 
-        {/* 画像 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">添付画像 (任意)</label>
           <div className="flex items-start space-x-4">
@@ -1000,48 +1056,85 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
           </div>
         </div>
 
-        {/* 解答設定 */}
-        {q.type === 'multiple' ? (
+        {q.type !== 'input' ? (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">選択肢 (正解を選んでください)</label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                選択肢 ({q.type === 'multiple' ? '正解を1つ選択' : '正解を全て選択'})
+              </label>
+              <button 
+                onClick={addOption}
+                className="text-xs flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
+              >
+                <PlusCircle size={14} className="mr-1" /> 選択肢を追加
+              </button>
+            </div>
+            
             <div className="space-y-3">
               {q.options.map((opt, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <input 
-                    type="radio" 
+                    type={q.type === 'multiple' ? 'radio' : 'checkbox'}
                     name="correct-opt"
-                    checked={q.correctAnswer === opt && opt !== ''} // 値が一致したらチェック
-                    onChange={() => setQ({ ...q, correctAnswer: opt })}
-                    className="w-5 h-5 text-blue-600"
+                    checked={q.correctAnswer.includes(opt) && opt !== ''}
+                    onChange={() => toggleCorrectAnswer(opt)}
+                    className="w-5 h-5 text-blue-600 cursor-pointer"
                   />
                   <input 
                     type="text" 
                     value={opt}
-                    onChange={(e) => {
-                      handleOptionChange(idx, e.target.value);
-                      // もしこれが正解として選ばれていたら、正解の値も更新する
-                      if (q.correctAnswer === opt) {
-                        setQ(prev => ({ ...prev, correctAnswer: e.target.value }));
-                      }
-                    }}
+                    onChange={(e) => handleOptionChange(idx, e.target.value)}
                     className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     placeholder={`選択肢 ${idx + 1}`}
                   />
+                  <button 
+                    onClick={() => removeOption(idx)}
+                    className="text-gray-400 hover:text-red-500"
+                    title="削除"
+                  >
+                    <MinusCircle size={20} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         ) : (
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">正解のキーワード</label>
-            <input 
-              type="text" 
-              className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={q.correctAnswer}
-              onChange={(e) => setQ({ ...q, correctAnswer: e.target.value })}
-              placeholder="正解を入力（完全一致で判定されます）"
-            />
-            <p className="text-xs text-gray-500 mt-1">※ユーザーが入力した値と完全に一致した場合のみ正解になります。</p>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                正解のキーワード (別解も登録可)
+              </label>
+              <button 
+                onClick={addInputAnswer}
+                className="text-xs flex items-center bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100"
+              >
+                <PlusCircle size={14} className="mr-1" /> 別解を追加
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {q.correctAnswer.map((ans, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="text-gray-400 text-sm font-bold w-6 text-center">{idx + 1}.</span>
+                  <input 
+                    type="text" 
+                    className="flex-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    value={ans}
+                    onChange={(e) => updateInputAnswer(idx, e.target.value)}
+                    placeholder="正解を入力（完全一致で判定されます）"
+                  />
+                  {q.correctAnswer.length > 1 && (
+                    <button 
+                      onClick={() => removeInputAnswer(idx)}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      <MinusCircle size={20} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">※ユーザーが入力した値と完全に一致した場合に正解となります。</p>
           </div>
         )}
       </div>
@@ -1055,9 +1148,8 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   const [answers, setAnswers] = useState([]); 
   const [startTime, setStartTime] = useState(null);
   const [qStartTime, setQStartTime] = useState(null);
-  
-  // 入力フォーム用state
   const [inputText, setInputText] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState([]);
 
   const questionOrder = useMemo(() => {
     let order = [...quiz.questions];
@@ -1065,12 +1157,11 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
 
     if (shuffleOptions) {
       order = order.map(q => {
-        if (q.type !== 'multiple') return q; // 4択以外はシャッフル不要
+        if (q.type === 'input') return q; 
         const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
         return {
           ...q,
           options: shuffledOptions,
-          // correctAnswerは値で持っているのでインデックス再計算は不要
         };
       });
     }
@@ -1085,23 +1176,31 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   useEffect(() => {
     setQStartTime(Date.now());
     setInputText('');
+    setSelectedOptions([]);
   }, [currentQIndex]);
 
   const handleAnswer = (answerVal) => {
     const now = Date.now();
     const currentQ = questionOrder[currentQIndex];
-    
-    const isCorrect = currentQ.type === 'multiple' 
-      ? answerVal === currentQ.correctAnswer
-      : answerVal.trim() === currentQ.correctAnswer.trim(); // 記述式はトリムして比較
+    let isCorrect = false;
+    let finalSelectedAnswer = answerVal;
 
-    // 4択の場合、選択したインデックスも保存したいが、今回は値ベースで保存
-    // リザルト表示のために、元の選択肢リスト内でのインデックスを探すなどの処理が必要になるかもだが
-    // ここではシンプルに「選んだ値」と「正解の値」を記録する
+    if (currentQ.type === 'multiple') {
+      isCorrect = currentQ.correctAnswer.includes(answerVal);
+    } else if (currentQ.type === 'multi-select') {
+      const correctSet = new Set(currentQ.correctAnswer);
+      const selectedSet = new Set(answerVal);
+      if (correctSet.size === selectedSet.size) {
+        isCorrect = [...correctSet].every(val => selectedSet.has(val));
+      }
+      finalSelectedAnswer = answerVal;
+    } else {
+      isCorrect = currentQ.correctAnswer.some(ans => ans.trim() === answerVal.trim());
+    }
     
     const answerRecord = {
       question: currentQ,
-      selectedAnswer: answerVal, // 値そのものを保存
+      selectedAnswer: finalSelectedAnswer,
       isCorrect: isCorrect,
       timeTaken: now - qStartTime,
       id: currentQ.id 
@@ -1115,6 +1214,14 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
     } else {
       const totalTime = now - startTime;
       onFinish(newAnswers, totalTime);
+    }
+  };
+
+  const toggleMultiSelect = (option) => {
+    if (selectedOptions.includes(option)) {
+      setSelectedOptions(selectedOptions.filter(o => o !== option));
+    } else {
+      setSelectedOptions([...selectedOptions, option]);
     }
   };
 
@@ -1134,11 +1241,18 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4 leading-relaxed whitespace-pre-line">
-          {currentQuestion.text}
-        </h2>
+        <div className="mb-4">
+          <span className={`inline-block px-2 py-1 rounded text-xs font-bold mb-2 ${
+            currentQuestion.type === 'input' ? 'bg-purple-100 text-purple-600' : 
+            currentQuestion.type === 'multi-select' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'
+          }`}>
+            {currentQuestion.type === 'input' ? '記述式' : currentQuestion.type === 'multi-select' ? '複数選択 (全て選べ)' : '単一選択'}
+          </span>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed whitespace-pre-line">
+            {currentQuestion.text}
+          </h2>
+        </div>
 
-        {/* 画像表示 */}
         {currentQuestion.image && (
           <div className="mb-6 flex justify-center">
             <img 
@@ -1149,7 +1263,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
           </div>
         )}
 
-        {/* 表データ表示 */}
         {currentQuestion.tableData && (
           <div className="mb-8">
             <SimpleTable data={currentQuestion.tableData} />
@@ -1158,8 +1271,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
         
         <div className="mb-4"></div>
 
-        {/* 回答エリア */}
-        {currentQuestion.type === 'multiple' ? (
+        {currentQuestion.type === 'multiple' && (
           <div className="space-y-4">
             {currentQuestion.options.map((option, idx) => (
               <button
@@ -1168,13 +1280,48 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
                 className="w-full text-left p-4 rounded-xl border-2 border-gray-100 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all group flex items-center bg-white dark:bg-gray-800"
               >
                 <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">
-                  {['A', 'B', 'C', 'D'][idx]}
+                  {idx + 1}
                 </span>
                 <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
               </button>
             ))}
           </div>
-        ) : (
+        )}
+
+        {currentQuestion.type === 'multi-select' && (
+          <div className="space-y-4">
+            {currentQuestion.options.map((option, idx) => {
+              const isSelected = selectedOptions.includes(option);
+              return (
+                <button
+                  key={idx}
+                  onClick={() => toggleMultiSelect(option)}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center ${
+                    isSelected 
+                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
+                      : 'border-gray-100 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded border-2 mr-4 flex items-center justify-center transition-colors ${
+                    isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300 bg-white'
+                  }`}>
+                    {isSelected && <CheckCircle size={16} />}
+                  </div>
+                  <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => handleAnswer(selectedOptions)}
+              className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow transition-colors disabled:opacity-50"
+              disabled={selectedOptions.length === 0}
+            >
+              回答を確定する
+            </button>
+          </div>
+        )}
+
+        {currentQuestion.type === 'input' && (
           <div className="space-y-4">
             <input
               type="text"
@@ -1223,6 +1370,18 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
     color = "text-red-500";
   }
 
+  const renderCorrectAnswer = (q) => {
+    if (q.type === 'multiple') return q.correctAnswer[0];
+    if (q.type === 'multi-select') return q.correctAnswer.join(', ');
+    if (q.type === 'input') return q.correctAnswer.join(' または ');
+    return '';
+  };
+
+  const renderUserAnswer = (ans) => {
+    if (Array.isArray(ans.selectedAnswer)) return ans.selectedAnswer.join(', ');
+    return ans.selectedAnswer;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="p-8 text-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
@@ -1257,12 +1416,12 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                 <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
                   <span className="text-xs opacity-70 block">あなたの回答</span>
-                  {ans.selectedAnswer}
+                  {renderUserAnswer(ans)}
                 </div>
                 {!ans.isCorrect && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded">
                     <span className="text-xs opacity-70 block">正解</span>
-                    {ans.question.correctAnswer}
+                    {renderCorrectAnswer(ans.question)}
                   </div>
                 )}
               </div>
@@ -1289,7 +1448,7 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   );
 };
 
-// 7. Settings View (System mode added)
+// 7. Settings View
 const SettingsView = ({ theme, changeTheme, onBack }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
@@ -1327,14 +1486,14 @@ const SettingsView = ({ theme, changeTheme, onBack }) => {
         </div>
 
         <div className="text-center text-sm text-gray-400 mt-8">
-          Study Master v2.0 - Creator Edition
+          Study Master v2.1 - Creator Edition Pro
         </div>
       </div>
     </div>
   );
 };
 
-// 8. Quiz Menu View (Updated for Edit)
+// 8. Quiz Menu View
 const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) => {
   const [randomize, setRandomize] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
@@ -1400,6 +1559,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
                   <div className="flex gap-2 ml-2">
                     {q.image && <ImageIcon size={16} />}
                     {q.type === 'input' && <Type size={16} />}
+                    {q.type === 'multi-select' && <CheckSquare size={16} />}
                   </div>
                 </div>
               ))}
@@ -1443,7 +1603,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
 // --- MAIN APP COMPONENT ---
 
 export default function App() {
-  const [view, setView] = useState('home'); // home, course, quiz_menu, quiz_play, result, settings, create_course, edit_quiz
+  const [view, setView] = useState('home'); 
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false });
@@ -1453,8 +1613,9 @@ export default function App() {
   const [courses, setCourses] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-data');
-      return saved ? JSON.parse(saved) : INITIAL_DATA;
-    } catch (e) { return INITIAL_DATA; }
+      // Normalize data structure on load
+      return saved ? normalizeData(JSON.parse(saved)) : normalizeData(INITIAL_DATA);
+    } catch (e) { return normalizeData(INITIAL_DATA); }
   });
 
   const [wrongHistory, setWrongHistory] = useState(() => {
@@ -1544,7 +1705,6 @@ export default function App() {
   };
 
   const handleCreateQuiz = () => {
-    // 空のクイズを作成して編集画面へ
     const newQuiz = {
       id: `quiz-${generateId()}`,
       title: '新規問題セット',
@@ -1569,7 +1729,7 @@ export default function App() {
     }
 
     setCourses(newCourses);
-    setSelectedCourse(newCourses[courseIndex]); // Update selected course state
+    setSelectedCourse(newCourses[courseIndex]); 
     setView('course');
     setSelectedQuiz(null);
   };
