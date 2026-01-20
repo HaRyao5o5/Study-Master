@@ -44,7 +44,8 @@ export const normalizeData = (rawData) => {
           correctAnswer: correctAnswer,
           options: options,
           image: q.image || null,
-          tableData: q.tableData || q.table_data || null // Handle snake_case from old data
+          tableData: q.tableData || q.table_data || null,
+          explanation: q.explanation || ''
         };
       })
     }))

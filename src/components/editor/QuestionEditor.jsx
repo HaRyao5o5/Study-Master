@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { List, CheckSquare, Type, ImageIcon, X, PlusCircle, MinusCircle } from 'lucide-react';
+import { List, CheckSquare, Type, ImageIcon, X, PlusCircle, MinusCircle, CircleHelp } from 'lucide-react';
 import { convertImageToBase64 } from '../../utils/helpers';
 
 const QuestionEditor = ({ question, onSave, onCancel }) => {
@@ -151,6 +151,18 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
               onChange={handleImageUpload}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
+            <CircleHelp size={16} className="mr-1 text-green-500" /> 解説 (任意)
+          </label>
+          <textarea 
+            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white h-24 text-sm"
+            value={q.explanation || ''}
+            onChange={(e) => setQ({ ...q, explanation: e.target.value })}
+            placeholder="正解後の画面に表示される解説を入力してください..."
+          />
         </div>
 
         {q.type !== 'input' ? (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, CheckCircle, XCircle, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, RotateCcw, ArrowLeft, BookOpen } from 'lucide-react';
 
 const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   const { answers, totalTime } = resultData;
@@ -50,6 +50,17 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
                 <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}><span className="text-xs opacity-70 block">あなたの回答</span>{renderUserAnswer(ans)}</div>
                 {!ans.isCorrect && <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded"><span className="text-xs opacity-70 block">正解</span>{renderCorrectAnswer(ans.question)}</div>}
               </div>
+              {ans.question.explanation && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex items-start text-sm text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                    <BookOpen size={16} className="mr-2 mt-0.5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
+                    <div>
+                      <span className="font-bold text-yellow-700 dark:text-yellow-500 block mb-1">解説</span>
+                      <p className="whitespace-pre-line leading-relaxed">{ans.question.explanation}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
