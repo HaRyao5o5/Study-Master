@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from 'react';
+// src/App.jsx
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Folder, FileText, ChevronRight, Play, Settings, Clock, 
   CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, 
   Brain, Target, Trash2, Lock, Shuffle, Moon, Sun, Monitor, 
   GraduationCap, Plus, Edit3, Image as ImageIcon, X, Save, Type, List,
   BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle, Bell, Info,
-  Trophy, Star, Flame, RefreshCw, BarChart2
+  Trophy, Star, Flame, RefreshCw, BarChart2, Cloud // Cloud追加
 } from 'lucide-react';
+
+// Firebase imports
+import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { auth, googleProvider } from "./lib/firebase";
+import { loadFromCloud, saveToCloud } from "./utils/cloudSync";
 
 import { normalizeData, generateId } from './utils/helpers';
 import { INITIAL_DATA } from './data/initialData';
@@ -33,7 +39,10 @@ export default function App() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
 
-  // ★ ユーザーのゲーミフィケーション・ステータス
+  // ★ ユーザー認証ステート
+  const [user, setUser] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false); // 保存中などの表示用
+
   const [userStats, setUserStats] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-stats');
@@ -42,20 +51,6 @@ export default function App() {
   });
 
   const levelInfo = getLevelInfo(userStats.totalXp);
-
-  const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
-
-  const getPath = () => {
-    const path = [];
-    if (selectedCourse) path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
-    if (selectedQuiz && view !== 'course' && view !== 'edit_quiz') path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
-    return path;
-  };
-  
-  const handleBreadcrumbNavigate = (type, id) => {
-    if (type === 'home') goHome();
-    if (type === 'course') { setView('course'); setSelectedQuiz(null); }
-  };
 
   const [courses, setCourses] = useState(() => {
     try {
@@ -83,13 +78,13 @@ export default function App() {
     return 'system';
   });
 
-  // データの永続化
+  // --- ローカルストレージへの保存 (これは常に動く) ---
   useEffect(() => { localStorage.setItem('study-master-data', JSON.stringify(courses)); }, [courses]);
   useEffect(() => { localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory)); }, [wrongHistory]);
   useEffect(() => { localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats)); }, [errorStats]);
   useEffect(() => { localStorage.setItem('study-master-stats', JSON.stringify(userStats)); }, [userStats]);
 
-  // テーマ設定の適用
+  // --- テーマ ---
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
     const root = document.documentElement;
@@ -112,7 +107,112 @@ export default function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // --- ハンドラ関数群 ---
+  // ★★★ Firebase認証とデータ同期ロジック (ここがキモ！) ★★★
+
+  // 1. ログイン状態の監視と初期ロード
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser) {
+        // ログイン時: クラウドのデータを確認
+        setIsSyncing(true);
+        try {
+          const cloudData = await loadFromCloud(currentUser.uid);
+          
+          if (!cloudData) {
+            // A. クラウドにデータがない (初回同期) -> ローカルデータをクラウドにアップロード
+            console.log("初回同期: ローカルデータをクラウドに保存します");
+            await saveToCloud(currentUser.uid, { courses, userStats, wrongHistory, errorStats });
+            alert("クラウド同期を開始しました！\n現在のデータがアカウントに紐付けられました。");
+          } else {
+            // B. クラウドにデータがある (別端末など) -> 読み込むか確認
+            if (confirm("クラウド上に保存されたデータが見つかりました。\n読み込みますか？\n(キャンセルすると、現在の端末のデータで上書きします)")) {
+               if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
+               if (cloudData.userStats) setUserStats(cloudData.userStats);
+               if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+               if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
+               alert("クラウドからデータを復元しました！");
+            } else {
+               // 上書きを選択した場合、現在のローカルデータでクラウドを更新
+               await saveToCloud(currentUser.uid, { courses, userStats, wrongHistory, errorStats });
+               alert("現在のデータでクラウドを更新しました。");
+            }
+          }
+        } catch (err) {
+          console.error("Sync Error:", err);
+          alert("データの同期中にエラーが発生しました。");
+        } finally {
+          setIsSyncing(false);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []); // 初回マウント時のみ設定
+
+  // 2. 自動保存 (Debounce処理)
+  // データが変更されたら、3秒後にクラウドへ保存する
+  const saveTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    if (!user) return; // ログインしてなければ何もしない
+
+    // 前回のタイマーをキャンセル
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+
+    // 3秒後に保存を実行
+    saveTimeoutRef.current = setTimeout(async () => {
+      setIsSyncing(true);
+      try {
+        await saveToCloud(user.uid, { courses, userStats, wrongHistory, errorStats });
+        console.log("Auto-saved to cloud");
+      } catch (err) {
+        console.error("Auto-save failed:", err);
+      } finally {
+        setIsSyncing(false);
+      }
+    }, 3000); // 3秒のデバウンス
+
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [courses, userStats, wrongHistory, errorStats, user]); // これらのデータが変わるたびにタイマーリセット
+
+  // --- 認証ハンドラ ---
+  const handleLogin = async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("ログインに失敗しました。");
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if(confirm("ログアウトしますか？")) {
+        await signOut(auth);
+        alert("ログアウトしました。");
+        // ※ログアウトしてもローカルデータは残す (Guest Modeに戻るだけ)
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  // --- ナビゲーション関数など (既存) ---
+
+  const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
+
+  const getPath = () => {
+    const path = [];
+    if (selectedCourse) path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
+    if (selectedQuiz && view !== 'course' && view !== 'edit_quiz') path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
+    return path;
+  };
+  
+  const handleBreadcrumbNavigate = (type, id) => {
+    if (type === 'home') goHome();
+    if (type === 'course') { setView('course'); setSelectedQuiz(null); }
+  };
 
   const handleCreateCourse = (title, desc) => {
     const newCourse = { id: `course-${generateId()}`, title, description: desc, quizzes: [] };
@@ -181,7 +281,6 @@ export default function App() {
     setView('quiz_play');
   };
 
-  // ★ クイズ終了処理 (XP計算 & ストリーク判定)
   const finishQuiz = (answers, totalTime) => {
     const xpGained = calculateXpGain({ answers, totalTime });
     
@@ -189,10 +288,9 @@ export default function App() {
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
 
-    // ストリーク判定: 最終学習日が「今日」じゃない場合のみ
     if (userStats.lastLogin !== today) {
       if (!userStats.lastLogin) {
-        newStreak = 1; // 初回
+        newStreak = 1;
       } else {
         const last = new Date(userStats.lastLogin);
         const now = new Date();
@@ -200,15 +298,14 @@ export default function App() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
 
         if (diffDays === 1) {
-          newStreak += 1; // 連続
+          newStreak += 1;
         } else {
-          newStreak = 1; // 途切れた
+          newStreak = 1;
         }
       }
       isStreakUpdated = true;
     }
 
-    // ステータス更新
     setUserStats(prev => ({
       ...prev,
       totalXp: prev.totalXp + xpGained,
@@ -216,7 +313,6 @@ export default function App() {
       lastLogin: today
     }));
 
-    // 結果データ作成
     const resultWithXp = { 
       answers, 
       totalTime,
@@ -229,7 +325,6 @@ export default function App() {
     setResultData(resultWithXp);
     setView('result');
     
-    // ミス履歴の更新
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
     const isReview = selectedQuiz?.id === 'review-mode';
@@ -257,7 +352,6 @@ export default function App() {
     }
   };
 
-  // デバッグ用リセット (今回はGUIには表示しないが機能として残す)
   const handleResetStats = () => {
     if(confirm("【デバッグ用】\nステータス（レベル・XP・ストリーク）を初期化しますか？\n（レベル1・ストリーク0に戻ります）")) {
        setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
@@ -287,7 +381,6 @@ export default function App() {
 
           <div className="flex items-center space-x-4">
             
-            {/* PC用ステータス表示 */}
             <div className="hidden sm:flex flex-col items-end mr-2">
               <div className="flex items-center text-sm font-bold text-gray-700 dark:text-gray-200">
                 <Trophy size={14} className="text-yellow-500 mr-1" />
@@ -296,16 +389,21 @@ export default function App() {
                 <Flame size={14} className="text-orange-500 mr-1" />
                 <span>{userStats.streak}日連続</span>
               </div>
-              <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden">
+              <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden relative">
                 <div 
                   className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500" 
                   style={{ width: `${(levelInfo.currentXp / levelInfo.xpForNextLevel) * 100}%` }}
                 ></div>
+                {/* 保存中インジケータ */}
+                {isSyncing && (
+                   <div className="absolute inset-0 bg-white/50 animate-pulse flex items-center justify-center">
+                     <div className="w-full h-full bg-blue-400 blur-sm"></div>
+                   </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
-              {/* 統計ボタン */}
               <button 
                 onClick={() => setView('stats')} 
                 className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" 
@@ -315,7 +413,17 @@ export default function App() {
               </button>
 
               <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="更新情報"><Bell size={20} /></button>
-              <button onClick={() => setView('settings')} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="設定"><Settings size={20} /></button>
+              
+              {/* 設定ボタン (ログイン中はアイコンを変えるなどの工夫もアリだが今回はそのまま) */}
+              <button 
+                onClick={() => setView('settings')} 
+                className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+                title="設定"
+              >
+                <Settings size={20} />
+              </button>
             </div>
           </div>
         </div>
@@ -329,7 +437,6 @@ export default function App() {
         <div className="animate-fade-in">
           {view === 'home' && (
             <>
-              {/* スマホ用ステータス表示 */}
               <div className="sm:hidden mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center animate-slide-up">
                 <div className="flex items-center">
                   <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400">
@@ -372,7 +479,20 @@ export default function App() {
             />
           )}
 
-          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} />}
+          {/* SettingsView に user, onLogin, onLogout を渡す */}
+          {view === 'settings' && (
+            <SettingsView 
+              theme={theme} 
+              changeTheme={setTheme} 
+              onBack={goHome} 
+              courses={courses} 
+              onImportData={handleImportBackup} 
+              onResetStats={handleResetStats}
+              user={user}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+            />
+          )}
           
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}
           
