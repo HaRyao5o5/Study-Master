@@ -1,4 +1,3 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Folder, FileText, ChevronRight, Play, Settings, Clock, 
@@ -6,7 +5,7 @@ import {
   Brain, Target, Trash2, Lock, Shuffle, Moon, Sun, Monitor, 
   GraduationCap, Plus, Edit3, Image as ImageIcon, X, Save, Type, List,
   BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle, Bell, Info,
-  Trophy, Star, Flame
+  Trophy, Star, Flame, RefreshCw, BarChart2
 } from 'lucide-react';
 
 import { normalizeData, generateId } from './utils/helpers';
@@ -23,6 +22,7 @@ import GameView from './components/game/GameView';
 import ResultView from './components/game/ResultView';
 import SettingsView from './components/layout/SettingsView';
 import ChangelogModal from './components/layout/ChangelogModal';
+import StatsView from './components/layout/StatsView';
 
 export default function App() {
   const [view, setView] = useState('home');
@@ -34,7 +34,6 @@ export default function App() {
   const [courseToEdit, setCourseToEdit] = useState(null);
 
   // ★ ユーザーのゲーミフィケーション・ステータス
-  // 初期値を streak: 0, lastLogin: '' に変更 (初回は0日からスタート)
   const [userStats, setUserStats] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-stats');
@@ -84,11 +83,13 @@ export default function App() {
     return 'system';
   });
 
+  // データの永続化
   useEffect(() => { localStorage.setItem('study-master-data', JSON.stringify(courses)); }, [courses]);
   useEffect(() => { localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory)); }, [wrongHistory]);
   useEffect(() => { localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats)); }, [errorStats]);
   useEffect(() => { localStorage.setItem('study-master-stats', JSON.stringify(userStats)); }, [userStats]);
 
+  // テーマ設定の適用
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
     const root = document.documentElement;
@@ -110,6 +111,8 @@ export default function App() {
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
+
+  // --- ハンドラ関数群 ---
 
   const handleCreateCourse = (title, desc) => {
     const newCourse = { id: `course-${generateId()}`, title, description: desc, quizzes: [] };
@@ -178,7 +181,7 @@ export default function App() {
     setView('quiz_play');
   };
 
-  // ★ クイズ終了処理 (ストリーク判定ロジック修正)
+  // ★ クイズ終了処理 (XP計算 & ストリーク判定)
   const finishQuiz = (answers, totalTime) => {
     const xpGained = calculateXpGain({ answers, totalTime });
     
@@ -186,11 +189,10 @@ export default function App() {
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
 
-    // 最終学習日が「今日」じゃない場合のみ判定
+    // ストリーク判定: 最終学習日が「今日」じゃない場合のみ
     if (userStats.lastLogin !== today) {
-      // 初回(空文字) または 久しぶりの場合
       if (!userStats.lastLogin) {
-        newStreak = 1; // 初めての学習なら1日目！
+        newStreak = 1; // 初回
       } else {
         const last = new Date(userStats.lastLogin);
         const now = new Date();
@@ -200,7 +202,7 @@ export default function App() {
         if (diffDays === 1) {
           newStreak += 1; // 連続
         } else {
-          newStreak = 1; // 途切れたら1から再開
+          newStreak = 1; // 途切れた
         }
       }
       isStreakUpdated = true;
@@ -227,6 +229,7 @@ export default function App() {
     setResultData(resultWithXp);
     setView('result');
     
+    // ミス履歴の更新
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
     const isReview = selectedQuiz?.id === 'review-mode';
@@ -254,6 +257,14 @@ export default function App() {
     }
   };
 
+  // デバッグ用リセット (今回はGUIには表示しないが機能として残す)
+  const handleResetStats = () => {
+    if(confirm("【デバッグ用】\nステータス（レベル・XP・ストリーク）を初期化しますか？\n（レベル1・ストリーク0に戻ります）")) {
+       setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
+       alert("ステータスをリセットしました。");
+    }
+  };
+
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
@@ -276,6 +287,7 @@ export default function App() {
 
           <div className="flex items-center space-x-4">
             
+            {/* PC用ステータス表示 */}
             <div className="hidden sm:flex flex-col items-end mr-2">
               <div className="flex items-center text-sm font-bold text-gray-700 dark:text-gray-200">
                 <Trophy size={14} className="text-yellow-500 mr-1" />
@@ -286,13 +298,22 @@ export default function App() {
               </div>
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500" 
+                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500" 
                   style={{ width: `${(levelInfo.currentXp / levelInfo.xpForNextLevel) * 100}%` }}
                 ></div>
               </div>
             </div>
 
             <div className="flex items-center space-x-2">
+              {/* 統計ボタン */}
+              <button 
+                onClick={() => setView('stats')} 
+                className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" 
+                title="プレイヤーデータ"
+              >
+                <BarChart2 size={20} />
+              </button>
+
               <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="更新情報"><Bell size={20} /></button>
               <button onClick={() => setView('settings')} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="設定"><Settings size={20} /></button>
             </div>
@@ -301,14 +322,15 @@ export default function App() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
-        {view !== 'home' && view !== 'settings' && view !== 'create_course' && view !== 'edit_course' && (
+        {view !== 'home' && view !== 'settings' && view !== 'stats' && view !== 'create_course' && view !== 'edit_course' && (
           <Breadcrumbs path={getPath()} onNavigate={handleBreadcrumbNavigate} />
         )}
 
         <div className="animate-fade-in">
           {view === 'home' && (
             <>
-              <div className="sm:hidden mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center">
+              {/* スマホ用ステータス表示 */}
+              <div className="sm:hidden mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center animate-slide-up">
                 <div className="flex items-center">
                   <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400">
                     <Trophy size={20} />
@@ -329,7 +351,7 @@ export default function App() {
                 </div>
               </div>
 
-              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white animate-slide-up delay-75">科目の選択</h2>
               <FolderListView 
                 courses={courses} 
                 onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} 
@@ -340,7 +362,17 @@ export default function App() {
               />
             </>
           )}
-          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportBackup} />}
+
+          {view === 'stats' && (
+            <StatsView 
+              userStats={userStats} 
+              errorStats={errorStats} 
+              courses={courses} 
+              onBack={goHome} 
+            />
+          )}
+
+          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} />}
           
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}
           
@@ -354,7 +386,10 @@ export default function App() {
           
           {view === 'course' && selectedCourse && (
             <>
-              <div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div>
+              <div className="mb-6 animate-slide-up">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2>
+                <p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p>
+              </div>
               <QuizListView 
                 course={selectedCourse} 
                 onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} 
