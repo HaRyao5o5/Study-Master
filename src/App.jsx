@@ -357,7 +357,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 transition-colors duration-200`}>
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           
           <div className="flex items-center space-x-3 cursor-pointer" onClick={goHome}>
