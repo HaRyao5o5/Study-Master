@@ -4,14 +4,14 @@ import {
   CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, 
   Brain, Target, Trash2, Lock, Shuffle, Moon, Sun, Monitor, 
   GraduationCap, Plus, Edit3, Image as ImageIcon, X, Save, Type, List,
-  BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle
+  BookOpen, Zap, CheckSquare, MinusCircle, PlusCircle, Bell, Info
 } from 'lucide-react';
 
+const APP_VERSION = "v2.1.0";
+
 // ==========================================
-// INITIAL DATA (FULL CONVERTED)
+// INITIAL DATA (DEFAULT)
 // ==========================================
-// ユーザーから提供されたJSONデータを新システム用に変換済み
-// 外部ファイル読み込みのエラーを避けるため、ここに直接記述します。
 const INITIAL_DATA = [
   {
     id: 'course-info-process-2',
@@ -496,28 +496,42 @@ const convertImageToBase64 = (file) => {
 };
 
 // --- DATA ADAPTER ---
-// 古いデータ形式や外部JSONを新仕様（correctAnswerが配列など）に適合させる
 const normalizeData = (rawData) => {
-  if (!rawData) return [];
+  if (!rawData || !Array.isArray(rawData)) return [];
+  
   return rawData.map(course => ({
     ...course,
-    quizzes: course.quizzes.map(quiz => ({
+    quizzes: (course.quizzes || []).map(quiz => ({
       ...quiz,
-      questions: quiz.questions.map(q => {
-        // correctAnswerを配列に統一
-        let normalizedCorrect = q.correctAnswer;
-        if (!Array.isArray(normalizedCorrect)) {
-          normalizedCorrect = [normalizedCorrect];
+      questions: (quiz.questions || []).map(q => {
+        let type = q.type || 'multiple';
+        let options = [];
+        let correctAnswer = [];
+
+        if (Array.isArray(q.options)) {
+          options = q.options;
+        } else if (typeof q.options === 'object' && q.options !== null) {
+           const keys = ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ'];
+           options = keys.filter(k => q.options[k]).map(k => q.options[k]);
         }
-        
-        // typeがない場合はmultipleとする
-        const type = q.type || 'multiple';
+
+        if (Array.isArray(q.correctAnswer)) {
+          correctAnswer = q.correctAnswer;
+        } else {
+          if (typeof q.options === 'object' && !Array.isArray(q.options) && q.options !== null) {
+             correctAnswer = [q.options[q.correctAnswer] || q.correctAnswer];
+          } else {
+             correctAnswer = [q.correctAnswer];
+          }
+        }
 
         return {
           ...q,
           type,
-          correctAnswer: normalizedCorrect,
-          options: q.options || []
+          correctAnswer: correctAnswer,
+          options: options,
+          image: q.image || null,
+          tableData: q.tableData || q.table_data || null // Handle snake_case from old data
         };
       })
     }))
@@ -563,7 +577,7 @@ const Breadcrumbs = ({ path, onNavigate }) => (
       <Home size={16} className="mr-1" /> Home
     </button>
     {path.map((item, index) => (
-      <React.Fragment key={`crumb-${item.type}-${item.id}`}>
+      <React.Fragment key={`crumb-${item.type}-${item.id}-${index}`}>
         <ChevronRight size={16} className="mx-2" />
         <button 
           onClick={() => onNavigate(item.type, item.id)}
@@ -584,10 +598,16 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
           onClick={() => onSelectCourse(course)}
           className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700 cursor-pointer transition-all hover:border-blue-300 dark:hover:border-blue-500 flex flex-col items-center justify-center h-48"
         >
-          <Folder size={64} className="text-blue-200 dark:text-blue-900 group-hover:text-blue-400 dark:group-hover:text-blue-500 mb-4 transition-colors" />
-          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 text-center line-clamp-2">{course.title}</h3>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{course.description || 'No description'}</p>
-          <span className="mt-4 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
+          <Folder size={64} className="text-blue-200 dark:text-blue-900 group-hover:text-blue-400 dark:group-hover:text-blue-500 mb-4 transition-colors flex-shrink-0" />
+          <div className="w-full text-center">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 leading-tight mb-1 line-clamp-2 px-2">
+              {course.title}
+            </h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500 line-clamp-1 px-2">
+              {course.description || 'No description'}
+            </p>
+          </div>
+          <span className="mt-3 text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
             {course.quizzes.length} フォルダ
           </span>
         </div>
@@ -803,9 +823,9 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
     setEditingQ({
       id: generateId(),
       text: '',
-      type: 'multiple', // default
-      options: ['', '', '', ''], // default 4 options
-      correctAnswer: [], // Array for all types
+      type: 'multiple',
+      options: ['', '', '', ''],
+      correctAnswer: [],
       image: null
     });
   };
@@ -1142,7 +1162,6 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
   );
 };
 
-// 6. Game View (Updated)
 const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState([]); 
@@ -1242,46 +1261,21 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
 
       <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
         <div className="mb-4">
-          <span className={`inline-block px-2 py-1 rounded text-xs font-bold mb-2 ${
-            currentQuestion.type === 'input' ? 'bg-purple-100 text-purple-600' : 
-            currentQuestion.type === 'multi-select' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'
-          }`}>
+          <span className={`inline-block px-2 py-1 rounded text-xs font-bold mb-2 ${currentQuestion.type === 'input' ? 'bg-purple-100 text-purple-600' : currentQuestion.type === 'multi-select' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
             {currentQuestion.type === 'input' ? '記述式' : currentQuestion.type === 'multi-select' ? '複数選択 (全て選べ)' : '単一選択'}
           </span>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed whitespace-pre-line">
-            {currentQuestion.text}
-          </h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed whitespace-pre-line">{currentQuestion.text}</h2>
         </div>
 
-        {currentQuestion.image && (
-          <div className="mb-6 flex justify-center">
-            <img 
-              src={currentQuestion.image} 
-              alt="Question" 
-              className="max-h-64 rounded-lg border dark:border-gray-600 object-contain"
-            />
-          </div>
-        )}
-
-        {currentQuestion.tableData && (
-          <div className="mb-8">
-            <SimpleTable data={currentQuestion.tableData} />
-          </div>
-        )}
-        
+        {currentQuestion.image && <div className="mb-6 flex justify-center"><img src={currentQuestion.image} alt="Question" className="max-h-64 rounded-lg border dark:border-gray-600 object-contain" /></div>}
+        {currentQuestion.tableData && <div className="mb-8"><SimpleTable data={currentQuestion.tableData} /></div>}
         <div className="mb-4"></div>
 
         {currentQuestion.type === 'multiple' && (
           <div className="space-y-4">
             {currentQuestion.options.map((option, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleAnswer(option)}
-                className="w-full text-left p-4 rounded-xl border-2 border-gray-100 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all group flex items-center bg-white dark:bg-gray-800"
-              >
-                <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">
-                  {idx + 1}
-                </span>
+              <button key={idx} onClick={() => handleAnswer(option)} className="w-full text-left p-4 rounded-xl border-2 border-gray-100 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all group flex items-center bg-white dark:bg-gray-800">
+                <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">{idx + 1}</span>
                 <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
               </button>
             ))}
@@ -1293,55 +1287,20 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
             {currentQuestion.options.map((option, idx) => {
               const isSelected = selectedOptions.includes(option);
               return (
-                <button
-                  key={idx}
-                  onClick={() => toggleMultiSelect(option)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center ${
-                    isSelected 
-                      ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' 
-                      : 'border-gray-100 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  <div className={`w-6 h-6 rounded border-2 mr-4 flex items-center justify-center transition-colors ${
-                    isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300 bg-white'
-                  }`}>
-                    {isSelected && <CheckCircle size={16} />}
-                  </div>
+                <button key={idx} onClick={() => toggleMultiSelect(option)} className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center ${isSelected ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-gray-100 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
+                  <div className={`w-6 h-6 rounded border-2 mr-4 flex items-center justify-center transition-colors ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300 bg-white'}`}>{isSelected && <CheckCircle size={16} />}</div>
                   <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
                 </button>
               );
             })}
-            <button
-              onClick={() => handleAnswer(selectedOptions)}
-              className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow transition-colors disabled:opacity-50"
-              disabled={selectedOptions.length === 0}
-            >
-              回答を確定する
-            </button>
+            <button onClick={() => handleAnswer(selectedOptions)} className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow transition-colors disabled:opacity-50" disabled={selectedOptions.length === 0}>回答を確定する</button>
           </div>
         )}
 
         {currentQuestion.type === 'input' && (
           <div className="space-y-4">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              className="w-full p-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-500 outline-none dark:bg-gray-700 dark:text-white"
-              placeholder="回答を入力..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && inputText.trim()) {
-                  handleAnswer(inputText);
-                }
-              }}
-            />
-            <button
-              onClick={() => handleAnswer(inputText)}
-              disabled={!inputText.trim()}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow transition-colors"
-            >
-              回答する
-            </button>
+            <input type="text" value={inputText} onChange={(e) => setInputText(e.target.value)} className="w-full p-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-500 outline-none dark:bg-gray-700 dark:text-white" placeholder="回答を入力..." onKeyDown={(e) => { if (e.key === 'Enter' && inputText.trim()) { handleAnswer(inputText); } }} />
+            <button onClick={() => handleAnswer(inputText)} disabled={!inputText.trim()} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow transition-colors">回答する</button>
           </div>
         )}
       </div>
@@ -1349,7 +1308,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   );
 };
 
-// 6. Result View (Updated)
 const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
   const { answers, totalTime } = resultData;
   const correctCount = answers.filter(a => a.isCorrect).length;
@@ -1359,16 +1317,9 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
 
   let comment = "もう一歩！";
   let color = "text-yellow-500";
-  if (accuracy === 100) {
-    comment = "パーフェクト！完璧だ！";
-    color = "text-green-500";
-  } else if (accuracy >= 80) {
-    comment = "素晴らしい！合格圏内だ。";
-    color = "text-blue-500";
-  } else if (accuracy < 50) {
-    comment = "もう少し復習が必要かも。";
-    color = "text-red-500";
-  }
+  if (accuracy === 100) { comment = "パーフェクト！完璧だ！"; color = "text-green-500"; } 
+  else if (accuracy >= 80) { comment = "素晴らしい！合格圏内だ。"; color = "text-blue-500"; } 
+  else if (accuracy < 50) { comment = "もう少し復習が必要かも。"; color = "text-red-500"; }
 
   const renderCorrectAnswer = (q) => {
     if (q.type === 'multiple') return q.correctAnswer[0];
@@ -1389,12 +1340,8 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
         <div className={`text-4xl font-black mb-2 ${color}`}>{accuracy}%</div>
         <p className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{correctCount} / {totalCount} 問正解</p>
         <p className="text-gray-600 dark:text-gray-300 font-medium mb-4">{comment}</p>
-        
-        <div className="flex justify-center items-center text-gray-500 dark:text-gray-400 text-sm">
-          <Clock size={16} className="mr-1" /> かかった時間: {formattedTime}
-        </div>
+        <div className="flex justify-center items-center text-gray-500 dark:text-gray-400 text-sm"><Clock size={16} className="mr-1" /> かかった時間: {formattedTime}</div>
       </div>
-
       <div className="p-6 bg-gray-50/50 dark:bg-gray-900/50">
         <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">詳細レポート</h3>
         <div className="space-y-4">
@@ -1402,98 +1349,51 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
             <div key={idx} className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 shadow-sm ${ans.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
               <div className="flex justify-between items-start mb-2">
                 <span className="font-bold text-sm text-gray-500 dark:text-gray-400">Q{idx + 1}</span>
-                {ans.isCorrect ? 
-                  <span className="flex items-center text-green-600 text-sm font-bold"><CheckCircle size={16} className="mr-1"/> 正解</span> : 
-                  <span className="flex items-center text-red-600 text-sm font-bold"><XCircle size={16} className="mr-1"/> 不正解</span>
-                }
+                {ans.isCorrect ? <span className="flex items-center text-green-600 text-sm font-bold"><CheckCircle size={16} className="mr-1"/> 正解</span> : <span className="flex items-center text-red-600 text-sm font-bold"><XCircle size={16} className="mr-1"/> 不正解</span>}
               </div>
               <p className="text-gray-800 dark:text-gray-200 font-medium mb-2 whitespace-pre-line">{ans.question.text}</p>
-              
-              {ans.question.image && (
-                <img src={ans.question.image} className="h-20 w-auto object-contain border rounded mb-2" alt="Q" />
-              )}
-
+              {ans.question.image && <img src={ans.question.image} className="h-20 w-auto object-contain border rounded mb-2" alt="Q" />}
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}>
-                  <span className="text-xs opacity-70 block">あなたの回答</span>
-                  {renderUserAnswer(ans)}
-                </div>
-                {!ans.isCorrect && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded">
-                    <span className="text-xs opacity-70 block">正解</span>
-                    {renderCorrectAnswer(ans.question)}
-                  </div>
-                )}
+                <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}><span className="text-xs opacity-70 block">あなたの回答</span>{renderUserAnswer(ans)}</div>
+                {!ans.isCorrect && <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded"><span className="text-xs opacity-70 block">正解</span>{renderCorrectAnswer(ans.question)}</div>}
               </div>
             </div>
           ))}
         </div>
       </div>
-
       <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-center bg-white dark:bg-gray-800 sticky bottom-0">
-        <button 
-          onClick={onRetry}
-          className="flex-1 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
-        >
-          <RotateCcw size={18} className="mr-2" /> もう一度挑戦
-        </button>
-        <button 
-          onClick={onBackToMenu}
-          className="flex-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
-        >
-          <ArrowLeft size={18} className="mr-2" /> メニューに戻る
-        </button>
+        <button onClick={onRetry} className="flex-1 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors"><RotateCcw size={18} className="mr-2" /> もう一度挑戦</button>
+        <button onClick={onBackToMenu} className="flex-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"><ArrowLeft size={18} className="mr-2" /> メニューに戻る</button>
       </div>
     </div>
   );
 };
 
-// 7. Settings View
 const SettingsView = ({ theme, changeTheme, onBack }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
       <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex items-center">
-        <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <ArrowLeft size={24} />
-        </button>
+        <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><ArrowLeft size={24} /></button>
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">アプリ設定</h2>
       </div>
-
       <div className="p-6 space-y-6">
-        {/* テーマ設定 */}
         <div className="p-4 border rounded-xl border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
           <h3 className="font-bold text-gray-800 dark:text-gray-100 mb-4">外観テーマ</h3>
           <div className="grid grid-cols-3 gap-3">
-            {[
-              { id: 'light', label: 'ライト', icon: Sun },
-              { id: 'dark', label: 'ダーク', icon: Moon },
-              { id: 'system', label: 'システム', icon: Monitor }
-            ].map((mode) => (
-              <button
-                key={mode.id}
-                onClick={() => changeTheme(mode.id)}
-                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all ${
-                  theme === mode.id 
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                    : 'border-transparent bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'
-                }`}
-              >
+            {[ { id: 'light', label: 'ライト', icon: Sun }, { id: 'dark', label: 'ダーク', icon: Moon }, { id: 'system', label: 'システム', icon: Monitor } ].map((mode) => (
+              <button key={mode.id} onClick={() => changeTheme(mode.id)} className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all ${theme === mode.id ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'border-transparent bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'}`}>
                 <mode.icon size={24} className="mb-2" />
                 <span className="text-xs font-bold">{mode.label}</span>
               </button>
             ))}
           </div>
         </div>
-
-        <div className="text-center text-sm text-gray-400 mt-8">
-          Study Master v2.1 - Creator Edition Pro
-        </div>
+        <div className="text-center text-sm text-gray-400 mt-8">{APP_VERSION} - Creator Edition Pro</div>
       </div>
     </div>
   );
 };
 
-// 8. Quiz Menu View
 const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) => {
   const [randomize, setRandomize] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
@@ -1502,65 +1402,33 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex justify-between items-start">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{quiz.title}</h2>
-          <p className="text-gray-600 dark:text-gray-300">{quiz.description}</p>
-        </div>
-        {/* 編集ボタン (通常クイズのみ) */}
-        {!isMock && !isReviewMode && onEdit && (
-          <button onClick={onEdit} className="p-2 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-200 rounded border hover:bg-gray-50 shadow-sm">
-            <Edit3 size={20} />
-          </button>
-        )}
+        <div><h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{quiz.title}</h2><p className="text-gray-600 dark:text-gray-300">{quiz.description}</p></div>
+        {!isMock && !isReviewMode && onEdit && (<button onClick={onEdit} className="p-2 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-200 rounded border hover:bg-gray-50 shadow-sm"><Edit3 size={20} /></button>)}
       </div>
-
       <div className="p-6">
         {!isMock && (
           <div className="mb-8">
-            <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-              <Settings size={18} className="mr-2" /> 設定
-            </h3>
+            <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center"><Settings size={18} className="mr-2" /> 設定</h3>
             <div className="space-y-2">
               <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={randomize} 
-                  onChange={(e) => setRandomize(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" 
-                />
+                <input type="checkbox" checked={randomize} onChange={(e) => setRandomize(e.target.checked)} className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" />
                 <span className="text-gray-700 dark:text-gray-200">出題順をランダムにする</span>
               </label>
-              
               <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <input 
-                  type="checkbox" 
-                  checked={shuffleOptions} 
-                  onChange={(e) => setShuffleOptions(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" 
-                />
-                <span className="text-gray-700 dark:text-gray-200 flex items-center">
-                  <Shuffle size={16} className="mr-2" /> 選択肢をシャッフルする
-                </span>
+                <input type="checkbox" checked={shuffleOptions} onChange={(e) => setShuffleOptions(e.target.checked)} className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500" />
+                <span className="text-gray-700 dark:text-gray-200 flex items-center"><Shuffle size={16} className="mr-2" /> 選択肢をシャッフルする</span>
               </label>
             </div>
           </div>
         )}
-
         {!isMock ? (
           <div className="mb-8">
             <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">収録されている問題 ({quiz.questions.length}問)</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
               {quiz.questions.map((q, idx) => (
                 <div key={q.id} className="text-sm p-3 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-100 dark:border-gray-600 text-gray-600 dark:text-gray-300 flex justify-between">
-                  <div className="truncate flex-1">
-                    <span className="font-bold text-blue-500 dark:text-blue-400 mr-2">Q{idx + 1}.</span>
-                    {q.text}
-                  </div>
-                  <div className="flex gap-2 ml-2">
-                    {q.image && <ImageIcon size={16} />}
-                    {q.type === 'input' && <Type size={16} />}
-                    {q.type === 'multi-select' && <CheckSquare size={16} />}
-                  </div>
+                  <div className="truncate flex-1"><span className="font-bold text-blue-500 dark:text-blue-400 mr-2">Q{idx + 1}.</span>{q.text}</div>
+                  <div className="flex gap-2 ml-2">{q.image && <ImageIcon size={16} />}{q.type === 'input' && <Type size={16} />}{q.type === 'multi-select' && <CheckSquare size={16} />}</div>
                 </div>
               ))}
             </div>
@@ -1569,51 +1437,89 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory, onEdit }) =
           <div className="mb-8 bg-gray-100 dark:bg-gray-700 p-8 rounded-xl border border-gray-200 dark:border-gray-600 text-center flex flex-col items-center justify-center">
             <Lock size={48} className="text-gray-400 dark:text-gray-500 mb-3" />
             <h3 className="font-bold text-gray-600 dark:text-gray-300 text-lg">Question List Hidden</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              本番形式の模試のため、問題内容は開始するまで表示されません。<br/>
-              出題順序は自動的にシャッフルされます。
-            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">本番形式の模試のため、問題内容は開始するまで表示されません。<br/>出題順序は自動的にシャッフルされます。</p>
           </div>
         )}
-
         <div className="flex flex-col gap-3">
-          <button 
-            onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={quiz.questions.length === 0}
-          >
+          <button onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={quiz.questions.length === 0}>
             <Play size={24} className="mr-2 fill-current" />
             {quiz.questions.length > 0 ? "テストを開始する" : "問題がありません"}
           </button>
-          
-          {isReviewMode && (
-            <button 
-              onClick={onClearHistory}
-              className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800 font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"
-            >
-              <Trash2 size={16} className="mr-2" /> 履歴をリセット（全て覚えた）
-            </button>
-          )}
+          {isReviewMode && <button onClick={onClearHistory} className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800 font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"><Trash2 size={16} className="mr-2" /> 履歴をリセット（全て覚えた）</button>}
         </div>
       </div>
     </div>
   );
 };
 
-// --- MAIN APP COMPONENT ---
+// Changelog Modal
+const ChangelogModal = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center"><Info size={24} className="mr-2 text-blue-600" /> 更新情報</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"><X size={20} className="text-gray-500 dark:text-gray-400" /></button>
+        </div>
+        <div className="p-6 space-y-6">
+          <div>
+            <div className="flex items-center mb-2"><span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded mr-2">Latest</span><h3 className="font-bold text-lg text-gray-800 dark:text-white">v2.1.0 - 多機能化アップデート</h3></div>
+            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1 ml-1">
+              <li>複数選択（チェックボックス）形式の問題に対応しました。</li>
+              <li>選択肢の数を自由に設定できるようになりました（2つ以上）。</li>
+              <li>記述式問題で複数の正解（別解）を設定できるようになりました。</li>
+              <li>既存のデータ構造を新形式へ自動変換する機能を追加しました。</li>
+              <li>UIの微調整（フォルダ名の表示崩れ修正など）を行いました。</li>
+            </ul>
+          </div>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <h3 className="font-bold text-md text-gray-700 dark:text-gray-200 mb-2">v2.0.0 - クリエイター機能実装</h3>
+            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1 ml-1">
+              <li>自分でフォルダや問題セットを作成・編集できる機能を追加しました。</li>
+              <li>画像付き問題の作成に対応しました。</li>
+              <li>ダークモード/ライトモードの手動・システム切り替えに対応しました。</li>
+            </ul>
+          </div>
+          <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+            <h3 className="font-bold text-md text-gray-700 dark:text-gray-200 mb-2">v1.2.0 - 学習機能強化</h3>
+            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 space-y-1 ml-1">
+              <li>実力診断模試（ランダム出題）機能を追加しました。</li>
+              <li>間違えた問題を復習できる「弱点克服モード」を追加しました。</li>
+              <li>学習履歴の保存機能を追加しました。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
-  const [view, setView] = useState('home'); 
+  const [view, setView] = useState('home');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false });
   const [resultData, setResultData] = useState(null);
+  const [showChangelog, setShowChangelog] = useState(false);
+
+  // Define nav functions BEFORE return and before other components might need them
+  const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
+
+  const getPath = () => {
+    const path = [];
+    if (selectedCourse) path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
+    if (selectedQuiz && view !== 'course' && view !== 'edit_quiz') path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
+    return path;
+  };
   
-  // -- Data State (LocalStorage) --
+  const handleBreadcrumbNavigate = (type, id) => {
+    if (type === 'home') goHome();
+    if (type === 'course') { setView('course'); setSelectedQuiz(null); }
+  };
+
   const [courses, setCourses] = useState(() => {
     try {
       const saved = localStorage.getItem('study-master-data');
-      // Normalize data structure on load
       return saved ? normalizeData(JSON.parse(saved)) : normalizeData(INITIAL_DATA);
     } catch (e) { return normalizeData(INITIAL_DATA); }
   });
@@ -1633,46 +1539,25 @@ export default function App() {
   });
 
   const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('study-master-theme') || 'system';
-    }
+    if (typeof window !== 'undefined') return localStorage.getItem('study-master-theme') || 'system';
     return 'system';
   });
 
-  // -- Effects --
-  // Data Persistence
-  useEffect(() => {
-    localStorage.setItem('study-master-data', JSON.stringify(courses));
-  }, [courses]);
+  useEffect(() => { localStorage.setItem('study-master-data', JSON.stringify(courses)); }, [courses]);
+  useEffect(() => { localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory)); }, [wrongHistory]);
+  useEffect(() => { localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats)); }, [errorStats]);
 
-  useEffect(() => {
-    localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory));
-  }, [wrongHistory]);
-
-  useEffect(() => {
-    localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats));
-  }, [errorStats]);
-
-  // Theme Handling
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
-    
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
-    } else {
-      // System
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+    if (theme === 'dark') root.classList.add('dark');
+    else if (theme === 'light') root.classList.remove('dark');
+    else {
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('dark');
+      else root.classList.remove('dark');
     }
   }, [theme]);
 
-  // System Theme Listener
   useEffect(() => {
     if (theme !== 'system') return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1684,16 +1569,8 @@ export default function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-
-  // -- Handlers --
-
   const handleCreateCourse = (title, desc) => {
-    const newCourse = {
-      id: `course-${generateId()}`,
-      title,
-      description: desc,
-      quizzes: []
-    };
+    const newCourse = { id: `course-${generateId()}`, title, description: desc, quizzes: [] };
     setCourses([...courses, newCourse]);
     setView('home');
   };
@@ -1705,12 +1582,7 @@ export default function App() {
   };
 
   const handleCreateQuiz = () => {
-    const newQuiz = {
-      id: `quiz-${generateId()}`,
-      title: '新規問題セット',
-      description: '',
-      questions: []
-    };
+    const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
     setSelectedQuiz(newQuiz);
     setView('edit_quiz');
   };
@@ -1718,18 +1590,12 @@ export default function App() {
   const handleSaveQuiz = (updatedQuiz) => {
     const courseIndex = courses.findIndex(c => c.id === selectedCourse.id);
     if (courseIndex === -1) return;
-
     const newCourses = [...courses];
     const quizIndex = newCourses[courseIndex].quizzes.findIndex(q => q.id === updatedQuiz.id);
-
-    if (quizIndex > -1) {
-      newCourses[courseIndex].quizzes[quizIndex] = updatedQuiz;
-    } else {
-      newCourses[courseIndex].quizzes.push(updatedQuiz);
-    }
-
+    if (quizIndex > -1) newCourses[courseIndex].quizzes[quizIndex] = updatedQuiz;
+    else newCourses[courseIndex].quizzes.push(updatedQuiz);
     setCourses(newCourses);
-    setSelectedCourse(newCourses[courseIndex]); 
+    setSelectedCourse(newCourses[courseIndex]);
     setView('course');
     setSelectedQuiz(null);
   };
@@ -1751,7 +1617,6 @@ export default function App() {
   const finishQuiz = (answers, totalTime) => {
     setResultData({ answers, totalTime });
     setView('result');
-
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
     const isReview = selectedQuiz?.id === 'review-mode';
@@ -1759,21 +1624,15 @@ export default function App() {
     if (currentWrongs.length > 0) {
       setErrorStats(prev => {
         const newStats = { ...prev };
-        currentWrongs.forEach(id => {
-          newStats[id] = (newStats[id] || 0) + 1;
-        });
+        currentWrongs.forEach(id => { newStats[id] = (newStats[id] || 0) + 1; });
         return newStats;
       });
     }
 
     setWrongHistory(prev => {
       let newHistory = [...prev];
-      currentWrongs.forEach(id => {
-        if (!newHistory.includes(id)) newHistory.push(id);
-      });
-      if (isReview) {
-        newHistory = newHistory.filter(id => !currentCorrects.includes(id));
-      }
+      currentWrongs.forEach(id => { if (!newHistory.includes(id)) newHistory.push(id); });
+      if (isReview) newHistory = newHistory.filter(id => !currentCorrects.includes(id));
       return newHistory;
     });
   };
@@ -1785,22 +1644,8 @@ export default function App() {
     }
   };
 
-  // Nav
-  const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
-  const getPath = () => {
-    const path = [];
-    if (selectedCourse) path.push({ title: selectedCourse.title, id: selectedCourse.id, type: 'course' });
-    if (selectedQuiz && view !== 'course' && view !== 'edit_quiz') path.push({ title: selectedQuiz.title, id: selectedQuiz.id, type: 'quiz_menu' });
-    return path;
-  };
-  const handleBreadcrumbNavigate = (type, id) => {
-    if (type === 'home') goHome();
-    if (type === 'course') { setView('course'); setSelectedQuiz(null); }
-  };
-
   return (
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 transition-colors duration-200`}>
-      {/* HEADER */}
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 transition-colors">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-2 cursor-pointer" onClick={goHome}>
@@ -1808,106 +1653,34 @@ export default function App() {
               <BookOpen size={24} />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">
-                Study Master
-              </h1>
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">
-                Professional
-              </span>
+              <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">Study Master</h1>
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Professional</span>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => setView('settings')} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <Settings size={20} />
-            </button>
+            <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="更新情報"><Bell size={20} /></button>
+            <button onClick={() => setView('settings')} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" title="設定"><Settings size={20} /></button>
           </div>
         </div>
       </header>
 
-      {/* MAIN */}
       <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
         {view !== 'home' && view !== 'settings' && view !== 'create_course' && (
           <Breadcrumbs path={getPath()} onNavigate={handleBreadcrumbNavigate} />
         )}
 
         <div className="animate-fade-in">
-          {/* HOME: FOLDER LIST */}
-          {view === 'home' && (
-            <>
-              <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2>
-              <FolderListView 
-                courses={courses} 
-                onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} 
-                onCreateCourse={() => setView('create_course')}
-                onDeleteCourse={handleDeleteCourse}
-              />
-            </>
-          )}
-
-          {/* SETTINGS */}
+          {view === 'home' && <><h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">科目の選択</h2><FolderListView courses={courses} onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} onCreateCourse={() => setView('create_course')} onDeleteCourse={handleDeleteCourse} /></>}
           {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} />}
-
-          {/* CREATE COURSE MODAL */}
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}
-
-          {/* COURSE: QUIZ LIST */}
-          {view === 'course' && selectedCourse && (
-            <>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2>
-                <p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p>
-              </div>
-              <QuizListView 
-                course={selectedCourse} 
-                onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} 
-                wrongHistory={wrongHistory}
-                onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }}
-                onCreateQuiz={handleCreateQuiz}
-                onDeleteQuiz={handleDeleteQuiz}
-              />
-            </>
-          )}
-
-          {/* QUIZ EDITOR */}
-          {view === 'edit_quiz' && (
-            <QuizEditor 
-              quiz={selectedQuiz} 
-              onSave={handleSaveQuiz} 
-              onCancel={() => { setView('course'); setSelectedQuiz(null); }} 
-            />
-          )}
-
-          {/* QUIZ MENU */}
-          {view === 'quiz_menu' && selectedQuiz && (
-            <QuizMenuView 
-              quiz={selectedQuiz} 
-              onStart={startQuiz} 
-              isReviewMode={selectedQuiz.id === 'review-mode'}
-              onClearHistory={clearHistory}
-              onEdit={selectedQuiz.isMock || selectedQuiz.id === 'review-mode' ? null : () => setView('edit_quiz')}
-            />
-          )}
-
-          {/* GAME VIEW */}
-          {view === 'quiz_play' && selectedQuiz && (
-            <GameView 
-              quiz={selectedQuiz} 
-              isRandom={gameSettings.randomize}
-              shuffleOptions={gameSettings.shuffleOptions}
-              onFinish={finishQuiz} 
-            />
-          )}
-
-          {/* RESULT VIEW */}
-          {view === 'result' && resultData && (
-            <ResultView 
-              resultData={resultData} 
-              onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions)}
-              onBackToMenu={() => setView('course')} 
-            />
-          )}
+          {view === 'course' && selectedCourse && <><div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div><QuizListView course={selectedCourse} onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} wrongHistory={wrongHistory} onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} /></>}
+          {view === 'edit_quiz' && <QuizEditor quiz={selectedQuiz} onSave={handleSaveQuiz} onCancel={() => { setView('course'); setSelectedQuiz(null); }} />}
+          {view === 'quiz_menu' && selectedQuiz && <QuizMenuView quiz={selectedQuiz} onStart={startQuiz} isReviewMode={selectedQuiz.id === 'review-mode'} onClearHistory={clearHistory} onEdit={selectedQuiz.isMock || selectedQuiz.id === 'review-mode' ? null : () => setView('edit_quiz')} />}
+          {view === 'quiz_play' && selectedQuiz && <GameView quiz={selectedQuiz} isRandom={gameSettings.randomize} shuffleOptions={gameSettings.shuffleOptions} onFinish={finishQuiz} />}
+          {view === 'result' && resultData && <ResultView resultData={resultData} onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions)} onBackToMenu={() => setView('course')} />}
         </div>
       </main>
+      {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
     </div>
   );
 }
