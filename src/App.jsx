@@ -110,45 +110,38 @@ export default function App() {
   // ★★★ Firebase認証とデータ同期ロジック (ここがキモ！) ★★★
 
   // 1. ログイン状態の監視と初期ロード
+  // 1. ログイン状態の監視とスマートな初期ロード
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
       if (currentUser) {
-        // ログイン時: クラウドのデータを確認
         setIsSyncing(true);
         try {
           const cloudData = await loadFromCloud(currentUser.uid);
           
           if (!cloudData) {
-            // A. クラウドにデータがない (初回同期) -> ローカルデータをクラウドにアップロード
-            console.log("初回同期: ローカルデータをクラウドに保存します");
+            // A. クラウドにデータがない (初回同期) -> 今のローカルデータをクラウドに即保存
             await saveToCloud(currentUser.uid, { courses, userStats, wrongHistory, errorStats });
-            alert("クラウド同期を開始しました！\n現在のデータがアカウントに紐付けられました。");
+            console.log("初回同期完了");
           } else {
-            // B. クラウドにデータがある (別端末など) -> 読み込むか確認
-            if (confirm("クラウド上に保存されたデータが見つかりました。\n読み込みますか？\n(キャンセルすると、現在の端末のデータで上書きします)")) {
-               if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
-               if (cloudData.userStats) setUserStats(cloudData.userStats);
-               if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
-               if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
-               alert("クラウドからデータを復元しました！");
-            } else {
-               // 上書きを選択した場合、現在のローカルデータでクラウドを更新
-               await saveToCloud(currentUser.uid, { courses, userStats, wrongHistory, errorStats });
-               alert("現在のデータでクラウドを更新しました。");
-            }
+            // B. クラウドにデータがある -> 【確認なし】で読み込む
+            // ただし、完全に空の状態で上書きされないよう最低限のチェックはする
+            if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
+            if (cloudData.userStats) setUserStats(cloudData.userStats);
+            if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+            if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
+            console.log("クラウドから最新データを同期しました");
           }
         } catch (err) {
           console.error("Sync Error:", err);
-          alert("データの同期中にエラーが発生しました。");
         } finally {
           setIsSyncing(false);
         }
       }
     });
     return () => unsubscribe();
-  }, []); // 初回マウント時のみ設定
+  }, []); // 依存配列は空でOK（起動時のみ）
 
   // 2. 自動保存 (Debounce処理)
   // データが変更されたら、3秒後にクラウドへ保存する
