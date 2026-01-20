@@ -1,73 +1,96 @@
+// src/components/game/ResultView.jsx
 import React from 'react';
-import { Clock, CheckCircle, XCircle, RotateCcw, ArrowLeft, BookOpen } from 'lucide-react';
+import { CheckCircle, XCircle, RotateCcw, Home, Clock, Trophy, Star, ArrowUpCircle } from 'lucide-react';
+import SimpleTable from '../common/SimpleTable';
 
 const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
-  const { answers, totalTime } = resultData;
+  const { answers, totalTime, xpGained, isLevelUp, currentLevel } = resultData;
   const correctCount = answers.filter(a => a.isCorrect).length;
   const totalCount = answers.length;
-  const accuracy = Math.round((correctCount / totalCount) * 100);
-  const formattedTime = `${Math.floor(totalTime / 1000)}秒`;
+  const percentage = Math.round((correctCount / totalCount) * 100) || 0;
 
-  let comment = "もう一歩！";
-  let color = "text-yellow-500";
-  if (accuracy === 100) { comment = "パーフェクト！完璧だ！"; color = "text-green-500"; } 
-  else if (accuracy >= 80) { comment = "素晴らしい！合格圏内だ。"; color = "text-blue-500"; } 
-  else if (accuracy < 50) { comment = "もう少し復習が必要かも。"; color = "text-red-500"; }
-
-  const renderCorrectAnswer = (q) => {
-    if (q.type === 'multiple') return q.correctAnswer[0];
-    if (q.type === 'multi-select') return q.correctAnswer.join(', ');
-    if (q.type === 'input') return q.correctAnswer.join(' または ');
-    return '';
-  };
-
-  const renderUserAnswer = (ans) => {
-    if (Array.isArray(ans.selectedAnswer)) return ans.selectedAnswer.join(', ');
-    return ans.selectedAnswer;
+  // 時間フォーマット (秒 -> mm:ss)
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="p-8 text-center bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-        <h2 className="text-lg text-gray-500 dark:text-gray-400 font-bold mb-2">RESULT</h2>
-        <div className={`text-4xl font-black mb-2 ${color}`}>{accuracy}%</div>
-        <p className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{correctCount} / {totalCount} 問正解</p>
-        <p className="text-gray-600 dark:text-gray-300 font-medium mb-4">{comment}</p>
-        <div className="flex justify-center items-center text-gray-500 dark:text-gray-400 text-sm"><Clock size={16} className="mr-1" /> かかった時間: {formattedTime}</div>
-      </div>
-      <div className="p-6 bg-gray-50/50 dark:bg-gray-900/50">
-        <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4">詳細レポート</h3>
-        <div className="space-y-4">
-          {answers.map((ans, idx) => (
-            <div key={idx} className={`bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 shadow-sm ${ans.isCorrect ? 'border-green-500' : 'border-red-500'}`}>
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-sm text-gray-500 dark:text-gray-400">Q{idx + 1}</span>
-                {ans.isCorrect ? <span className="flex items-center text-green-600 text-sm font-bold"><CheckCircle size={16} className="mr-1"/> 正解</span> : <span className="flex items-center text-red-600 text-sm font-bold"><XCircle size={16} className="mr-1"/> 不正解</span>}
-              </div>
-              <p className="text-gray-800 dark:text-gray-200 font-medium mb-2 whitespace-pre-line">{ans.question.text}</p>
-              {ans.question.image && <img src={ans.question.image} className="h-20 w-auto object-contain border rounded mb-2" alt="Q" />}
-              <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'}`}><span className="text-xs opacity-70 block">あなたの回答</span>{renderUserAnswer(ans)}</div>
-                {!ans.isCorrect && <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-2 rounded"><span className="text-xs opacity-70 block">正解</span>{renderCorrectAnswer(ans.question)}</div>}
-              </div>
-              {ans.question.explanation && (
-                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                  <div className="flex items-start text-sm text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
-                    <BookOpen size={16} className="mr-2 mt-0.5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
-                    <div>
-                      <span className="font-bold text-yellow-700 dark:text-yellow-500 block mb-1">解説</span>
-                      <p className="whitespace-pre-line leading-relaxed">{ans.question.explanation}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+    <div className="space-y-6 animate-fade-in pb-10">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-center p-8 relative">
+        
+        {/* レベルアップ通知 (もしあれば) */}
+        {isLevelUp && (
+          <div className="absolute top-0 left-0 w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-black py-1 shadow-md animate-bounce">
+            LEVEL UP! Lv.{currentLevel} になりました！
+          </div>
+        )}
+
+        <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-2 tracking-tight">結果発表</h2>
+        
+        <div className="flex justify-center items-end space-x-2 mb-6">
+          <span className="text-6xl font-black text-blue-600 dark:text-blue-400">{percentage}</span>
+          <span className="text-2xl font-bold text-gray-400 dark:text-gray-500 mb-2">%</span>
+        </div>
+
+        {/* スコア・XP・時間 */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+            <div className="flex justify-center text-green-500 mb-1"><CheckCircle size={24} /></div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-white">{correctCount}/{totalCount}</div>
+            <div className="text-xs text-gray-400 font-bold uppercase">Correct</div>
+          </div>
+          
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border-2 border-yellow-100 dark:border-yellow-900/50 relative overflow-hidden">
+             {/* XP獲得エフェクト装飾 */}
+            <div className="absolute -right-2 -top-2 opacity-20">
+               <Star size={48} className="text-yellow-500" />
             </div>
-          ))}
+            <div className="flex justify-center text-yellow-500 mb-1"><Trophy size={24} /></div>
+            <div className="text-2xl font-black text-yellow-600 dark:text-yellow-400">+{xpGained}</div>
+            <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70 font-bold uppercase">XP Gained</div>
+          </div>
+
+          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+            <div className="flex justify-center text-blue-500 mb-1"><Clock size={24} /></div>
+            <div className="text-2xl font-bold text-gray-800 dark:text-white">{formatTime(totalTime)}</div>
+            <div className="text-xs text-gray-400 font-bold uppercase">Time</div>
+          </div>
+        </div>
+
+        {/* アクションボタン */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <button 
+            onClick={onRetry}
+            className="flex items-center justify-center px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+          >
+            <RotateCcw size={20} className="mr-2" /> もう一度
+          </button>
+          <button 
+            onClick={onBackToMenu}
+            className="flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 dark:shadow-blue-900/20 transition-all transform hover:scale-105"
+          >
+            <Home size={20} className="mr-2" /> メニューへ戻る
+          </button>
         </div>
       </div>
-      <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-center bg-white dark:bg-gray-800 sticky bottom-0">
-        <button onClick={onRetry} className="flex-1 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors"><RotateCcw size={18} className="mr-2" /> もう一度挑戦</button>
-        <button onClick={onBackToMenu} className="flex-1 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-bold py-3 px-6 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"><ArrowLeft size={18} className="mr-2" /> メニューに戻る</button>
+
+      {/* 詳細テーブル (既存機能) */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 font-bold text-gray-700 dark:text-gray-300">
+          詳細レポート
+        </div>
+        <SimpleTable 
+          headers={['#', '問題', 'あなたの解答', '正解', '判定']}
+          data={answers.map((a, i) => ({
+            '#': i + 1,
+            '問題': <div className="max-w-xs truncate" title={a.question.text}>{a.question.text}</div>,
+            'あなたの解答': <span className={a.isCorrect ? 'text-green-600 dark:text-green-400 font-bold' : 'text-red-500 font-bold'}>{Array.isArray(a.userAnswer) ? a.userAnswer.join(', ') : a.userAnswer}</span>,
+            '正解': <span className="text-gray-500 dark:text-gray-400">{Array.isArray(a.question.correctAnswer) ? a.question.correctAnswer.join(', ') : a.question.correctAnswer}</span>,
+            '判定': a.isCorrect ? <CheckCircle size={20} className="text-green-500 mx-auto" /> : <XCircle size={20} className="text-red-500 mx-auto" />
+          }))}
+        />
       </div>
     </div>
   );
