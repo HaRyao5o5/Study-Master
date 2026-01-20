@@ -1,15 +1,18 @@
+// src/components/editor/QuestionEditor.jsx
 import React, { useState, useRef } from 'react';
-import { List, CheckSquare, Type, ImageIcon, X, PlusCircle, MinusCircle, CircleHelp } from 'lucide-react';
+// ↓ Camera アイコンを追加
+import { List, CheckSquare, Type, ImageIcon, X, PlusCircle, MinusCircle, CircleHelp, Camera } from 'lucide-react';
 import { convertImageToBase64 } from '../../utils/helpers';
 
 const QuestionEditor = ({ question, onSave, onCancel }) => {
   const [q, setQ] = useState(question);
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null); // ← カメラ用のRefを追加
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 500000) { 
+      if (file.size > 5000000) { // 5MBくらいまでは許容しよう (最近のスマホ写真はデカいからな)
         alert("画像サイズが大きすぎます。読み込みが遅くなる可能性があります。");
       }
       try {
@@ -87,6 +90,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
       </div>
 
       <div className="max-w-2xl mx-auto p-6 space-y-6">
+        {/* 出題形式 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">出題形式</label>
           <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
@@ -111,6 +115,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
           </div>
         </div>
 
+        {/* 問題文 */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">問題文</label>
           <textarea 
@@ -121,6 +126,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
           />
         </div>
 
+        {/* 添付画像 (カメラ対応版) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">添付画像 (任意)</label>
           <div className="flex items-start space-x-4">
@@ -135,14 +141,28 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
                 </button>
               </div>
             ) : (
-              <div 
-                onClick={() => fileInputRef.current?.click()}
-                className="h-32 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
-              >
-                <ImageIcon size={32} className="mb-2" />
-                <span className="text-xs">画像をアップロード</span>
+              <div className="w-full flex gap-3">
+                {/* ファイルアップロードボタン */}
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-blue-400 transition-colors"
+                >
+                  <ImageIcon size={28} className="mb-2" />
+                  <span className="text-xs font-bold">ファイルを選択</span>
+                </div>
+                
+                {/* カメラ起動ボタン (NEW!) */}
+                <div 
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="flex-1 h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:border-green-400 transition-colors"
+                >
+                  <Camera size={28} className="mb-2" />
+                  <span className="text-xs font-bold">カメラで撮影</span>
+                </div>
               </div>
             )}
+            
+            {/* 隠しinput (通常ファイル用) */}
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -150,9 +170,20 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
               accept="image/*"
               onChange={handleImageUpload}
             />
+            
+            {/* 隠しinput (カメラ用) capture="environment" がキモだ！ */}
+            <input 
+              type="file" 
+              ref={cameraInputRef} 
+              className="hidden" 
+              accept="image/*"
+              capture="environment" 
+              onChange={handleImageUpload}
+            />
           </div>
         </div>
 
+        {/* 解説入力エリア */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 flex items-center">
             <CircleHelp size={16} className="mr-1 text-green-500" /> 解説 (任意)
@@ -165,6 +196,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
           />
         </div>
 
+        {/* 選択肢・正解設定 */}
         {q.type !== 'input' ? (
           <div>
             <div className="flex justify-between items-center mb-2">
