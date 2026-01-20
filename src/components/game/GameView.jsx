@@ -1,7 +1,7 @@
 // src/components/game/GameView.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, XCircle, ArrowRight, BookOpen } from 'lucide-react';
-import { SimpleTable } from '../common/SimpleTable';
+import SimpleTable from '../common/SimpleTable'; // ← {} を外してデフォルトインポートに変更！
 
 const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
