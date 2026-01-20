@@ -103,6 +103,27 @@ export default function App() {
     setView('home');
   };
 
+  const handleImportData = (importedData) => {
+    try {
+      // 簡易チェック: 配列かどうか
+      if (!Array.isArray(importedData)) {
+        alert('データの形式が正しくありません。');
+        return;
+      }
+      // 念のため正規化してセット
+      const normalized = normalizeData(importedData);
+      
+      if (confirm('現在のデータを上書きして、バックアップから復元しますか？\n（現在のデータは消えます！）')) {
+        setCourses(normalized);
+        alert('データの復元が完了しました！');
+        goHome();
+      }
+    } catch (e) {
+      console.error(e);
+      alert('読み込みに失敗しました。ファイルが壊れている可能性があります。');
+    }
+  };
+
   // コース編集開始
   const handleEditCourseRequest = (course) => {
     setCourseToEdit(course);
@@ -226,7 +247,7 @@ export default function App() {
               />
             </>
           )}
-          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} />}
+          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportData} />}
           
           {/* 新規作成モード */}
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}

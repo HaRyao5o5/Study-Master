@@ -1,6 +1,14 @@
 // src/data/changelog.js
 
 export const CHANGELOG_DATA = [
+    {
+    version: "v2.7.0",
+    title: "データバックアップ機能",
+    details: [
+      "設定画面から、作成した問題データをファイル（JSON形式）として保存できるようになりました。",
+      "保存したファイルを読み込んで、データを復元したり、他の端末のデータを取り込んだりできます。"
+    ]
+  },
   {
     version: "v2.6.0",
     title: "アプリ化 (PWA) 対応",
