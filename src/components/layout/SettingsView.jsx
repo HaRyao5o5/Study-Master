@@ -2,51 +2,28 @@
 import React, { useRef } from 'react';
 import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database } from 'lucide-react';
 import { CHANGELOG_DATA } from '../../data/changelog';
+import { exportToFile, importFromFile } from '../../utils/fileIO';
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version} - Creator Edition Pro`;
 
-// propsに courses, onImportData を追加
 const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData }) => {
   const fileInputRef = useRef(null);
 
-  // バックアップ作成 (エクスポート)
+  // バックアップ保存 (Utilityを使用)
   const handleExport = () => {
-    const dataStr = JSON.stringify(courses, null, 2);
-    const blob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    // 日付入りファイル名を作成 (例: study-master-backup-20231027.json)
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const fileName = `study-master-backup-${date}.json`;
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    exportToFile(courses, 'backup', 'study-master-backup');
   };
 
-  // バックアップ復元 (インポート)
+  // バックアップ復元 (Utilityを使用)
+  const handleFileChange = (e) => {
+    importFromFile(e.target.files[0], 'backup', (data) => {
+      onImportData(data);
+    });
+    e.target.value = '';
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const json = JSON.parse(event.target.result);
-        onImportData(json);
-      } catch (err) {
-        alert("ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。");
-      }
-      // 同じファイルを再度選べるようにリセット
-      e.target.value = '';
-    };
-    reader.readAsText(file);
   };
 
   return (
@@ -105,14 +82,13 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData }) => 
               className="flex items-center justify-center p-4 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-green-500 hover:text-green-600 dark:hover:border-green-400 dark:hover:text-green-400 transition-all font-bold text-gray-600 dark:text-gray-300"
             >
               <Upload size={20} className="mr-2" />
-              データを復元 / 読込
+              データを復元
             </button>
-            {/* 隠しファイル入力 */}
             <input 
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
-              accept=".json" // JSONファイルのみ許可
+              accept=".json" 
               onChange={handleFileChange}
             />
           </div>

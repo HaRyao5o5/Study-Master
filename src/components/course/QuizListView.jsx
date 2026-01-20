@@ -1,30 +1,27 @@
 // src/components/course/QuizListView.jsx
-import React, { useState, useMemo, useEffect } from 'react';
-import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Settings } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Settings, Share2, Upload } from 'lucide-react';
+import { exportToFile, importFromFile } from '../../utils/fileIO';
 
-const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCreateQuiz, onDeleteQuiz }) => {
+const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
   const [showMockSettings, setShowMockSettings] = useState(false);
-  const [mockQuestionCount, setMockQuestionCount] = useState(10); // 初期値
+  const [mockQuestionCount, setMockQuestionCount] = useState(10);
+  const fileInputRef = useRef(null);
 
-  // コース内の全問題を取得
   const allQuestions = useMemo(() => {
     return course.quizzes.flatMap(q => q.questions);
   }, [course]);
 
-  // ★ バグ修正: 総問題数が10問未満の場合、初期値を総問題数に合わせる
   useEffect(() => {
     if (allQuestions.length > 0 && allQuestions.length < 10) {
       setMockQuestionCount(allQuestions.length);
     } else if (allQuestions.length >= 10 && mockQuestionCount < 10) {
-        // もし以前の設定で小さい値になっていて、かつ問題数が十分あるなら10に戻す（お好みで）
-        // ここでは「現在の設定値が総数を超えていたら丸める」処理だけにするのが安全
         if (mockQuestionCount > allQuestions.length) {
             setMockQuestionCount(allQuestions.length);
         }
     }
   }, [allQuestions.length]);
 
-  // 設定値が変わったときに、上限を超えないようにガード
   const handleCountChange = (e) => {
     const val = parseInt(e.target.value, 10);
     if (val > allQuestions.length) {
@@ -37,7 +34,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
   };
 
   const startMockExam = () => {
-    // ランダムに問題を抽出して新しいクイズセットを作成
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5);
     const selected = shuffled.slice(0, mockQuestionCount);
     
@@ -52,7 +48,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
   };
 
   const startWeaknessReview = () => {
-    // 間違えた履歴のある問題だけを抽出
     const weaknessQuestions = allQuestions.filter(q => wrongHistory.includes(q.id));
     
     const reviewQuiz = {
@@ -65,11 +60,17 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
     onSelectReview(reviewQuiz);
   };
 
+  const handleFileSelect = (e) => {
+    importFromFile(e.target.files[0], 'quiz', (newQuizData) => {
+      onImportQuiz(newQuizData);
+    });
+    e.target.value = '';
+  };
+
   const weaknessCount = allQuestions.filter(q => wrongHistory.includes(q.id)).length;
 
   return (
     <div className="space-y-6">
-      {/* 学習モード選択エリア */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 実力診断テスト */}
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group">
@@ -109,7 +110,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
           ) : (
             <button 
               onClick={() => {
-                  // 設定を開いた瞬間にもチェック
                   if (allQuestions.length < 10) setMockQuestionCount(allQuestions.length);
                   setShowMockSettings(true);
               }}
@@ -144,12 +144,23 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
           <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center">
             <Layers size={20} className="mr-2" /> 問題セット一覧
           </h3>
-          <button 
-            onClick={onCreateQuiz}
-            className="text-sm bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold flex items-center transition-colors"
-          >
-            <Plus size={16} className="mr-1" /> 新規作成
-          </button>
+          <div className="flex space-x-2">
+            {/* 読込ボタン */}
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="text-sm bg-white dark:bg-gray-700 text-green-600 dark:text-green-400 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-gray-600 font-bold flex items-center transition-colors"
+            >
+              <Upload size={16} className="mr-1" /> 読込
+            </button>
+            <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
+
+            <button 
+              onClick={onCreateQuiz}
+              className="text-sm bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 font-bold flex items-center transition-colors"
+            >
+              <Plus size={16} className="mr-1" /> 新規作成
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -177,7 +188,19 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
                 </div>
                 
                 <div className="flex items-center space-x-2 flex-shrink-0">
+                   {/* シェアボタン */}
                    <button 
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      exportToFile(quiz, 'quiz', `quiz-${quiz.title}`);
+                    }}
+                    className="p-2 text-gray-300 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                    title="共有用ファイルを書き出す"
+                  >
+                    <Share2 size={18} />
+                  </button>
+
+                  <button 
                     onClick={(e) => { e.stopPropagation(); onDeleteQuiz(quiz.id); }}
                     className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-all opacity-0 group-hover:opacity-100"
                     title="削除"

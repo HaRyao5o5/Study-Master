@@ -14,7 +14,7 @@ import { INITIAL_DATA } from './data/initialData';
 import Breadcrumbs from './components/common/Breadcrumbs';
 import FolderListView from './components/course/FolderListView';
 import QuizListView from './components/course/QuizListView';
-import CreateCourseModal from './components/course/CreateCourseModal'; // 名前はそのままだが中身は万能型
+import CreateCourseModal from './components/course/CreateCourseModal';
 import QuizEditor from './components/editor/QuizEditor';
 import QuizMenuView from './components/course/QuizMenuView';
 import GameView from './components/game/GameView';
@@ -29,7 +29,7 @@ export default function App() {
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
-  const [courseToEdit, setCourseToEdit] = useState(null); // 編集対象のコースを保持するstate
+  const [courseToEdit, setCourseToEdit] = useState(null);
 
   const goHome = () => { setView('home'); setSelectedCourse(null); setSelectedQuiz(null); setResultData(null); };
 
@@ -103,14 +103,13 @@ export default function App() {
     setView('home');
   };
 
-  const handleImportData = (importedData) => {
+  // ■ バックアップ（全データ）インポート
+  const handleImportBackup = (importedData) => {
     try {
-      // 簡易チェック: 配列かどうか
       if (!Array.isArray(importedData)) {
         alert('データの形式が正しくありません。');
         return;
       }
-      // 念のため正規化してセット
       const normalized = normalizeData(importedData);
       
       if (confirm('現在のデータを上書きして、バックアップから復元しますか？\n（現在のデータは消えます！）')) {
@@ -124,13 +123,35 @@ export default function App() {
     }
   };
 
-  // コース編集開始
+  // ■ 科目インポート
+  const handleImportCourse = (newCourseData) => {
+    setCourses([...courses, newCourseData]);
+    alert(`科目フォルダ「${newCourseData.title}」を追加しました！`);
+  };
+
+  // ■ 問題セットインポート
+  const handleImportQuiz = (newQuizData) => {
+    if (!selectedCourse) return;
+    
+    const updatedCourse = {
+      ...selectedCourse,
+      quizzes: [...selectedCourse.quizzes, newQuizData]
+    };
+
+    const newCourses = courses.map(c => 
+      c.id === selectedCourse.id ? updatedCourse : c
+    );
+    
+    setCourses(newCourses);
+    setSelectedCourse(updatedCourse);
+    alert(`問題セット「${newQuizData.title}」を追加しました！`);
+  };
+
   const handleEditCourseRequest = (course) => {
     setCourseToEdit(course);
     setView('edit_course');
   };
 
-  // コース更新実行
   const handleUpdateCourse = (title, desc) => {
     const updatedCourses = courses.map(c => 
       c.id === courseToEdit.id ? { ...c, title, description: desc } : c
@@ -243,16 +264,15 @@ export default function App() {
                 onSelectCourse={(c) => { setSelectedCourse(c); setView('course'); }} 
                 onCreateCourse={() => setView('create_course')} 
                 onDeleteCourse={handleDeleteCourse}
-                onEditCourse={handleEditCourseRequest} // ここを追加
+                onEditCourse={handleEditCourseRequest}
+                onImportCourse={handleImportCourse}
               />
             </>
           )}
-          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportData} />}
+          {view === 'settings' && <SettingsView theme={theme} changeTheme={setTheme} onBack={goHome} courses={courses} onImportData={handleImportBackup} />}
           
-          {/* 新規作成モード */}
           {view === 'create_course' && <CreateCourseModal onClose={goHome} onSave={handleCreateCourse} />}
           
-          {/* 編集モード (CreateCourseModalを再利用) */}
           {view === 'edit_course' && (
             <CreateCourseModal 
               onClose={goHome} 
@@ -261,7 +281,20 @@ export default function App() {
             />
           )}
           
-          {view === 'course' && selectedCourse && <><div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div><QuizListView course={selectedCourse} onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} wrongHistory={wrongHistory} onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} /></>}
+          {view === 'course' && selectedCourse && (
+            <>
+              <div className="mb-6"><h2 className="text-2xl font-bold text-gray-800 dark:text-white">{selectedCourse.title}</h2><p className="text-gray-500 dark:text-gray-400">{selectedCourse.description}</p></div>
+              <QuizListView 
+                course={selectedCourse} 
+                onSelectQuiz={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} 
+                wrongHistory={wrongHistory} 
+                onSelectReview={(q) => { setSelectedQuiz(q); setView('quiz_menu'); }} 
+                onCreateQuiz={handleCreateQuiz} 
+                onDeleteQuiz={handleDeleteQuiz}
+                onImportQuiz={handleImportQuiz}
+              />
+            </>
+          )}
           {view === 'edit_quiz' && <QuizEditor quiz={selectedQuiz} onSave={handleSaveQuiz} onCancel={() => { setView('course'); setSelectedQuiz(null); }} />}
           {view === 'quiz_menu' && selectedQuiz && <QuizMenuView quiz={selectedQuiz} onStart={startQuiz} isReviewMode={selectedQuiz.id === 'review-mode'} onClearHistory={clearHistory} onEdit={selectedQuiz.isMock || selectedQuiz.id === 'review-mode' ? null : () => setView('edit_quiz')} />}
           
