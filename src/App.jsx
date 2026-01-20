@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Folder, FileText, ChevronRight, Play, Settings, Clock, CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, Brain, Target, Trash2, Lock } from 'lucide-react';
+import { Folder, FileText, ChevronRight, Play, Settings, Clock, CheckCircle, XCircle, RotateCcw, Home, ArrowLeft, Layers, Brain, Target, Trash2, Lock, Shuffle } from 'lucide-react';
 
 // ==========================================
 // DATA SECTION
@@ -670,6 +670,7 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview }) =>
 // 4. Quiz Detail/Menu View
 const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
   const [randomize, setRandomize] = useState(false);
+  const [shuffleOptions, setShuffleOptions] = useState(false);
   const isMock = quiz.isMock; // 模試かどうか
 
   // 模試の場合は強制的にランダム（データ自体が既にランダムだが、UI上も制御）
@@ -689,15 +690,29 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
             <h3 className="font-bold text-gray-700 mb-4 flex items-center">
               <Settings size={18} className="mr-2" /> 設定
             </h3>
-            <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-              <input 
-                type="checkbox" 
-                checked={randomize} 
-                onChange={(e) => setRandomize(e.target.checked)}
-                className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" 
-              />
-              <span className="text-gray-700">出題順をランダムにする</span>
-            </label>
+            <div className="space-y-2">
+              <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={randomize} 
+                  onChange={(e) => setRandomize(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" 
+                />
+                <span className="text-gray-700">出題順をランダムにする</span>
+              </label>
+              
+              <label className="flex items-center space-x-3 cursor-pointer p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={shuffleOptions} 
+                  onChange={(e) => setShuffleOptions(e.target.checked)}
+                  className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500" 
+                />
+                <span className="text-gray-700 flex items-center">
+                  <Shuffle size={16} className="mr-2" /> 選択肢をシャッフルする
+                </span>
+              </label>
+            </div>
           </div>
         )}
 
@@ -727,7 +742,7 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
 
         <div className="flex flex-col gap-3">
           <button 
-            onClick={() => onStart(isMock ? false : randomize)} // 模試は既にデータがランダムなのでfalseを渡す
+            onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions)} // 模試の場合は強制的にシャッフルONでもいいかもしれないが、一旦デフォルトは維持
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg"
           >
             <Play size={24} className="mr-2 fill-current" />
@@ -749,20 +764,45 @@ const QuizMenuView = ({ quiz, onStart, isReviewMode, onClearHistory }) => {
 };
 
 // 5. Game Loop View
-const GameView = ({ quiz, isRandom, onFinish }) => {
+const GameView = ({ quiz, isRandom, shuffleOptions, onFinish }) => {
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [answers, setAnswers] = useState([]); // { questionId, selectedIndex, timeTaken }
   const [startTime, setStartTime] = useState(null);
   const [qStartTime, setQStartTime] = useState(null);
 
-  // 実際の出題順序を決定
+  // 実際の出題順序を決定 & 選択肢のシャッフル処理
   const questionOrder = useMemo(() => {
     let order = [...quiz.questions];
+    
+    // 1. 問題順のシャッフル
     if (isRandom) {
       order = order.sort(() => Math.random() - 0.5);
     }
+
+    // 2. 選択肢のシャッフル
+    if (shuffleOptions) {
+      order = order.map(q => {
+        // 現在の選択肢とインデックスのペアを作成
+        const optionsWithIndex = q.options.map((opt, i) => ({ text: opt, originalIndex: i }));
+        // シャッフル
+        const shuffledOptions = [...optionsWithIndex].sort(() => Math.random() - 0.5);
+        
+        // 新しい選択肢配列
+        const newOptions = shuffledOptions.map(o => o.text);
+        // 新しい正解インデックス（元の正解インデックスを持つ要素がどこに移動したか）
+        const newCorrectIndex = shuffledOptions.findIndex(o => o.originalIndex === q.correctIndex);
+
+        return {
+          ...q,
+          options: newOptions,
+          correctIndex: newCorrectIndex,
+          // 元のデータも保持しておくとデバッグに便利かもしれないが、今回は上書きで動作させる
+        };
+      });
+    }
+
     return order;
-  }, [quiz, isRandom]);
+  }, [quiz, isRandom, shuffleOptions]);
 
   useEffect(() => {
     setStartTime(Date.now());
@@ -837,7 +877,7 @@ const GameView = ({ quiz, isRandom, onFinish }) => {
               className="w-full text-left p-4 rounded-xl border-2 border-gray-100 hover:border-blue-500 hover:bg-blue-50 transition-all group flex items-center"
             >
               <span className="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">
-                {['ア', 'イ', 'ウ', 'エ'][idx]}
+                {['A', 'B', 'C', 'D'][idx]}
               </span>
               <span className="text-gray-700 font-medium">{option}</span>
             </button>
@@ -907,12 +947,12 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
               <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                 <div className={`p-2 rounded ${ans.isCorrect ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
                   <span className="text-xs opacity-70 block">あなたの回答</span>
-                  {['ア', 'イ', 'ウ', 'エ'][ans.selectedIndex]}. {ans.question.options[ans.selectedIndex]}
+                  {['A', 'B', 'C', 'D'][ans.selectedIndex]}. {ans.question.options[ans.selectedIndex]}
                 </div>
                 {!ans.isCorrect && (
                   <div className="bg-blue-50 text-blue-800 p-2 rounded">
                     <span className="text-xs opacity-70 block">正解</span>
-                    {['ア', 'イ', 'ウ', 'エ'][ans.question.correctIndex]}. {ans.question.options[ans.question.correctIndex]}
+                    {['A', 'B', 'C', 'D'][ans.question.correctIndex]}. {ans.question.options[ans.question.correctIndex]}
                   </div>
                 )}
               </div>
@@ -945,7 +985,7 @@ export default function App() {
   const [view, setView] = useState('home'); // home, course, quiz_menu, quiz_play, result
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-  const [gameSettings, setGameSettings] = useState({ randomize: false });
+  const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false });
   const [resultData, setResultData] = useState(null);
   
   // 間違えた問題のIDリスト（復習用リスト）
@@ -993,8 +1033,8 @@ export default function App() {
     setView('quiz_menu');
   };
 
-  const startQuiz = (randomize) => {
-    setGameSettings({ randomize });
+  const startQuiz = (randomize, shuffleOptions) => {
+    setGameSettings({ randomize, shuffleOptions });
     setView('quiz_play');
   };
 
@@ -1119,7 +1159,8 @@ export default function App() {
           {view === 'quiz_play' && selectedQuiz && (
             <GameView 
               quiz={selectedQuiz} 
-              isRandom={gameSettings.randomize} 
+              isRandom={gameSettings.randomize}
+              shuffleOptions={gameSettings.shuffleOptions}
               onFinish={finishQuiz} 
             />
           )}
@@ -1127,7 +1168,7 @@ export default function App() {
           {view === 'result' && resultData && (
             <ResultView 
               resultData={resultData} 
-              onRetry={() => startQuiz(gameSettings.randomize)}
+              onRetry={() => startQuiz(gameSettings.randomize, gameSettings.shuffleOptions)}
               onBackToMenu={() => setView('course')} 
             />
           )}
