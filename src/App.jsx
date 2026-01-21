@@ -13,6 +13,7 @@ import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
 
 import Breadcrumbs from './components/common/Breadcrumbs';
+import LoadingScreen from './components/common/LoadingScreen'; // ★ 追加
 import FolderListView from './components/course/FolderListView';
 import QuizListView from './components/course/QuizListView';
 import CreateCourseModal from './components/course/CreateCourseModal';
@@ -33,6 +34,7 @@ export default function App() {
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true); // ★ 追加: ロード画面制御用
 
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('study-master-theme') || 'system';
@@ -53,6 +55,17 @@ export default function App() {
   const levelInfo = getLevelInfo(userStats.totalXp);
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
+
+  // ★ 追加: 初期ロード制御
+  // isSyncing（Firebase同期）が終わるのを待ちつつ、最低1秒はロード画面を見せる
+  useEffect(() => {
+    if (!isSyncing) {
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 1000); 
+      return () => clearTimeout(timer);
+    }
+  }, [isSyncing]);
 
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
@@ -238,7 +251,6 @@ export default function App() {
   };
 
   // --- Route Helper Components ---
-  // (中身は変更なしだが、App全体のレンダリングに関わるため省略せず記述)
   const CourseRoute = () => {
     const { courseId } = useParams();
     const course = courses.find(c => c.id === courseId);
@@ -263,7 +275,7 @@ export default function App() {
       </>
     );
   };
-  // (以下、他のRouteコンポーネントは変更なしなのでそのまま)
+
   const QuizMenuRoute = () => {
     const { courseId, quizId } = useParams();
     const course = courses.find(c => c.id === courseId);
@@ -328,12 +340,15 @@ export default function App() {
     return <QuizEditor quiz={newQuiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}`)} />;
   };
 
+  // ★ 変更: ロード中は専用画面を返す
+  if (isInitialLoading) {
+    return <LoadingScreen />;
+  }
+
   return (
-    // ★ 背景に少しグラデーションを追加してリッチに
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
       <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 pointer-events-none -z-10"></div>
       
-      {/* ★ Header: glassクラスを適用し、タイトルをグラデーション化 */}
       <header className="sticky top-0 z-50 glass shadow-sm transition-all">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => navigate('/')}>
@@ -341,7 +356,6 @@ export default function App() {
               <BookOpen size={24} />
             </div>
             <div className="flex flex-col">
-              {/* ★ text-gradient 適用 */}
               <h1 className="text-xl font-black tracking-tight text-gradient leading-none">Study Master</h1>
               <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
                 {currentTitle}

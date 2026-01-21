@@ -26,7 +26,6 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
     setError(null);
 
     try {
-      // API呼び出し
       const generatedData = await generateQuizWithAI(text, count, keyToUse);
       
       const newQuiz = {
@@ -41,7 +40,6 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
       onSave(newQuiz);
       onClose();
     } catch (err) {
-      // エラーメッセージを見やすく表示
       console.error(err);
       setError(err.message || "予期せぬエラーが発生しました。");
     } finally {
@@ -50,12 +48,14 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
   };
 
   return (
-    // ★ 修正ポイント: z-50 を z-[100] に変更して、ヘッダーより手前に表示させる
-    // top-0 left-0 も明示的に指定して隙間をなくす
+    // ★ 修正: アニメーションクラス(animate-fade-in)を削除し、確実に画面を覆う
+    // style={{ margin: 0, top: 0 }} で強制的にリセット
     <div 
-      className="fixed top-0 left-0 right-0 bottom-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fade-in" 
+      className="fixed top-0 left-0 w-full h-full bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] m-0 p-4" 
+      style={{ margin: 0, top: 0 }}
       onClick={onClose}
     >
+      {/* カード部分にだけアニメーション(animate-pop-in)を適用 */}
       <div 
         className="glass w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-pop-in border border-white/20"
         onClick={e => e.stopPropagation()}
@@ -75,7 +75,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
           </button>
         </div>
 
-        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto"> {/* 画面が小さい時用にスクロール追加 */}
+        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {!hasEnvKey && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800 text-xs text-yellow-800 dark:text-yellow-200 mb-4">
               <AlertCircle size={14} className="inline mr-1" />
