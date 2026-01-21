@@ -1,6 +1,17 @@
 // src/data/changelog.js
 
 export const CHANGELOG_DATA = [
+  {
+    version: '2.12.0',
+    date: '2026-01-21',
+    title: '共有機能実装とナビゲーション刷新',
+    details: [
+      '共有機能の実装: コースに「公開」「限定公開」を設定し、リンクで友達に共有可能に ',
+      'ナビゲーション刷新: React Router導入により、URLでの画面遷移と「戻る」操作に対応 ',
+      '安定性向上: Context APIによるデータ管理の最適化とError Boundaryによるクラッシュ防止',
+      'テスト基盤: Vitestによる自動テスト環境の構築'
+    ]
+  },
     {
     version: "v2.11.0",
     title: "🚀 クラウド同期・完全実装！",

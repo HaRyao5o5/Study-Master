@@ -118,3 +118,41 @@ export const saveToCloud = async (uid, allData) => {
     throw error;
   }
 };
+
+// src/utils/cloudSync.js の末尾に追加
+
+// ★ 公開コースを取得する関数
+export const fetchPublicCourse = async (targetUid, courseId) => {
+  try {
+    // 1. コース情報の取得
+    const courseRef = doc(db, "users", targetUid, "courses", courseId);
+    const courseSnap = await getDoc(courseRef);
+
+    if (!courseSnap.exists()) {
+      throw new Error("指定されたコースが見つかりません。削除された可能性があります。");
+    }
+
+    const courseData = courseSnap.data();
+
+    // 2. アクセス権限のチェック
+    // 'private' ならエラーにする（Firestoreのルールでも弾くべきだが、念のため）
+    if (courseData.visibility === 'private') {
+      throw new Error("このコースは非公開に設定されています。");
+    }
+
+    // 3. クイズ（サブコレクション）の取得
+    const quizzesRef = collection(db, "users", targetUid, "courses", courseId, "quizzes");
+    const quizzesSnap = await getDocs(quizzesRef);
+    const quizzes = [];
+    quizzesSnap.forEach(doc => {
+      quizzes.push(doc.data());
+    });
+
+    // コース情報とクイズを合体させて返す
+    return { ...courseData, quizzes };
+
+  } catch (error) {
+    console.error("Error fetching public course:", error);
+    throw error;
+  }
+};
