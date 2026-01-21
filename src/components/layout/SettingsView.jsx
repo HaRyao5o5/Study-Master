@@ -162,20 +162,22 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
               onChange={handleFileChange} 
             />
 
-            <button 
-              onClick={onResetStats}
-              className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl border border-white/20 dark:border-gray-700 transition-all group mt-4"
-            >
-              <div className="flex items-center">
-                <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg mr-3 group-hover:rotate-12 transition-transform">
-                  <Trash2 size={20} />
+            {import.meta.env.DEV && (
+              <button 
+                onClick={onResetStats}
+                className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl border border-white/20 dark:border-gray-700 transition-all group mt-4"
+              >
+                <div className="flex items-center">
+                  <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg mr-3 group-hover:rotate-12 transition-transform">
+                    <Trash2 size={20} />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-red-600 dark:text-red-400">学習データをリセット</div>
+                    <div className="text-xs text-red-400 dark:text-red-500/70">レベルや経験値を初期化 (注意)</div>
+                  </div>
                 </div>
-                <div className="text-left">
-                  <div className="font-bold text-red-600 dark:text-red-400">学習データをリセット</div>
-                  <div className="text-xs text-red-400 dark:text-red-500/70">レベルや経験値を初期化 (注意)</div>
-                </div>
-              </div>
-            </button>
+              </button>
+            )}
           </div>
         </section>
 
