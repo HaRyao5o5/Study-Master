@@ -2,6 +2,16 @@
 
 export const CHANGELOG_DATA = [
   {
+    version: '2.14.0',
+    date: '2026-01-22',
+    title: '魔法の杖：AIクイズ生成機能',
+    details: [
+      '新機能: Gemini APIを使用して、テキストやトピックから自動で4択クイズを生成する「AI作成」機能を追加',
+      'UI改善: 生成モーダルのデザインと表示レイヤー(z-index)を調整し、操作性を向上',
+      'システム: APIキーのセキュリティ管理とエラーハンドリングを強化'
+    ]
+  },
+  {
     version: '2.13.0',
     date: '2026-01-21',
     title: 'UI全面刷新：Project Glass',

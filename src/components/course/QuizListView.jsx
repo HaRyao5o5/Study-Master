@@ -1,11 +1,13 @@
 // src/components/course/QuizListView.jsx
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Settings, Share2, Upload } from 'lucide-react';
+import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Share2, Upload, Sparkles } from 'lucide-react';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
+import GenerateQuizModal from './GenerateQuizModal';
 
 const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
   const [showMockSettings, setShowMockSettings] = useState(false);
   const [mockQuestionCount, setMockQuestionCount] = useState(10);
+  const [showAiModal, setShowAiModal] = useState(false); // AIモーダル表示用
   const fileInputRef = useRef(null);
 
   const allQuestions = useMemo(() => {
@@ -65,12 +67,18 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
     e.target.value = '';
   };
 
+  // AI生成完了時の処理
+  const handleAiQuizGenerated = (newQuiz) => {
+    onImportQuiz(newQuiz);
+    alert(`AIがクイズ「${newQuiz.title}」を作成しました！`);
+  };
+
   const weaknessCount = allQuestions.filter(q => wrongHistory.includes(q.id)).length;
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 実力診断テスト - グラデーション＋ガラス */}
+        {/* 実力診断テスト */}
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group animate-pop-in hover:shadow-2xl transition-all duration-300">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
             <Target size={100} />
@@ -111,7 +119,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
                   if (allQuestions.length < 10) setMockQuestionCount(allQuestions.length);
                   setShowMockSettings(true);
               }}
-              // ★ glassクラスをボタンに適用
               className="w-full glass hover:bg-white/20 text-white font-bold py-2 rounded-lg transition-colors flex items-center justify-center active:scale-95 border-white/30"
               disabled={allQuestions.length === 0}
             >
@@ -152,6 +159,14 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
             </button>
             <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
 
+            {/* AI作成ボタン */}
+            <button 
+              onClick={() => setShowAiModal(true)}
+              className="glass glass-hover text-sm text-purple-600 dark:text-purple-400 px-3 py-1.5 rounded-lg font-bold flex items-center active:scale-95"
+            >
+              <Sparkles size={16} className="mr-1" /> AI作成
+            </button>
+
             <button 
               onClick={onCreateQuiz}
               className="glass glass-hover text-sm text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold flex items-center active:scale-95"
@@ -172,7 +187,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
             course.quizzes.map((quiz, index) => (
               <div 
                 key={quiz.id} 
-                // ★ ここで glass と glass-hover を適用。透過背景になる
                 className="glass glass-hover p-4 rounded-xl shadow-sm hover:shadow-md flex justify-between items-center group cursor-pointer opacity-0 animate-slide-up active:scale-[0.99]"
                 style={{ animationDelay: `${300 + (index * 75)}ms` }}
                 onClick={() => onSelectQuiz(quiz)}
@@ -213,6 +227,14 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
           )}
         </div>
       </div>
+
+      {/* AIモーダル */}
+      {showAiModal && (
+        <GenerateQuizModal 
+          onClose={() => setShowAiModal(false)} 
+          onSave={handleAiQuizGenerated} 
+        />
+      )}
     </div>
   );
 };
