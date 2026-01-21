@@ -29,6 +29,157 @@ import SharedCourseView from './components/course/SharedCourseView';
 // Context
 import { useApp } from './context/AppContext';
 
+// --- ルート用コンポーネント (Appの外に出して安定化させる) ---
+
+const CoursePage = ({ wrongHistory, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
+  const { courseId } = useParams();
+  const { courses } = useApp();
+  const navigate = useNavigate();
+  const course = courses.find(c => c.id === courseId);
+  
+  if (!course) return <div className="p-8 text-center">コースが見つかりません</div>;
+
+  return (
+    <>
+      <div className="mb-6 animate-slide-up">
+        <Breadcrumbs path={[{ title: course.title, id: course.id, type: 'course' }]} onNavigate={() => navigate('/')} />
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mt-4">{course.title}</h2>
+        <p className="text-gray-500 dark:text-gray-400">{course.description}</p>
+      </div>
+      <QuizListView 
+        course={course} 
+        onSelectQuiz={(q) => navigate(`/course/${course.id}/quiz/${q.id}`)} 
+        wrongHistory={wrongHistory} 
+        onSelectReview={() => navigate(`/course/${course.id}/quiz/review-mode`)}
+        onCreateQuiz={() => onCreateQuiz(course.id)}
+        onDeleteQuiz={(qid) => onDeleteQuiz(qid, course.id)}
+        onImportQuiz={(q) => onImportQuiz(q, course.id)}
+      />
+    </>
+  );
+};
+
+const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
+  const { courseId, quizId } = useParams();
+  const { courses } = useApp();
+  const navigate = useNavigate();
+  const course = courses.find(c => c.id === courseId);
+
+  if (!course) return <div>コースが見つかりません</div>;
+  
+  let quiz;
+  if (quizId === 'review-mode') {
+    const wrongQuestions = [];
+    courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
+      if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
+    })));
+    quiz = { id: 'review-mode', title: '弱点克服（復習）', description: '間違えた問題のみ出題されます', questions: wrongQuestions };
+  } else {
+    quiz = course.quizzes.find(q => q.id === quizId);
+  }
+
+  if (!quiz) return <div>問題セットが見つかりません</div>;
+
+  const path = [
+    { title: course.title, id: course.id, type: 'course' },
+    { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
+  ];
+
+  return (
+    <>
+      <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
+      <QuizMenuView 
+        quiz={quiz} 
+        onStart={(rand, shuf, imm) => onStart(courseId, quizId, rand, shuf, imm)} 
+        isReviewMode={quizId === 'review-mode'} 
+        onClearHistory={onClearHistory} 
+        onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} 
+      />
+    </>
+  );
+};
+
+const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
+  const { courseId, quizId } = useParams();
+  const { courses } = useApp();
+  const course = courses.find(c => c.id === courseId);
+  
+  let quiz;
+  if (quizId === 'review-mode') {
+    const wrongQuestions = [];
+    courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
+      if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
+    })));
+    quiz = { id: 'review-mode', title: '弱点克服', questions: wrongQuestions };
+  } else {
+    quiz = course?.quizzes.find(q => q.id === quizId);
+  }
+
+  if (!quiz) return <Navigate to="/" />;
+
+  return (
+    <GameView 
+      quiz={quiz} 
+      isRandom={gameSettings.randomize} 
+      shuffleOptions={gameSettings.shuffleOptions} 
+      immediateFeedback={gameSettings.immediateFeedback} 
+      onFinish={(ans, time) => onFinish(ans, time, courseId, quizId)} 
+    />
+  );
+};
+
+const ResultPage = ({ resultData, gameSettings, onRetry }) => {
+  const { courseId, quizId } = useParams();
+  const navigate = useNavigate();
+
+  // resultDataがない場合（直接URLアクセスなど）はメニューに戻す
+  if (!resultData) return <Navigate to={`/course/${courseId}`} />;
+
+  return (
+    <ResultView 
+      resultData={resultData} 
+      onRetry={() => onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} 
+      onBackToMenu={() => navigate(`/course/${courseId}`)} 
+    />
+  );
+};
+
+const EditQuizPage = ({ onSave }) => {
+  const { courseId, quizId } = useParams();
+  const { courses } = useApp();
+  const navigate = useNavigate();
+  const course = courses.find(c => c.id === courseId);
+  const quiz = course?.quizzes.find(q => q.id === quizId);
+
+  if (!course || !quiz) return <Navigate to="/" />;
+
+  return (
+    <QuizEditor 
+      quiz={quiz} 
+      onSave={(updated) => onSave(updated, courseId)} 
+      onCancel={() => navigate(`/course/${courseId}/quiz/${quizId}`)} 
+    />
+  );
+};
+
+const CreateQuizPage = ({ onSave }) => {
+  const { courseId } = useParams();
+  const navigate = useNavigate();
+  // 新規IDをここで生成せず、Editor内で管理してもいいが、初期値として渡す
+  const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
+
+  return (
+    <QuizEditor 
+      quiz={newQuiz} 
+      onSave={(updated) => onSave(updated, courseId)} 
+      onCancel={() => navigate(`/course/${courseId}`)} 
+    />
+  );
+};
+
+
+// --- メイン App コンポーネント ---
+
 export default function App() {
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
@@ -179,7 +330,7 @@ export default function App() {
   const finishQuiz = (answers, totalTime, courseId, quizId) => {
     const xpGained = calculateXpGain({ answers, totalTime });
     
-    const today = new Date().toDateString(); 
+    const today = new Date().toDateString();
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
 
@@ -191,7 +342,7 @@ export default function App() {
         const current = new Date(today);
         
         const diffTime = Math.abs(current - last);
-        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
         
         if (diffDays === 1) {
             newStreak += 1;
@@ -253,7 +404,6 @@ export default function App() {
     }
   };
 
-  // ★ 追加: 昨日ログインしたことにするデバッグ機能
   const handleDebugYesterday = () => {
     if(confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
        const yesterday = new Date();
@@ -266,96 +416,6 @@ export default function App() {
        }));
        alert("最終ログイン日を昨日に変更しました！\nクイズをクリアして連続記録を確認してください。");
     }
-  };
-
-  // --- Route Helper Components ---
-  const CourseRoute = () => {
-    const { courseId } = useParams();
-    const course = courses.find(c => c.id === courseId);
-    if (!course) return <div className="p-8 text-center">コースが見つかりません</div>;
-
-    return (
-      <>
-        <div className="mb-6 animate-slide-up">
-          <Breadcrumbs path={[{ title: course.title, id: course.id, type: 'course' }]} onNavigate={() => navigate('/')} />
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white mt-4">{course.title}</h2>
-          <p className="text-gray-500 dark:text-gray-400">{course.description}</p>
-        </div>
-        <QuizListView 
-          course={course} 
-          onSelectQuiz={(q) => navigate(`/course/${course.id}/quiz/${q.id}`)} 
-          wrongHistory={wrongHistory} 
-          onSelectReview={() => navigate(`/course/${course.id}/quiz/review-mode`)}
-          onCreateQuiz={() => handleCreateQuiz(course.id)}
-          onDeleteQuiz={(qid) => handleDeleteQuiz(qid, course.id)}
-          onImportQuiz={(q) => handleImportQuiz(q, course.id)}
-        />
-      </>
-    );
-  };
-
-  const QuizMenuRoute = () => {
-    const { courseId, quizId } = useParams();
-    const course = courses.find(c => c.id === courseId);
-    if (!course) return <div>コースが見つかりません</div>;
-    let quiz;
-    if (quizId === 'review-mode') {
-      const wrongQuestions = [];
-      courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-        if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
-      })));
-      quiz = { id: 'review-mode', title: '弱点克服（復習）', description: '間違えた問題のみ出題されます', questions: wrongQuestions };
-    } else {
-      quiz = course.quizzes.find(q => q.id === quizId);
-    }
-    if (!quiz) return <div>問題セットが見つかりません</div>;
-    const path = [
-      { title: course.title, id: course.id, type: 'course' },
-      { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
-    ];
-    return (
-      <>
-        <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
-        <QuizMenuView quiz={quiz} onStart={(rand, shuf, imm) => startQuiz(courseId, quizId, rand, shuf, imm)} isReviewMode={quizId === 'review-mode'} onClearHistory={clearHistory} onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} />
-      </>
-    );
-  };
-
-  const GameRoute = () => {
-    const { courseId, quizId } = useParams();
-    const course = courses.find(c => c.id === courseId);
-    let quiz;
-    if (quizId === 'review-mode') {
-      const wrongQuestions = [];
-      courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-        if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
-      })));
-      quiz = { id: 'review-mode', title: '弱点克服', questions: wrongQuestions };
-    } else {
-      quiz = course?.quizzes.find(q => q.id === quizId);
-    }
-    if (!quiz) return <Navigate to="/" />;
-    return <GameView quiz={quiz} isRandom={gameSettings.randomize} shuffleOptions={gameSettings.shuffleOptions} immediateFeedback={gameSettings.immediateFeedback} onFinish={(ans, time) => finishQuiz(ans, time, courseId, quizId)} />;
-  };
-
-  const ResultRoute = () => {
-    const { courseId, quizId } = useParams();
-    if (!resultData) return <Navigate to={`/course/${courseId}`} />;
-    return <ResultView resultData={resultData} onRetry={() => startQuiz(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} onBackToMenu={() => navigate(`/course/${courseId}`)} />;
-  };
-
-  const EditQuizRoute = () => {
-    const { courseId, quizId } = useParams();
-    const course = courses.find(c => c.id === courseId);
-    const quiz = course?.quizzes.find(q => q.id === quizId);
-    if (!course || !quiz) return <Navigate to="/" />;
-    return <QuizEditor quiz={quiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}/quiz/${quizId}`)} />;
-  };
-
-  const CreateQuizRoute = () => {
-    const { courseId } = useParams();
-    const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
-    return <QuizEditor quiz={newQuiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}`)} />;
   };
 
   if (isInitialLoading) {
@@ -444,19 +504,51 @@ export default function App() {
             
             <Route path="/create-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleCreateCourse} />} />
             <Route path="/edit-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleUpdateCourse} initialData={courseToEdit} />} />
-            
-            {/* ★ 修正: onDebugYesterday を渡す */}
             <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} onDebugYesterday={handleDebugYesterday} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
-            
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
             
-            <Route path="/course/:courseId" element={<CourseRoute />} />
-            <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuRoute />} />
-            <Route path="/course/:courseId/quiz/:quizId/play" element={<GameRoute />} />
-            <Route path="/course/:courseId/quiz/:quizId/result" element={<ResultRoute />} />
-            <Route path="/course/:courseId/quiz/:quizId/edit" element={<EditQuizRoute />} />
-            <Route path="/course/:courseId/create-quiz" element={<CreateQuizRoute />} />
+            {/* ★ 変更点: 各ページコンポーネントを Route の element として直接配置 */}
+            <Route path="/course/:courseId" element={
+              <CoursePage 
+                wrongHistory={wrongHistory} 
+                onCreateQuiz={handleCreateQuiz} 
+                onDeleteQuiz={handleDeleteQuiz} 
+                onImportQuiz={handleImportQuiz}
+              />
+            } />
+            
+            <Route path="/course/:courseId/quiz/:quizId" element={
+              <QuizMenuPage 
+                wrongHistory={wrongHistory} 
+                onStart={startQuiz} 
+                onClearHistory={clearHistory} 
+              />
+            } />
+            
+            <Route path="/course/:courseId/quiz/:quizId/play" element={
+              <GamePage 
+                gameSettings={gameSettings} 
+                wrongHistory={wrongHistory} 
+                onFinish={finishQuiz} 
+              />
+            } />
+            
+            <Route path="/course/:courseId/quiz/:quizId/result" element={
+              <ResultPage 
+                resultData={resultData} 
+                gameSettings={gameSettings} 
+                onRetry={startQuiz} 
+              />
+            } />
+            
+            <Route path="/course/:courseId/quiz/:quizId/edit" element={
+              <EditQuizPage onSave={handleSaveQuiz} />
+            } />
+            
+            <Route path="/course/:courseId/create-quiz" element={
+              <CreateQuizPage onSave={handleSaveQuiz} />
+            } />
 
             <Route path="*" element={<div className="text-center p-10">ページが見つかりません (404)</div>} />
           </Routes>
