@@ -1,9 +1,10 @@
 // src/components/layout/SettingsView.jsx
 import React, { useRef } from 'react';
-import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Shield, Github } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Github } from 'lucide-react'; // Githubアイコンも追加（一般的によくあるので）
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
 
+// ★ 修正1: "Creator Edition Pro" を削除し、シンプルに
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
 const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, user, onLogin, onLogout }) => {
@@ -14,177 +15,160 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
   };
 
   const handleFileChange = (e) => {
-    if (!e.target.files.length) return;
     importFromFile(e.target.files[0], 'backup', (data) => {
       onImportData(data);
     });
     e.target.value = '';
   };
 
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in pb-20">
-      {/* ヘッダー部分 */}
-      <div className="flex items-center mb-8 pt-4">
-        <button 
-          onClick={onBack} 
-          className="p-3 mr-4 rounded-full glass hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all hover:-translate-x-1 group"
-        >
-          <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300 group-hover:text-blue-500" />
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto animate-fade-in mb-20">
+      <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex items-center">
+        <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <ArrowLeft size={24} />
         </button>
-        <div>
-          <h2 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">Settings</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-bold">アプリの設定とデータ管理</p>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
       </div>
 
-      <div className="space-y-6">
+      <div className="p-6 space-y-8">
         
-        {/* 1. アカウント設定 (一番上に配置) */}
-        <section className="glass p-6 rounded-3xl border-white/40 dark:border-gray-700/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-            <User size={120} />
-          </div>
-          
-          <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-            <Cloud size={20} className="mr-2 text-blue-500" /> Cloud Sync
+        {/* クラウド同期 / アカウント設定 */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
+            <Cloud size={20} className="mr-2 text-blue-500" /> クラウド同期
           </h3>
-
-          <div className="relative z-10">
+          
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
             {user ? (
-              <div className="flex items-center justify-between bg-white/50 dark:bg-gray-800/50 p-4 rounded-2xl border border-white/20 dark:border-gray-700">
-                <div className="flex items-center space-x-4">
+              // ログイン済みの場合
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-full border-2 border-blue-500" />
+                    <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-600 mr-3" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 font-bold text-xl">
-                      {user.displayName?.[0] || 'U'}
+                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-3">
+                      <User size={20} className="text-blue-500" />
                     </div>
                   )}
                   <div>
-                    <p className="font-bold text-gray-800 dark:text-white text-lg">{user.displayName || 'Guest User'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{user.email}</p>
+                    <p className="text-sm font-bold text-gray-800 dark:text-white">{user.displayName || 'ユーザー'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                    <p className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1 flex items-center">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                      同期有効
+                    </p>
                   </div>
                 </div>
                 <button 
                   onClick={onLogout}
-                  className="px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-xl font-bold text-sm transition-colors flex items-center"
+                  className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
                 >
-                  <LogOut size={16} className="mr-2" />
-                  Sign Out
+                  <LogOut size={16} className="mr-2" /> ログアウト
                 </button>
               </div>
             ) : (
-              <div className="text-center py-6">
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  ログインすると、学習データをクラウドに保存し、<br/>複数のデバイスで同期できます。
-                </p>
+              // 未ログインの場合
+              <div className="text-center sm:text-left sm:flex items-center justify-between gap-4">
+                <div className="mb-4 sm:mb-0">
+                  <p className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">データをクラウドに保存</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    ログインすると、学習データを安全にバックアップし、複数端末で同期できます。
+                  </p>
+                </div>
                 <button 
                   onClick={onLogin}
-                  className="px-8 py-3 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-full font-bold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center mx-auto border border-gray-100 dark:border-gray-600"
+                  className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-lg shadow-sm border border-gray-300 transition-all flex items-center justify-center"
                 >
-                  <img src="https://www.google.com/favicon.ico" alt="G" className="w-5 h-5 mr-3" />
-                  Sign in with Google
+                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" className="w-5 h-5 mr-3" />
+                  Googleでログイン
                 </button>
               </div>
             )}
           </div>
-        </section>
+        </div>
 
-        {/* 2. テーマ設定 */}
-        <section className="glass p-6 rounded-3xl border-white/40 dark:border-gray-700/50">
-          <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-            <Monitor size={20} className="mr-2 text-purple-500" /> Appearance
+        {/* テーマ設定 */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
+             <Monitor size={20} className="mr-2 text-purple-500" /> 外観設定
           </h3>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { id: 'light', icon: Sun, label: 'Light' },
-              { id: 'dark', icon: Moon, label: 'Dark' },
-              { id: 'system', icon: Monitor, label: 'System' },
-            ].map((option) => (
+              { id: 'light', label: 'ライト', icon: Sun },
+              { id: 'dark', label: 'ダーク', icon: Moon },
+              { id: 'system', label: 'システム', icon: Monitor }
+            ].map((mode) => (
               <button
-                key={option.id}
-                onClick={() => changeTheme(option.id)}
-                className={`
-                  flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200
-                  ${theme === option.id 
-                    ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 text-blue-600 dark:text-blue-400' 
-                    : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-500 hover:text-gray-700 dark:text-gray-400'
-                  }
-                `}
+                key={mode.id}
+                onClick={() => changeTheme(mode.id)}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all ${
+                  theme === mode.id 
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
+                    : 'border-transparent bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'
+                }`}
               >
-                <option.icon size={24} className="mb-2" />
-                <span className="text-xs font-bold">{option.label}</span>
+                <mode.icon size={24} className="mb-2" />
+                <span className="text-xs font-bold">{mode.label}</span>
               </button>
             ))}
           </div>
-        </section>
+        </div>
 
-        {/* 3. データ管理 */}
-        <section className="glass p-6 rounded-3xl border-white/40 dark:border-gray-700/50">
-          <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-            <Database size={20} className="mr-2 text-green-500" /> Data Management
+        {/* データ管理 */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
+            <Database size={20} className="mr-2 text-green-500" /> データ管理
           </h3>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button 
               onClick={handleExport}
-              className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-white/20 dark:border-gray-700 transition-all group"
+              className="flex items-center justify-center p-4 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-all font-bold text-gray-600 dark:text-gray-300 group"
             >
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg mr-3 group-hover:scale-110 transition-transform">
-                  <Download size={20} />
-                </div>
-                <div className="text-left">
-                  <div className="font-bold text-gray-800 dark:text-white">バックアップを保存</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">学習データをファイルとしてダウンロード</div>
-                </div>
-              </div>
+              <Download size={20} className="mr-2 group-hover:-translate-y-1 transition-transform" />
+              バックアップを保存
             </button>
-
             <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 rounded-xl border border-white/20 dark:border-gray-700 transition-all group"
+              onClick={handleImportClick}
+              className="flex items-center justify-center p-4 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-green-500 hover:text-green-600 dark:hover:border-green-400 dark:hover:text-green-400 transition-all font-bold text-gray-600 dark:text-gray-300 group"
             >
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg mr-3 group-hover:scale-110 transition-transform">
-                  <Upload size={20} />
-                </div>
-                <div className="text-left">
-                  <div className="font-bold text-gray-800 dark:text-white">バックアップを復元</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">保存したファイルからデータを読み込み</div>
-                </div>
-              </div>
+              <Upload size={20} className="mr-2 group-hover:-translate-y-1 transition-transform" />
+              データを復元
             </button>
             <input 
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
               accept=".json" 
-              onChange={handleFileChange} 
+              onChange={handleFileChange}
             />
-
-            {import.meta.env.DEV && (
-              <button 
-                onClick={onResetStats}
-                className="w-full flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl border border-white/20 dark:border-gray-700 transition-all group mt-4"
-              >
-                <div className="flex items-center">
-                  <div className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg mr-3 group-hover:rotate-12 transition-transform">
-                    <Trash2 size={20} />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-red-600 dark:text-red-400">学習データをリセット</div>
-                    <div className="text-xs text-red-400 dark:text-red-500/70">レベルや経験値を初期化 (注意)</div>
-                  </div>
-                </div>
-              </button>
-            )}
           </div>
-        </section>
 
-        <div className="text-center pt-8 text-gray-400 dark:text-gray-600 text-xs font-mono">
-          <p>{APP_VERSION}</p>
-          <p className="mt-2 flex justify-center items-center gap-2">
-            Made with <span className="animate-pulse">❤️</span> by Gemini & You
+          {/* デバッグ用エリア (開発環境のみ表示) */}
+          {import.meta.env.DEV && (
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+               <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Developer Zone</h4>
+               <button 
+                onClick={onResetStats}
+                className="w-full flex items-center justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+              >
+                <Trash2 size={18} className="mr-2" />
+                ステータス初期化 (Dev Only)
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ★ 修正2: フッターを一般向けにシンプル化 */}
+        <div className="text-center pt-8 pb-4">
+          <p className="text-sm font-mono text-gray-400 dark:text-gray-500">
+            {APP_VERSION}
+          </p>
+          <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">
+            © 2026 Study Master Project
           </p>
         </div>
       </div>
