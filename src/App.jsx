@@ -23,14 +23,12 @@ import ResultView from './components/game/ResultView';
 import SettingsView from './components/layout/SettingsView';
 import ChangelogModal from './components/layout/ChangelogModal';
 import StatsView from './components/layout/StatsView';
-// ★ 追加: 共有されたコースを表示するビュー
 import SharedCourseView from './components/course/SharedCourseView';
 
 // Context
 import { useApp } from './context/AppContext';
 
 export default function App() {
-  // --- State & Context ---
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -56,7 +54,6 @@ export default function App() {
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
-  // --- Theme Effect ---
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
     const root = document.documentElement;
@@ -79,7 +76,6 @@ export default function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
-  // --- Auth Handlers ---
   const handleLogin = async () => {
     try { await signInWithPopup(auth, googleProvider); } 
     catch (error) { console.error("Login failed:", error); alert("ログインに失敗しました。"); }
@@ -90,15 +86,12 @@ export default function App() {
     catch (error) { console.error("Logout failed:", error); }
   };
 
-  // --- Action Handlers ---
-
-  // ★ 修正: visibility 引数を追加して保存
   const handleCreateCourse = (title, desc, visibility) => {
     const newCourse = { 
       id: `course-${generateId()}`, 
       title, 
       description: desc, 
-      visibility: visibility || 'private', // 公開設定を保存
+      visibility: visibility || 'private',
       quizzes: [] 
     };
     setCourses([...courses, newCourse]);
@@ -110,7 +103,6 @@ export default function App() {
     navigate('/edit-course');
   };
 
-  // ★ 修正: visibility 引数を追加して保存
   const handleUpdateCourse = (title, desc, visibility) => {
     const updatedCourses = courses.map(c => 
       c.id === courseToEdit.id 
@@ -246,7 +238,7 @@ export default function App() {
   };
 
   // --- Route Helper Components ---
-
+  // (中身は変更なしだが、App全体のレンダリングに関わるため省略せず記述)
   const CourseRoute = () => {
     const { courseId } = useParams();
     const course = courses.find(c => c.id === courseId);
@@ -271,12 +263,11 @@ export default function App() {
       </>
     );
   };
-
+  // (以下、他のRouteコンポーネントは変更なしなのでそのまま)
   const QuizMenuRoute = () => {
     const { courseId, quizId } = useParams();
     const course = courses.find(c => c.id === courseId);
     if (!course) return <div>コースが見つかりません</div>;
-
     let quiz;
     if (quizId === 'review-mode') {
       const wrongQuestions = [];
@@ -287,30 +278,15 @@ export default function App() {
     } else {
       quiz = course.quizzes.find(q => q.id === quizId);
     }
-    
     if (!quiz) return <div>問題セットが見つかりません</div>;
-
     const path = [
       { title: course.title, id: course.id, type: 'course' },
       { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
     ];
-
     return (
       <>
-        <Breadcrumbs 
-          path={path} 
-          onNavigate={(type, id) => {
-            if(type === 'home') navigate('/');
-            if(type === 'course') navigate(`/course/${courseId}`);
-          }} 
-        />
-        <QuizMenuView 
-          quiz={quiz} 
-          onStart={(rand, shuf, imm) => startQuiz(courseId, quizId, rand, shuf, imm)} 
-          isReviewMode={quizId === 'review-mode'} 
-          onClearHistory={clearHistory} 
-          onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} 
-        />
+        <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
+        <QuizMenuView quiz={quiz} onStart={(rand, shuf, imm) => startQuiz(courseId, quizId, rand, shuf, imm)} isReviewMode={quizId === 'review-mode'} onClearHistory={clearHistory} onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} />
       </>
     );
   };
@@ -328,30 +304,14 @@ export default function App() {
     } else {
       quiz = course?.quizzes.find(q => q.id === quizId);
     }
-
     if (!quiz) return <Navigate to="/" />;
-
-    return (
-      <GameView 
-        quiz={quiz} 
-        isRandom={gameSettings.randomize} 
-        shuffleOptions={gameSettings.shuffleOptions} 
-        immediateFeedback={gameSettings.immediateFeedback}
-        onFinish={(ans, time) => finishQuiz(ans, time, courseId, quizId)} 
-      />
-    );
+    return <GameView quiz={quiz} isRandom={gameSettings.randomize} shuffleOptions={gameSettings.shuffleOptions} immediateFeedback={gameSettings.immediateFeedback} onFinish={(ans, time) => finishQuiz(ans, time, courseId, quizId)} />;
   };
 
   const ResultRoute = () => {
     const { courseId, quizId } = useParams();
     if (!resultData) return <Navigate to={`/course/${courseId}`} />;
-    return (
-      <ResultView 
-        resultData={resultData} 
-        onRetry={() => startQuiz(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} 
-        onBackToMenu={() => navigate(`/course/${courseId}`)} 
-      />
-    );
+    return <ResultView resultData={resultData} onRetry={() => startQuiz(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} onBackToMenu={() => navigate(`/course/${courseId}`)} />;
   };
 
   const EditQuizRoute = () => {
@@ -359,42 +319,31 @@ export default function App() {
     const course = courses.find(c => c.id === courseId);
     const quiz = course?.quizzes.find(q => q.id === quizId);
     if (!course || !quiz) return <Navigate to="/" />;
-
-    return (
-      <QuizEditor 
-        quiz={quiz} 
-        onSave={(updated) => handleSaveQuiz(updated, courseId)} 
-        onCancel={() => navigate(`/course/${courseId}/quiz/${quizId}`)} 
-      />
-    );
+    return <QuizEditor quiz={quiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}/quiz/${quizId}`)} />;
   };
 
   const CreateQuizRoute = () => {
     const { courseId } = useParams();
     const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
-    return (
-      <QuizEditor 
-        quiz={newQuiz} 
-        onSave={(updated) => handleSaveQuiz(updated, courseId)} 
-        onCancel={() => navigate(`/course/${courseId}`)} 
-      />
-    );
+    return <QuizEditor quiz={newQuiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}`)} />;
   };
 
-  // --- Main Render ---
-
   return (
-    <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-900 transition-colors duration-200`}>
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transition-colors">
+    // ★ 背景に少しグラデーションを追加してリッチに
+    <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
+      <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 pointer-events-none -z-10"></div>
+      
+      {/* ★ Header: glassクラスを適用し、タイトルをグラデーション化 */}
+      <header className="sticky top-0 z-50 glass shadow-sm transition-all">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white p-2 rounded-lg shadow-md transform transition-transform hover:scale-105">
+          <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => navigate('/')}>
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 dark:from-blue-500 dark:to-indigo-500 text-white p-2 rounded-lg shadow-md transform transition-transform group-hover:scale-105 group-hover:rotate-3">
               <BookOpen size={24} />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-xl font-black tracking-tight text-gray-900 dark:text-white leading-none">Study Master</h1>
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest truncate max-w-[120px]">
+              {/* ★ text-gradient 適用 */}
+              <h1 className="text-xl font-black tracking-tight text-gradient leading-none">Study Master</h1>
+              <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest truncate max-w-[120px]">
                 {currentTitle}
               </span>
             </div>
@@ -423,10 +372,10 @@ export default function App() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <button onClick={() => navigate('/stats')} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={() => navigate('/stats')} className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors">
                 <BarChart2 size={20} />
               </button>
-              <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors">
                 <Bell size={20} />
               </button>
               <button onClick={() => navigate('/settings')} className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
@@ -437,14 +386,13 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 pb-20">
+      {/* Main Content Area */}
+      <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
         <div className="animate-fade-in">
           <Routes>
-            {/* Home */}
             <Route path="/" element={
               <>
-                <div className="sm:hidden mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center animate-slide-up">
+                <div className="sm:hidden mb-6 glass p-4 rounded-xl shadow-sm flex justify-between items-center animate-slide-up">
                   <div className="flex items-center">
                     <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400"><Trophy size={20} /></div>
                     <div><div className="text-xs text-gray-500 dark:text-gray-400 font-bold">現在のレベル</div><div className="text-lg font-black text-gray-800 dark:text-white">Lv.{levelInfo.level}</div></div>
@@ -462,17 +410,13 @@ export default function App() {
                 />
               </>
             } />
-
-            {/* Modals & Special Pages */}
+            
             <Route path="/create-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleCreateCourse} />} />
             <Route path="/edit-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleUpdateCourse} initialData={courseToEdit} />} />
             <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
-
-            {/* ★ 追加: 共有されたコースの閲覧ページ */}
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
-
-            {/* Course & Quiz Routes */}
+            
             <Route path="/course/:courseId" element={<CourseRoute />} />
             <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuRoute />} />
             <Route path="/course/:courseId/quiz/:quizId/play" element={<GameRoute />} />

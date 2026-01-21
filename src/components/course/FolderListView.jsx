@@ -1,17 +1,17 @@
 // src/components/course/FolderListView.jsx
 import React, { useRef } from 'react';
-import { Folder, Plus, X, Edit3, Share2, Upload } from 'lucide-react';
-import { exportToFile, importFromFile } from '../../utils/fileIO';
-// Contextフック
+import { Folder, Plus, X, Edit3, Share2, Upload, MoreVertical } from 'lucide-react'; // MoreVertical追加
+import { importFromFile } from '../../utils/fileIO';
 import { useApp } from '../../context/AppContext';
 
 const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
-  // ★ user を取得して、ログインしているかチェックできるようにする
   const { courses, setCourses, user } = useApp();
-  
   const fileInputRef = useRef(null);
 
+  // ... (handleFileSelect, handleDelete, handleShare はそのまま) ...
   const handleFileSelect = (e) => {
+    // 中身は既存のまま
+    if (!e.target.files.length) return;
     importFromFile(e.target.files[0], 'course', (newCourseData) => {
       setCourses(prevCourses => [...prevCourses, newCourseData]);
       alert(`科目フォルダ「${newCourseData.title}」を追加しました！`);
@@ -25,22 +25,16 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
     }
   };
 
-  // ★ 追加: 共有リンク生成機能
   const handleShare = (course) => {
     if (!user) {
       alert("共有機能を使うにはログインが必要です。");
       return;
     }
-    // privateなら共有させない（Firestoreのルールでも弾かれるが、UIでも親切に教える）
     if (course.visibility === 'private') {
       alert("このコースは「非公開」です。共有するには編集から「公開」または「限定公開」に設定してください。");
       return;
     }
-
-    // 共有URL: https://.../share/{uid}/{courseId}
     const shareUrl = `${window.location.origin}/share/${user.uid}/${course.id}`;
-    
-    // クリップボードにコピー
     navigator.clipboard.writeText(shareUrl).then(() => {
       alert(`共有リンクをコピーしました！\n\n${shareUrl}\n\nこのURLを友達に教えてあげましょう。`);
     }).catch(err => {
@@ -48,100 +42,104 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
       alert('リンクのコピーに失敗しました。');
     });
   };
+  // ... (ここまで既存ロジック) ...
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> {/* gapを少し広げた */}
       {courses.map((course, index) => (
         <div 
           key={course.id} 
-          className="relative group animate-slide-up"
-          style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
+          onClick={() => onSelectCourse(course)}
+          className="group relative animate-slide-up cursor-pointer"
+          style={{ animationDelay: `${index * 100}ms` }}
         >
-          <div 
-            onClick={() => onSelectCourse(course)}
-            className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm hover:shadow-lg border border-gray-100 dark:border-gray-700 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-500 flex flex-col items-center justify-center min-h-[12rem] h-auto active:scale-95"
-          >
-            <div className="transform transition-transform duration-300 group-hover:scale-110">
-               {/* visibilityによってアイコンの色を変えるなどの工夫もアリだが今回はシンプルに */}
-               <Folder size={64} className="text-blue-200 dark:text-blue-900 group-hover:text-blue-400 dark:group-hover:text-blue-500 mb-4 transition-colors" />
-            </div>
-            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 text-center line-clamp-2 w-full break-words">
-              {course.title}
-            </h3>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center line-clamp-1">
-              {course.description || 'No description'}
-            </p>
+          {/* カード本体: ガラス効果とホバーアニメーション */}
+          <div className="h-full p-6 rounded-2xl border border-white/20 dark:border-gray-700 shadow-sm hover:shadow-xl dark:shadow-none bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800 relative overflow-hidden">
             
-            {/* 公開設定バッジを表示 */}
-            <div className="flex gap-2 mt-4">
-              <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full">
-                {course.quizzes.length} フォルダ
-              </span>
+            {/* 装飾: 背景の淡いグラデーション */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+
+            <div className="flex items-start justify-between mb-4">
+              {/* アイコン部分 */}
+              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                <Folder size={28} />
+              </div>
+              
+              {/* 公開設定バッジ (右上に移動) */}
               {course.visibility && course.visibility !== 'private' && (
-                <span className="text-xs bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-1 rounded-full border border-green-100 dark:border-green-800">
-                  {course.visibility === 'public' ? '公開' : '限定'}
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
+                  course.visibility === 'public' 
+                    ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
+                    : 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
+                }`}>
+                  {course.visibility === 'public' ? 'Public' : 'Link'}
                 </span>
               )}
             </div>
-          </div>
 
-          <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                // ★ 修正: ファイル書き出しではなく、共有リンク生成を呼び出す
-                handleShare(course);
-              }}
-              className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-gray-600 rounded-full transition-colors"
-              title="共有リンクをコピー"
-            >
-              <Share2 size={16} />
-            </button>
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              {course.title}
+            </h3>
+            
+            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 min-h-[2.5rem]">
+              {course.description || 'No description provided.'}
+            </p>
 
-            <button 
-              onClick={(e) => { e.stopPropagation(); onEditCourse(course); }}
-              className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-full transition-colors"
-              title="編集"
-            >
-              <Edit3 size={16} />
-            </button>
-
-            <button 
-              onClick={(e) => { 
-                e.stopPropagation(); 
-                handleDelete(course.id);
-              }}
-              className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-full transition-colors"
-              title="削除"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
+              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
+                {course.quizzes.length} sets inside
+              </span>
+              
+              {/* アクションボタン群 (常に表示だが控えめに、ホバーで強調) */}
+              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleShare(course); }}
+                  className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600 rounded-lg transition-colors"
+                  title="共有"
+                >
+                  <Share2 size={16} />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); onEditCourse(course); }}
+                  className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-gray-400 hover:text-blue-600 rounded-lg transition-colors"
+                  title="編集"
+                >
+                  <Edit3 size={16} />
+                </button>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDelete(course.id); }}
+                  className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 rounded-lg transition-colors"
+                  title="削除"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ))}
 
+      {/* 新規作成・インポートボタンエリア */}
       <div 
-        className="flex flex-col gap-2 min-h-[12rem] h-auto animate-slide-up"
-        style={{ animationDelay: `${courses.length * 100}ms`, animationFillMode: 'both' }}
+        className="flex flex-col gap-4 animate-slide-up"
+        style={{ animationDelay: `${courses.length * 50}ms` }}
       >
         <button 
           onClick={onCreateCourse}
-          className="flex-1 bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:-translate-y-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 group"
+          className="flex-1 min-h-[140px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
         >
-          <div className="mr-2">
-            <div className="transform transition-transform duration-300 group-hover:rotate-90">
-               <Plus size={24} />
-            </div>
+          <div className="p-4 rounded-full bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform mb-3">
+            <Plus size={24} />
           </div>
-          <span className="font-bold">新規作成</span>
+          <span className="font-bold text-sm">新しい科目を作成</span>
         </button>
 
         <button 
           onClick={() => fileInputRef.current?.click()}
-          className="h-12 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl flex items-center justify-center cursor-pointer hover:border-green-400 hover:text-green-600 dark:hover:text-green-400 transition-all active:scale-95 text-gray-400 font-bold text-sm"
+          className="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-sm"
         >
-          <Upload size={18} className="mr-2" />
-          <span>ファイルを読込</span>
+          <Upload size={18} />
+          <span>ファイルを読み込む</span>
         </button>
         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
       </div>

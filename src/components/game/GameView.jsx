@@ -1,268 +1,177 @@
 // src/components/game/GameView.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, ArrowRight, BookOpen } from 'lucide-react';
-import SimpleTable from '../common/SimpleTable'; // ← {} を外してデフォルトインポートに変更！
+import React, { useState, useMemo, useRef } from 'react';
+import { CheckCircle, XCircle, ChevronRight, HelpCircle } from 'lucide-react';
 
 const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish }) => {
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-  const [answers, setAnswers] = useState([]); 
-  const [startTime, setStartTime] = useState(null);
-  const [qStartTime, setQStartTime] = useState(null);
-  const [inputText, setInputText] = useState('');
-  const [selectedOptions, setSelectedOptions] = useState([]);
-  
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  // ★ データを確実に保持する金庫
+  const answersRef = useRef([]); 
+  const [startTime] = useState(Date.now());
+  const [selectedOption, setSelectedOption] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [currentResult, setCurrentResult] = useState(null);
+  const [isCorrect, setIsCorrect] = useState(false);
 
-  const questionOrder = useMemo(() => {
-    let order = [...quiz.questions];
-    if (isRandom) order = order.sort(() => Math.random() - 0.5);
+  const questions = useMemo(() => {
+    let q = [...quiz.questions];
+    if (isRandom) q.sort(() => Math.random() - 0.5);
+    return q;
+  }, [quiz, isRandom]);
 
-    if (shuffleOptions) {
-      order = order.map(q => {
-        if (q.type === 'input') return q; 
-        const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
-        return {
-          ...q,
-          options: shuffledOptions,
-        };
-      });
-    }
-    return order;
-  }, [quiz, isRandom, shuffleOptions]);
+  const currentQuestion = questions[currentQuestionIndex];
 
-  useEffect(() => {
-    setStartTime(Date.now());
-    setQStartTime(Date.now());
-  }, []);
+  const currentOptions = useMemo(() => {
+    let options = [...currentQuestion.options];
+    if (shuffleOptions) options.sort(() => Math.random() - 0.5);
+    return options;
+  }, [currentQuestion, shuffleOptions]);
 
-  useEffect(() => {
-    setQStartTime(Date.now());
-    setInputText('');
-    setSelectedOptions([]);
-    setShowFeedback(false);
-    setCurrentResult(null);
-  }, [currentQIndex]);
+  const handleAnswer = (option) => {
+    if (selectedOption) return;
 
-  const handleAnswer = (answerVal) => {
-    const now = Date.now();
-    const currentQ = questionOrder[currentQIndex];
-    let isCorrect = false;
-    let finalSelectedAnswer = answerVal;
+    // ★ 安全装置：前後の空白を削除して比較する
+    const cleanOption = String(option).trim();
+    const cleanCorrect = String(currentQuestion.correctAnswer).trim();
+    const correct = cleanOption === cleanCorrect;
 
-    if (currentQ.type === 'multiple') {
-      isCorrect = currentQ.correctAnswer.includes(answerVal);
-    } else if (currentQ.type === 'multi-select') {
-      const correctSet = new Set(currentQ.correctAnswer);
-      const selectedSet = new Set(answerVal);
-      if (correctSet.size === selectedSet.size) {
-        isCorrect = [...correctSet].every(val => selectedSet.has(val));
-      }
-      finalSelectedAnswer = answerVal;
-    } else {
-      isCorrect = currentQ.correctAnswer.some(ans => ans.trim() === answerVal.trim());
-    }
-    
+    setSelectedOption(option);
+    setIsCorrect(correct);
+
     const answerRecord = {
-      question: currentQ,
-      selectedAnswer: finalSelectedAnswer,
-      isCorrect: isCorrect,
-      timeTaken: now - qStartTime,
-      id: currentQ.id 
+      question: currentQuestion,
+      selectedAnswer: option,
+      isCorrect: correct,
+      timeTaken: 0 
     };
 
-    const newAnswers = [...answers, answerRecord];
-    setAnswers(newAnswers);
+    // 金庫に保存
+    answersRef.current = [...answersRef.current, answerRecord];
 
     if (immediateFeedback) {
-      setCurrentResult(answerRecord);
       setShowFeedback(true);
     } else {
-      if (currentQIndex < questionOrder.length - 1) {
-        setCurrentQIndex(prev => prev + 1);
-      } else {
-        const totalTime = now - startTime;
-        onFinish(newAnswers, totalTime);
-      }
+      setTimeout(() => nextQuestion(), 300);
     }
   };
 
-  const handleNextQuestion = () => {
-    if (currentQIndex < questionOrder.length - 1) {
-      setCurrentQIndex(prev => prev + 1);
+  const nextQuestion = () => {
+    setShowFeedback(false);
+    setSelectedOption(null);
+    
+    if (currentQuestionIndex + 1 < questions.length) {
+      setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      const totalTime = Date.now() - startTime;
-      onFinish(answers, totalTime);
+      const totalTime = (Date.now() - startTime) / 1000;
+      // 確実に最新のデータが入っている Ref を渡す
+      onFinish(answersRef.current, totalTime);
     }
-  };
-
-  const toggleMultiSelect = (option) => {
-    if (showFeedback) return;
-    if (selectedOptions.includes(option)) {
-      setSelectedOptions(selectedOptions.filter(o => o !== option));
-    } else {
-      setSelectedOptions([...selectedOptions, option]);
-    }
-  };
-
-  const currentQuestion = questionOrder[currentQIndex];
-  const progress = ((currentQIndex) / questionOrder.length) * 100;
-
-  const renderCorrectAnswer = (q) => {
-    if (q.type === 'multiple') return q.correctAnswer[0];
-    if (q.type === 'multi-select') return q.correctAnswer.join(', ');
-    if (q.type === 'input') return q.correctAnswer.join(' または ');
-    return '';
   };
 
   return (
-    <div className="max-w-2xl mx-auto pb-20">
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-1">
-          <span>Question {currentQIndex + 1} / {questionOrder.length}</span>
-          <span>{Math.round(progress)}%</span>
+    <div className="max-w-2xl mx-auto py-8 px-4 animate-fade-in">
+      {/* 進捗バー */}
+      <div className="mb-8">
+        <div className="flex justify-between text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">
+          <span>Progress</span>
+          <span>{currentQuestionIndex + 1} / {questions.length}</span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-          <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
+          <div 
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500 ease-out"
+            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+          ></div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
-        <div className="mb-4">
-          <span className={`inline-block px-2 py-1 rounded text-xs font-bold mb-2 ${currentQuestion.type === 'input' ? 'bg-purple-100 text-purple-600' : currentQuestion.type === 'multi-select' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'}`}>
-            {currentQuestion.type === 'input' ? '記述式' : currentQuestion.type === 'multi-select' ? '複数選択 (全て選べ)' : '単一選択'}
+      {/* 問題カード */}
+      <div className="glass p-8 rounded-2xl shadow-xl mb-6 relative overflow-hidden min-h-[200px] flex flex-col justify-center border-white/40 dark:border-gray-600/50">
+        <div className="absolute top-0 right-0 p-4 opacity-5">
+          <HelpCircle size={120} />
+        </div>
+        
+        <div className="relative z-10">
+          <span className="inline-block px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 text-xs font-bold mb-4 border border-blue-200 dark:border-blue-800">
+            Question {currentQuestionIndex + 1}
           </span>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 leading-relaxed whitespace-pre-line">{currentQuestion.text}</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white leading-relaxed">
+            {currentQuestion.text}
+          </h2>
         </div>
-
-        {currentQuestion.image && <div className="mb-6 flex justify-center"><img src={currentQuestion.image} alt="Question" className="max-h-64 rounded-lg border dark:border-gray-600 object-contain" /></div>}
-        {currentQuestion.tableData && <div className="mb-8"><SimpleTable data={currentQuestion.tableData} /></div>}
-        <div className="mb-4"></div>
-
-        <div className={showFeedback ? "opacity-80 pointer-events-none" : ""}>
-          {currentQuestion.type === 'multiple' && (
-            <div className="space-y-4">
-              {currentQuestion.options.map((option, idx) => {
-                let optionClass = "border-gray-100 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30";
-                if (showFeedback && currentResult) {
-                  if (option === currentResult.selectedAnswer) {
-                     optionClass = currentResult.isCorrect 
-                       ? "border-green-500 bg-green-50 dark:bg-green-900/20 ring-2 ring-green-500" 
-                       : "border-red-500 bg-red-50 dark:bg-red-900/20 ring-2 ring-red-500";
-                  } else if (currentQuestion.correctAnswer.includes(option) && !currentResult.isCorrect) {
-                     optionClass = "border-green-500 bg-green-50 dark:bg-green-900/20 opacity-50";
-                  }
-                }
-
-                return (
-                  <button key={idx} onClick={() => handleAnswer(option)} className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center bg-white dark:bg-gray-800 ${optionClass}`}>
-                    <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 flex items-center justify-center font-bold mr-4 group-hover:bg-blue-500 group-hover:text-white transition-colors flex-shrink-0">{idx + 1}</span>
-                    <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {currentQuestion.type === 'multi-select' && (
-            <div className="space-y-4">
-              {currentQuestion.options.map((option, idx) => {
-                const isSelected = selectedOptions.includes(option);
-                let optionClass = isSelected ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-gray-100 dark:border-gray-600 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700';
-                
-                if (showFeedback && currentResult) {
-                   if (currentQuestion.correctAnswer.includes(option)) {
-                      optionClass += " border-green-500 ring-1 ring-green-500";
-                   } else if (isSelected) {
-                      optionClass += " border-red-500 ring-1 ring-red-500";
-                   }
-                }
-
-                return (
-                  <button key={idx} onClick={() => toggleMultiSelect(option)} className={`w-full text-left p-4 rounded-xl border-2 transition-all group flex items-center ${optionClass}`}>
-                    <div className={`w-6 h-6 rounded border-2 mr-4 flex items-center justify-center transition-colors ${isSelected ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-300 bg-white'}`}>{isSelected && <CheckCircle size={16} />}</div>
-                    <span className="text-gray-700 dark:text-gray-200 font-medium">{option}</span>
-                  </button>
-                );
-              })}
-              <button onClick={() => handleAnswer(selectedOptions)} className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow transition-colors disabled:opacity-50" disabled={selectedOptions.length === 0 || showFeedback}>回答を確定する</button>
-            </div>
-          )}
-
-          {currentQuestion.type === 'input' && (
-            <div className="space-y-4">
-              <input 
-                type="text" 
-                value={inputText} 
-                onChange={(e) => setInputText(e.target.value)} 
-                disabled={showFeedback} 
-                className="w-full p-4 text-lg border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-blue-500 dark:focus:border-blue-500 outline-none dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800" 
-                placeholder="回答を入力..." 
-                onKeyDown={(e) => { 
-                  // ★ バグ修正: 変換中(isComposing)は無視 & 確定時はpreventDefault
-                  if (e.key === 'Enter') {
-                    if (e.nativeEvent.isComposing) return;
-                    e.preventDefault();
-                    if (inputText.trim() && !showFeedback) { 
-                      handleAnswer(inputText); 
-                    }
-                  }
-                }} 
-              />
-              <button onClick={() => handleAnswer(inputText)} disabled={!inputText.trim() || showFeedback} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow transition-colors">回答する</button>
-            </div>
-          )}
-        </div>
-
-        {showFeedback && currentResult && (
-          <div className="mt-8 animate-fade-in">
-            <div className={`p-4 rounded-lg border-l-4 mb-4 ${currentResult.isCorrect ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'bg-red-50 dark:bg-red-900/20 border-red-500'}`}>
-              <div className="flex items-center mb-2">
-                {currentResult.isCorrect ? (
-                  <>
-                    <CheckCircle size={24} className="text-green-500 mr-2" />
-                    <span className="font-bold text-lg text-green-700 dark:text-green-300">正解！</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle size={24} className="text-red-500 mr-2" />
-                    <span className="font-bold text-lg text-red-700 dark:text-red-300">残念... 不正解</span>
-                  </>
-                )}
-              </div>
-              
-              {!currentResult.isCorrect && (
-                <div className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 mt-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-bold block mb-1">正解は...</span>
-                  <span className="font-bold text-gray-800 dark:text-gray-100">{renderCorrectAnswer(currentQuestion)}</span>
-                </div>
-              )}
-            </div>
-
-            {currentQuestion.explanation && (
-              <div className="bg-yellow-50 dark:bg-yellow-900/10 p-4 rounded-lg border border-yellow-100 dark:border-yellow-900/30 mb-6">
-                <div className="flex items-center mb-2">
-                  <BookOpen size={18} className="text-yellow-600 dark:text-yellow-500 mr-2" />
-                  <span className="font-bold text-yellow-700 dark:text-yellow-500">解説</span>
-                </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{currentQuestion.explanation}</p>
-              </div>
-            )}
-
-            <button 
-              onClick={handleNextQuestion} 
-              autoFocus
-              className="w-full bg-gray-800 hover:bg-gray-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-transform transform active:scale-95 flex items-center justify-center text-lg"
-            >
-              {currentQIndex < questionOrder.length - 1 ? (
-                <>次の問題へ <ArrowRight size={20} className="ml-2" /></>
-              ) : (
-                <>結果を見る <ArrowRight size={20} className="ml-2" /></>
-              )}
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* 選択肢エリア */}
+      <div className="grid grid-cols-1 gap-4">
+        {currentOptions.map((option, index) => (
+          <button
+            key={index}
+            onClick={() => handleAnswer(option)}
+            disabled={selectedOption !== null}
+            className={`
+              group relative p-5 rounded-xl text-left transition-all duration-200
+              border-2 shadow-sm active:scale-[0.98]
+              ${selectedOption === option 
+                ? 'bg-blue-600 border-blue-600 text-white shadow-lg scale-[1.02]' 
+                : 'glass hover:bg-white/80 dark:hover:bg-gray-700/80 border-white/20 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-blue-400 dark:hover:border-blue-500'
+              }
+            `}
+            style={{ animationDelay: `${index * 50}ms` }}
+          >
+            <div className="flex items-center">
+              <div className={`
+                w-8 h-8 rounded-full flex items-center justify-center mr-4 text-sm font-bold border
+                ${selectedOption === option
+                  ? 'bg-white text-blue-600 border-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 group-hover:text-blue-500 group-hover:border-blue-200'
+                }
+              `}>
+                {['A', 'B', 'C', 'D'][index] || index + 1}
+              </div>
+              <span className="text-lg font-medium">{option}</span>
+              <ChevronRight className={`ml-auto transform transition-transform ${selectedOption === option ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-hover:translate-x-1'}`} />
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* フィードバック画面 */}
+      {showFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in bg-black/20 backdrop-blur-sm">
+          <div 
+            className={`
+              relative w-full max-w-md p-8 rounded-3xl shadow-2xl transform transition-all animate-pop-in
+              ${isCorrect 
+                ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white' 
+                : 'bg-gradient-to-br from-red-500 to-rose-600 text-white'
+              }
+            `}
+            onClick={() => nextQuestion()} 
+          >
+            <div className="flex flex-col items-center text-center">
+              {isCorrect ? (
+                <CheckCircle size={80} className="mb-4 text-green-100 animate-pulse-slow" />
+              ) : (
+                <XCircle size={80} className="mb-4 text-red-100 animate-shake" />
+              )}
+              
+              <h3 className="text-3xl font-black mb-2 tracking-tight">
+                {isCorrect ? 'Excellent!' : 'Missed...'}
+              </h3>
+              
+              {!isCorrect && (
+                <div className="bg-white/20 rounded-xl p-4 mt-4 w-full text-left backdrop-blur-sm">
+                  <p className="text-xs font-bold text-red-100 uppercase mb-1">Correct Answer</p>
+                  <p className="text-lg font-bold">{currentQuestion.correctAnswer}</p>
+                </div>
+              )}
+
+              <button className="mt-8 px-8 py-3 bg-white text-gray-900 rounded-full font-bold shadow-lg hover:scale-105 transition-transform flex items-center">
+                Next <ChevronRight size={18} className="ml-1" />
+              </button>
+              
+              <p className="mt-4 text-xs text-white/60">画面をクリックして次へ</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
