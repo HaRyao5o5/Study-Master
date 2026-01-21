@@ -29,7 +29,7 @@ import SharedCourseView from './components/course/SharedCourseView';
 // Context
 import { useApp } from './context/AppContext';
 
-// --- ルート用コンポーネント (Appの外に出して安定化させる) ---
+// --- ルート用コンポーネント ---
 
 const CoursePage = ({ wrongHistory, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
   const { courseId } = useParams();
@@ -132,7 +132,6 @@ const ResultPage = ({ resultData, gameSettings, onRetry }) => {
   const { courseId, quizId } = useParams();
   const navigate = useNavigate();
 
-  // resultDataがない場合（直接URLアクセスなど）はメニューに戻す
   if (!resultData) return <Navigate to={`/course/${courseId}`} />;
 
   return (
@@ -165,7 +164,6 @@ const EditQuizPage = ({ onSave }) => {
 const CreateQuizPage = ({ onSave }) => {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  // 新規IDをここで生成せず、Editor内で管理してもいいが、初期値として渡す
   const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
 
   return (
@@ -201,9 +199,12 @@ export default function App() {
   } = useApp();
 
   const navigate = useNavigate();
-  const location = useLocation();
-
+  
+  // ★ ヘッダーEXPバー計算用の安全なロジック
   const levelInfo = getLevelInfo(userStats.totalXp);
+  // 分母が0にならないように保護し、100%を超えないようにclampする
+  const xpPercentage = Math.min(100, Math.max(0, (levelInfo.currentXp / (levelInfo.xpForNextLevel || 1)) * 100));
+
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
@@ -333,6 +334,7 @@ export default function App() {
     const today = new Date().toDateString();
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
+    let newLastLogin = userStats.lastLogin;
 
     if (userStats.lastLogin !== today) {
       if (!userStats.lastLogin) {
@@ -351,15 +353,10 @@ export default function App() {
         }
       }
       isStreakUpdated = true;
+      newLastLogin = today;
     }
 
-    setUserStats(prev => ({
-      ...prev,
-      totalXp: prev.totalXp + xpGained,
-      streak: isStreakUpdated ? newStreak : prev.streak,
-      lastLogin: today
-    }));
-
+    // ★ 修正ポイント1: 先にリザルトデータを作成して遷移させる
     const resultWithXp = { 
       answers, totalTime, xpGained, 
       currentLevel: levelInfo.level,
@@ -369,6 +366,17 @@ export default function App() {
 
     setResultData(resultWithXp);
     navigate(`/course/${courseId}/quiz/${quizId}/result`);
+
+    // ★ 修正ポイント2: 画面遷移から少し遅らせてグローバルEXPを更新する（フライング防止）
+    // ResultViewのアニメーション準備ができる頃(0.6秒後)にヘッダーを増やす
+    setTimeout(() => {
+        setUserStats(prev => ({
+          ...prev,
+          totalXp: prev.totalXp + xpGained,
+          streak: isStreakUpdated ? newStreak : prev.streak,
+          lastLogin: newLastLogin
+        }));
+    }, 600);
 
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
     const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
@@ -450,9 +458,10 @@ export default function App() {
                 <span>{userStats.streak}日連続</span>
               </div>
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden relative">
+                {/* ★ 修正ポイント3: 安全なパーセンテージ計算結果を使用 */}
                 <div 
                   className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500" 
-                  style={{ width: `${(levelInfo.currentXp / levelInfo.xpForNextLevel) * 100}%` }}
+                  style={{ width: `${xpPercentage}%` }}
                 ></div>
                 {isSyncing && (
                    <div className="absolute inset-0 bg-white/50 animate-pulse flex items-center justify-center">
@@ -508,7 +517,6 @@ export default function App() {
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
             
-            {/* ★ 変更点: 各ページコンポーネントを Route の element として直接配置 */}
             <Route path="/course/:courseId" element={
               <CoursePage 
                 wrongHistory={wrongHistory} 
