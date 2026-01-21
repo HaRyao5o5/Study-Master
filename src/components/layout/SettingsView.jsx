@@ -1,13 +1,19 @@
 // src/components/layout/SettingsView.jsx
-import React, { useRef } from 'react';
-import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock } from 'lucide-react'; 
+import React, { useRef, useState } from 'react'; // useState追加
+import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock, Edit2, Check, X } from 'lucide-react'; // アイコン追加
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
+import { updateUserProfile } from '../../lib/firebase'; // ★ 追加
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
 const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout }) => {
   const fileInputRef = useRef(null);
+  
+  // プロフィール編集用ステート
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user?.displayName || '');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleExport = () => {
     exportToFile(courses, 'backup', 'study-master-backup');
@@ -22,6 +28,23 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // プロフィール保存処理
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) return;
+    setIsSaving(true);
+    try {
+      await updateUserProfile(user, editName);
+      setIsEditing(false);
+      // リロードしなくても反映されるように、userオブジェクト自体はReactの再レンダリングを待つか、
+      // ここでは簡易的にalertを出して更新を促す（本来はContext更新が望ましいが、firebase authの変更は自動検知される場合が多い）
+      alert("プロフィール名を変更しました！");
+    } catch (error) {
+      alert("変更に失敗しました。");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -43,30 +66,81 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
           
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
             {user ? (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt="User" className="w-10 h-10 rounded-full border-2 border-white dark:border-gray-600 mr-3" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-3">
-                      <User size={20} className="text-blue-500" />
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center flex-1 min-w-0">
+                    {user.photoURL ? (
+                      <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 mr-3" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-3">
+                        <User size={20} className="text-blue-500" />
+                      </div>
+                    )}
+                    
+                    {/* 名前表示エリア (通常時 / 編集時) */}
+                    <div className="flex-1 min-w-0">
+                      {isEditing ? (
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text" 
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="w-full px-2 py-1 text-sm font-bold border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            autoFocus
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-lg font-bold text-gray-800 dark:text-white truncate">
+                          {user.displayName || 'ユーザー'}
+                        </p>
+                      )}
+                      
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-bold text-gray-800 dark:text-white">{user.displayName || 'ユーザー'}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                    <p className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1 flex items-center">
+                  </div>
+
+                  {/* 編集ボタン */}
+                  <div className="ml-4">
+                    {isEditing ? (
+                      <div className="flex items-center gap-2">
+                         <button 
+                          onClick={handleSaveProfile} 
+                          disabled={isSaving}
+                          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button 
+                          onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
+                          className="p-2 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={() => { setIsEditing(true); setEditName(user.displayName || ''); }}
+                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 rounded-full transition-colors"
+                        title="名前を変更"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-blue-100 dark:border-blue-900/30 pt-4 mt-2">
+                   <p className="text-[10px] text-green-600 dark:text-green-400 font-bold flex items-center">
                       <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
                       同期有効
                     </p>
-                  </div>
+                    <button 
+                      onClick={onLogout}
+                      className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
+                    >
+                      <LogOut size={14} className="mr-2" /> ログアウト
+                    </button>
                 </div>
-                <button 
-                  onClick={onLogout}
-                  className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
-                >
-                  <LogOut size={16} className="mr-2" /> ログアウト
-                </button>
               </div>
             ) : (
               <div className="text-center sm:text-left sm:flex items-center justify-between gap-4">

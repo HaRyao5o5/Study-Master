@@ -25,20 +25,18 @@ import SettingsView from './components/layout/SettingsView';
 import ChangelogModal from './components/layout/ChangelogModal';
 import StatsView from './components/layout/StatsView';
 import SharedCourseView from './components/course/SharedCourseView';
+import RankingView from './components/layout/RankingView'; // ★ 追加
 
 // Context
 import { useApp } from './context/AppContext';
 
 // --- ルート用コンポーネント ---
-
 const CoursePage = ({ wrongHistory, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
   const { courseId } = useParams();
   const { courses } = useApp();
   const navigate = useNavigate();
   const course = courses.find(c => c.id === courseId);
-  
   if (!course) return <div className="p-8 text-center">コースが見つかりません</div>;
-
   return (
     <>
       <div className="mb-6 animate-slide-up">
@@ -64,9 +62,7 @@ const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
   const { courses } = useApp();
   const navigate = useNavigate();
   const course = courses.find(c => c.id === courseId);
-
   if (!course) return <div>コースが見つかりません</div>;
-  
   let quiz;
   if (quizId === 'review-mode') {
     const wrongQuestions = [];
@@ -77,14 +73,11 @@ const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
   } else {
     quiz = course.quizzes.find(q => q.id === quizId);
   }
-
   if (!quiz) return <div>問題セットが見つかりません</div>;
-
   const path = [
     { title: course.title, id: course.id, type: 'course' },
     { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
   ];
-
   return (
     <>
       <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
@@ -103,7 +96,6 @@ const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
   const { courseId, quizId } = useParams();
   const { courses } = useApp();
   const course = courses.find(c => c.id === courseId);
-  
   let quiz;
   if (quizId === 'review-mode') {
     const wrongQuestions = [];
@@ -114,9 +106,7 @@ const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
   } else {
     quiz = course?.quizzes.find(q => q.id === quizId);
   }
-
   if (!quiz) return <Navigate to="/" />;
-
   return (
     <GameView 
       quiz={quiz} 
@@ -131,9 +121,7 @@ const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
 const ResultPage = ({ resultData, gameSettings, onRetry }) => {
   const { courseId, quizId } = useParams();
   const navigate = useNavigate();
-
   if (!resultData) return <Navigate to={`/course/${courseId}`} />;
-
   return (
     <ResultView 
       resultData={resultData} 
@@ -149,9 +137,7 @@ const EditQuizPage = ({ onSave }) => {
   const navigate = useNavigate();
   const course = courses.find(c => c.id === courseId);
   const quiz = course?.quizzes.find(q => q.id === quizId);
-
   if (!course || !quiz) return <Navigate to="/" />;
-
   return (
     <QuizEditor 
       quiz={quiz} 
@@ -165,7 +151,6 @@ const CreateQuizPage = ({ onSave }) => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
-
   return (
     <QuizEditor 
       quiz={newQuiz} 
@@ -175,9 +160,7 @@ const CreateQuizPage = ({ onSave }) => {
   );
 };
 
-
 // --- メイン App コンポーネント ---
-
 export default function App() {
   const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
   const [resultData, setResultData] = useState(null);
@@ -200,11 +183,8 @@ export default function App() {
 
   const navigate = useNavigate();
   
-  // ★ ヘッダーEXPバー計算用の安全なロジック
   const levelInfo = getLevelInfo(userStats.totalXp);
-  // 分母が0にならないように保護し、100%を超えないようにclampする
   const xpPercentage = Math.min(100, Math.max(0, (levelInfo.currentXp / (levelInfo.xpForNextLevel || 1)) * 100));
-
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
@@ -250,40 +230,23 @@ export default function App() {
   };
 
   const handleCreateCourse = (title, desc, visibility) => {
-    const newCourse = { 
-      id: `course-${generateId()}`, 
-      title, 
-      description: desc, 
-      visibility: visibility || 'private',
-      quizzes: [] 
-    };
+    const newCourse = { id: `course-${generateId()}`, title, description: desc, visibility: visibility || 'private', quizzes: [] };
     setCourses([...courses, newCourse]);
     navigate('/');
   };
 
-  const handleEditCourseRequest = (course) => { 
-    setCourseToEdit(course); 
-    navigate('/edit-course');
-  };
-
+  const handleEditCourseRequest = (course) => { setCourseToEdit(course); navigate('/edit-course'); };
+  
   const handleUpdateCourse = (title, desc, visibility) => {
-    const updatedCourses = courses.map(c => 
-      c.id === courseToEdit.id 
-        ? { ...c, title, description: desc, visibility: visibility || 'private' } 
-        : c
-    );
-    setCourses(updatedCourses); 
-    setCourseToEdit(null); 
-    navigate('/');
+    const updatedCourses = courses.map(c => c.id === courseToEdit.id ? { ...c, title, description: desc, visibility: visibility || 'private' } : c);
+    setCourses(updatedCourses); setCourseToEdit(null); navigate('/');
   };
 
   const handleImportBackup = (importedData) => {
     try {
       if (!Array.isArray(importedData)) { alert('データの形式が正しくありません。'); return; }
       if (confirm('現在のデータを上書きして、バックアップから復元しますか？')) {
-        setCourses(importedData); 
-        alert('データの復元が完了しました！'); 
-        navigate('/');
+        setCourses(importedData); alert('データの復元が完了しました！'); navigate('/');
       }
     } catch (e) { console.error(e); alert('読み込みに失敗しました。'); }
   };
@@ -298,21 +261,15 @@ export default function App() {
     alert(`問題セット「${newQuizData.title}」を追加しました！`);
   };
 
-  const handleCreateQuiz = (courseId) => {
-    navigate(`/course/${courseId}/create-quiz`);
-  };
+  const handleCreateQuiz = (courseId) => { navigate(`/course/${courseId}/create-quiz`); };
 
   const handleSaveQuiz = (updatedQuiz, courseId) => {
     const courseIndex = courses.findIndex(c => c.id === courseId);
     if (courseIndex === -1) return;
     const newCourses = [...courses];
     const quizIndex = newCourses[courseIndex].quizzes.findIndex(q => q.id === updatedQuiz.id);
-    
-    if (quizIndex > -1) newCourses[courseIndex].quizzes[quizIndex] = updatedQuiz;
-    else newCourses[courseIndex].quizzes.push(updatedQuiz);
-    
-    setCourses(newCourses);
-    navigate(`/course/${courseId}`);
+    if (quizIndex > -1) newCourses[courseIndex].quizzes[quizIndex] = updatedQuiz; else newCourses[courseIndex].quizzes.push(updatedQuiz);
+    setCourses(newCourses); navigate(`/course/${courseId}`);
   };
 
   const handleDeleteQuiz = (quizId, courseId) => {
@@ -330,33 +287,24 @@ export default function App() {
 
   const finishQuiz = (answers, totalTime, courseId, quizId) => {
     const xpGained = calculateXpGain({ answers, totalTime });
-    
     const today = new Date().toDateString();
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
     let newLastLogin = userStats.lastLogin;
 
     if (userStats.lastLogin !== today) {
-      if (!userStats.lastLogin) {
-        newStreak = 1;
-      } else {
+      if (!userStats.lastLogin) { newStreak = 1; } 
+      else {
         const last = new Date(userStats.lastLogin);
         const current = new Date(today);
-        
         const diffTime = Math.abs(current - last);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        
-        if (diffDays === 1) {
-            newStreak += 1;
-        } else {
-            newStreak = 1;
-        }
+        if (diffDays === 1) { newStreak += 1; } else { newStreak = 1; }
       }
       isStreakUpdated = true;
       newLastLogin = today;
     }
 
-    // ★ 修正ポイント1: 先にリザルトデータを作成して遷移させる
     const resultWithXp = { 
       answers, totalTime, xpGained, 
       currentLevel: levelInfo.level,
@@ -367,15 +315,8 @@ export default function App() {
     setResultData(resultWithXp);
     navigate(`/course/${courseId}/quiz/${quizId}/result`);
 
-    // ★ 修正ポイント2: 画面遷移から少し遅らせてグローバルEXPを更新する（フライング防止）
-    // ResultViewのアニメーション準備ができる頃(0.6秒後)にヘッダーを増やす
     setTimeout(() => {
-        setUserStats(prev => ({
-          ...prev,
-          totalXp: prev.totalXp + xpGained,
-          streak: isStreakUpdated ? newStreak : prev.streak,
-          lastLogin: newLastLogin
-        }));
+        setUserStats(prev => ({ ...prev, totalXp: prev.totalXp + xpGained, streak: isStreakUpdated ? newStreak : prev.streak, lastLogin: newLastLogin }));
     }, 600);
 
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
@@ -398,37 +339,17 @@ export default function App() {
     });
   };
   
-  const clearHistory = () => {
-    if (confirm('復習リストをリセットしますか？')) {
-      setWrongHistory([]);
-      navigate('/');
-    }
-  };
-
-  const handleResetStats = () => {
-    if(confirm("【デバッグ用】ステータスを初期化しますか？")) {
-       setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
-       alert("ステータスをリセットしました。");
-    }
-  };
-
+  const clearHistory = () => { if (confirm('復習リストをリセットしますか？')) { setWrongHistory([]); navigate('/'); } };
+  const handleResetStats = () => { if(confirm("【デバッグ用】ステータスを初期化しますか？")) { setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' }); alert("ステータスをリセットしました。"); } };
   const handleDebugYesterday = () => {
     if(confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
-       const yesterday = new Date();
-       yesterday.setDate(yesterday.getDate() - 1);
-       
-       setUserStats(prev => ({
-         ...prev,
-         streak: 1,
-         lastLogin: yesterday.toDateString()
-       }));
-       alert("最終ログイン日を昨日に変更しました！\nクイズをクリアして連続記録を確認してください。");
+       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+       setUserStats(prev => ({ ...prev, streak: 1, lastLogin: yesterday.toDateString() }));
+       alert("最終ログイン日を昨日に変更しました！");
     }
   };
 
-  if (isInitialLoading) {
-    return <LoadingScreen />;
-  }
+  if (isInitialLoading) return <LoadingScreen />;
 
   return (
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
@@ -449,7 +370,11 @@ export default function App() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <div className="hidden sm:flex flex-col items-end mr-2">
+            {/* ★ 変更: クリックでランキングへ飛ぶように cursor-pointer と onClick を追加 */}
+            <div 
+              className="hidden sm:flex flex-col items-end mr-2 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate('/ranking')}
+            >
               <div className="flex items-center text-sm font-bold text-gray-700 dark:text-gray-200">
                 <Trophy size={14} className="text-yellow-500 mr-1" />
                 <span>Lv.{levelInfo.level}</span>
@@ -458,7 +383,6 @@ export default function App() {
                 <span>{userStats.streak}日連続</span>
               </div>
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden relative">
-                {/* ★ 修正ポイント3: 安全なパーセンテージ計算結果を使用 */}
                 <div 
                   className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500" 
                   style={{ width: `${xpPercentage}%` }}
@@ -492,7 +416,10 @@ export default function App() {
           <Routes>
             <Route path="/" element={
               <>
-                <div className="sm:hidden mb-6 glass p-4 rounded-xl shadow-sm flex justify-between items-center animate-slide-up">
+                <div 
+                    className="sm:hidden mb-6 glass p-4 rounded-xl shadow-sm flex justify-between items-center animate-slide-up cursor-pointer hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
+                    onClick={() => navigate('/ranking')}
+                >
                   <div className="flex items-center">
                     <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400"><Trophy size={20} /></div>
                     <div><div className="text-xs text-gray-500 dark:text-gray-400 font-bold">現在のレベル</div><div className="text-lg font-black text-gray-800 dark:text-white">Lv.{levelInfo.level}</div></div>
@@ -517,46 +444,15 @@ export default function App() {
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
             
-            <Route path="/course/:courseId" element={
-              <CoursePage 
-                wrongHistory={wrongHistory} 
-                onCreateQuiz={handleCreateQuiz} 
-                onDeleteQuiz={handleDeleteQuiz} 
-                onImportQuiz={handleImportQuiz}
-              />
-            } />
+            {/* ★ 追加: ランキングページへのルート */}
+            <Route path="/ranking" element={<RankingView onBack={() => navigate('/')} currentUser={user} />} />
             
-            <Route path="/course/:courseId/quiz/:quizId" element={
-              <QuizMenuPage 
-                wrongHistory={wrongHistory} 
-                onStart={startQuiz} 
-                onClearHistory={clearHistory} 
-              />
-            } />
-            
-            <Route path="/course/:courseId/quiz/:quizId/play" element={
-              <GamePage 
-                gameSettings={gameSettings} 
-                wrongHistory={wrongHistory} 
-                onFinish={finishQuiz} 
-              />
-            } />
-            
-            <Route path="/course/:courseId/quiz/:quizId/result" element={
-              <ResultPage 
-                resultData={resultData} 
-                gameSettings={gameSettings} 
-                onRetry={startQuiz} 
-              />
-            } />
-            
-            <Route path="/course/:courseId/quiz/:quizId/edit" element={
-              <EditQuizPage onSave={handleSaveQuiz} />
-            } />
-            
-            <Route path="/course/:courseId/create-quiz" element={
-              <CreateQuizPage onSave={handleSaveQuiz} />
-            } />
+            <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />
+            <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuPage wrongHistory={wrongHistory} onStart={startQuiz} onClearHistory={clearHistory} />} />
+            <Route path="/course/:courseId/quiz/:quizId/play" element={<GamePage gameSettings={gameSettings} wrongHistory={wrongHistory} onFinish={finishQuiz} />} />
+            <Route path="/course/:courseId/quiz/:quizId/result" element={<ResultPage resultData={resultData} gameSettings={gameSettings} onRetry={startQuiz} />} />
+            <Route path="/course/:courseId/quiz/:quizId/edit" element={<EditQuizPage onSave={handleSaveQuiz} />} />
+            <Route path="/course/:courseId/create-quiz" element={<CreateQuizPage onSave={handleSaveQuiz} />} />
 
             <Route path="*" element={<div className="text-center p-10">ページが見つかりません (404)</div>} />
           </Routes>
