@@ -13,7 +13,7 @@ import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
 
 import Breadcrumbs from './components/common/Breadcrumbs';
-import LoadingScreen from './components/common/LoadingScreen'; // ★ 追加
+import LoadingScreen from './components/common/LoadingScreen';
 import FolderListView from './components/course/FolderListView';
 import QuizListView from './components/course/QuizListView';
 import CreateCourseModal from './components/course/CreateCourseModal';
@@ -34,7 +34,7 @@ export default function App() {
   const [resultData, setResultData] = useState(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true); // ★ 追加: ロード画面制御用
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') return localStorage.getItem('study-master-theme') || 'system';
@@ -56,8 +56,6 @@ export default function App() {
   const titles = getUnlockedTitles(userStats);
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
-  // ★ 追加: 初期ロード制御
-  // isSyncing（Firebase同期）が終わるのを待ちつつ、最低1秒はロード画面を見せる
   useEffect(() => {
     if (!isSyncing) {
       const timer = setTimeout(() => {
@@ -181,7 +179,7 @@ export default function App() {
   const finishQuiz = (answers, totalTime, courseId, quizId) => {
     const xpGained = calculateXpGain({ answers, totalTime });
     
-    const today = new Date().toDateString();
+    const today = new Date().toDateString(); 
     let newStreak = userStats.streak;
     let isStreakUpdated = false;
 
@@ -190,11 +188,16 @@ export default function App() {
         newStreak = 1;
       } else {
         const last = new Date(userStats.lastLogin);
-        const now = new Date();
-        const diffTime = Math.abs(now - last);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        if (diffDays === 1) newStreak += 1;
-        else newStreak = 1;
+        const current = new Date(today);
+        
+        const diffTime = Math.abs(current - last);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        if (diffDays === 1) {
+            newStreak += 1;
+        } else {
+            newStreak = 1;
+        }
       }
       isStreakUpdated = true;
     }
@@ -247,6 +250,21 @@ export default function App() {
     if(confirm("【デバッグ用】ステータスを初期化しますか？")) {
        setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
        alert("ステータスをリセットしました。");
+    }
+  };
+
+  // ★ 追加: 昨日ログインしたことにするデバッグ機能
+  const handleDebugYesterday = () => {
+    if(confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
+       const yesterday = new Date();
+       yesterday.setDate(yesterday.getDate() - 1);
+       
+       setUserStats(prev => ({
+         ...prev,
+         streak: 1,
+         lastLogin: yesterday.toDateString()
+       }));
+       alert("最終ログイン日を昨日に変更しました！\nクイズをクリアして連続記録を確認してください。");
     }
   };
 
@@ -340,7 +358,6 @@ export default function App() {
     return <QuizEditor quiz={newQuiz} onSave={(updated) => handleSaveQuiz(updated, courseId)} onCancel={() => navigate(`/course/${courseId}`)} />;
   };
 
-  // ★ 変更: ロード中は専用画面を返す
   if (isInitialLoading) {
     return <LoadingScreen />;
   }
@@ -427,7 +444,10 @@ export default function App() {
             
             <Route path="/create-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleCreateCourse} />} />
             <Route path="/edit-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleUpdateCourse} initialData={courseToEdit} />} />
-            <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
+            
+            {/* ★ 修正: onDebugYesterday を渡す */}
+            <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} onDebugYesterday={handleDebugYesterday} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
+            
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
             

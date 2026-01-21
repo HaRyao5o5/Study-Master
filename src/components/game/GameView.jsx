@@ -1,15 +1,31 @@
 // src/components/game/GameView.jsx
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CheckCircle, XCircle, ChevronRight, HelpCircle } from 'lucide-react';
+import LoadingScreen from '../common/LoadingScreen'; // ★ 追加
 
 const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish }) => {
+  const [isReady, setIsReady] = useState(false); // ★ 追加
+
+  // 問題の準備（シャッフルなど）が終わったことを検知する
+  useEffect(() => {
+    // ほんの少し待ってから開始（アニメーションの準備時間）
+    const timer = setTimeout(() => setIsReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  // ★ データを確実に保持する金庫
   const answersRef = useRef([]); 
-  const [startTime] = useState(Date.now());
+  // const [startTime] = useState(Date.now()); // ★ 修正: 開始時間は isReady になってから計測すべき
+  const [startTime, setStartTime] = useState(null);
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+
+  // isReady になったらタイマー開始
+  useEffect(() => {
+    if (isReady) setStartTime(Date.now());
+  }, [isReady]);
 
   const questions = useMemo(() => {
     let q = [...quiz.questions];
@@ -20,15 +36,22 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
   const currentQuestion = questions[currentQuestionIndex];
 
   const currentOptions = useMemo(() => {
+    // ★ ガード節: currentQuestionがない場合は空配列を返す（エラー防止）
+    if (!currentQuestion) return [];
     let options = [...currentQuestion.options];
     if (shuffleOptions) options.sort(() => Math.random() - 0.5);
     return options;
   }, [currentQuestion, shuffleOptions]);
 
+  // ★ 追加: 準備中 or 問題データ異常時はロード画面
+  if (!isReady || !currentQuestion || !startTime) {
+    return <LoadingScreen />;
+  }
+
+  // ... (handleAnswer, nextQuestion は修正なし) ...
   const handleAnswer = (option) => {
     if (selectedOption) return;
 
-    // ★ 安全装置：前後の空白を削除して比較する
     const cleanOption = String(option).trim();
     const cleanCorrect = String(currentQuestion.correctAnswer).trim();
     const correct = cleanOption === cleanCorrect;
@@ -43,7 +66,6 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
       timeTaken: 0 
     };
 
-    // 金庫に保存
     answersRef.current = [...answersRef.current, answerRecord];
 
     if (immediateFeedback) {
@@ -61,13 +83,13 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       const totalTime = (Date.now() - startTime) / 1000;
-      // 確実に最新のデータが入っている Ref を渡す
       onFinish(answersRef.current, totalTime);
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 animate-fade-in">
+      {/* ... (JSXの中身は変更なし) ... */}
       {/* 進捗バー */}
       <div className="mb-8">
         <div className="flex justify-between text-xs font-bold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-wider">

@@ -1,17 +1,149 @@
 // src/components/game/ResultView.jsx
-import React, { useEffect, useState } from 'react';
-import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Share2, Star } from 'lucide-react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Star, Flame, Rocket, Sparkles, ArrowRight, Zap } from 'lucide-react';
+import LoadingScreen from '../common/LoadingScreen';
 
-const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
-  const { answers, totalTime, xpGained, currentLevel, isLevelUp, streakInfo } = resultData;
-  const correctCount = answers.filter(a => a.isCorrect).length;
-  const accuracy = Math.round((correctCount / answers.length) * 100);
+// --- ストリーク演出用コンポーネント (New Design) ---
+const StreakCelebration = ({ days, type, onComplete }) => {
   
-  // アニメーション用のカウントアップステート
+  // 演出テーマ定義（よりモダンなグラデーションと光彩）
+  const themes = {
+    fire: {
+      color: "text-orange-500",
+      gradient: "from-orange-500 to-red-600",
+      glow: "bg-orange-500",
+      icon: <Flame size={80} className="fill-current animate-bounce" />,
+      title: "Keep the Streak!",
+      sub: "情熱の炎が燃え上がる！",
+    },
+    star: {
+      color: "text-purple-500",
+      gradient: "from-indigo-400 to-purple-600",
+      glow: "bg-purple-500",
+      icon: <Sparkles size={80} className="fill-current animate-pulse" />,
+      title: "Stellar Performance!",
+      sub: "星のように輝く継続力！",
+    },
+    rocket: {
+      color: "text-blue-500",
+      gradient: "from-cyan-400 to-blue-600",
+      glow: "bg-blue-500",
+      icon: <Rocket size={80} className="fill-current animate-pulse" />,
+      title: "Sky High!",
+      sub: "限界を超えて突き進め！",
+    }
+  };
+
+  const theme = themes[type] || themes.fire;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fade-in">
+      {/* 1. 背景レイヤー (Deep Blur Overlay) */}
+      <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-xl transition-all duration-500"></div>
+
+      {/* 2. 環境光 (Ambient Glow) - テーマカラーで背後を照らす */}
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] ${theme.glow} rounded-full blur-[120px] opacity-20 animate-pulse-slow`}></div>
+
+      {/* 3. メインカード (Glass Card) */}
+      <div className="relative w-full max-w-sm bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 animate-pop-in">
+        
+        {/* カード上部の装飾 */}
+        <div className={`h-2 w-full bg-gradient-to-r ${theme.gradient}`}></div>
+
+        <div className="p-8 flex flex-col items-center text-center relative z-10">
+          
+          {/* アイコンサークル */}
+          <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${theme.gradient} bg-opacity-10 flex items-center justify-center mb-6 shadow-lg shadow-gray-200/50 dark:shadow-none`}>
+            <div className="w-28 h-28 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-transparent bg-clip-text bg-gradient-to-br from-gray-800 to-gray-600 dark:from-white dark:to-gray-300">
+              <div className={theme.color}>
+                {theme.icon}
+              </div>
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-black text-gray-800 dark:text-white mb-2 tracking-tight">
+            {theme.title}
+          </h2>
+          <p className="text-sm font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-8">
+            {theme.sub}
+          </p>
+
+          {/* ストリーク日数表示 */}
+          <div className="w-full bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-center space-x-2 mb-1">
+               <Zap size={16} className={`${theme.color} fill-current`} />
+               <span className="text-xs font-bold text-gray-400 uppercase">Current Streak</span>
+            </div>
+            <div className={`text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r ${theme.gradient} tracking-tighter`}>
+              {days}
+            </div>
+            <div className="text-sm font-bold text-gray-400 mt-1">Days</div>
+          </div>
+
+          {/* CONTINUE ボタン */}
+          <button 
+            onClick={onComplete}
+            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all flex items-center justify-center bg-gradient-to-r ${theme.gradient}`}
+          >
+            CONTINUE
+            <ArrowRight size={20} className="ml-2 animate-bounce-x" />
+          </button>
+
+        </div>
+        
+        {/* 紙吹雪パーティクル (CSS装飾) */}
+        <div className="absolute inset-0 pointer-events-none opacity-30">
+            <div className={`absolute top-10 left-10 w-4 h-4 rounded-full ${theme.glow} animate-ping`}></div>
+            <div className={`absolute bottom-20 right-10 w-3 h-3 rounded-full ${theme.glow} animate-ping delay-700`}></div>
+            <div className={`absolute top-1/2 right-5 w-2 h-2 rounded-full ${theme.glow} animate-ping delay-300`}></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- メインコンポーネント ---
+const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
+  const [isReady, setIsReady] = useState(false);
   const [displayXp, setDisplayXp] = useState(0);
   
+  // ストリーク演出を表示するかどうか
+  const [showCelebration, setShowCelebration] = useState(false);
+  
+  // 演出タイプをランダム決定 (fire, star, rocket)
+  const celebrationType = useMemo(() => {
+    const types = ['fire', 'star', 'rocket'];
+    return types[Math.floor(Math.random() * types.length)];
+  }, []);
+
+  // 1. 準備完了を待つEffect
   useEffect(() => {
-    // XPカウントアップアニメーション
+    if (resultData) {
+      if (resultData.streakInfo?.isUpdated) {
+        setShowCelebration(true);
+      }
+      
+      const timer = setTimeout(() => {
+        setIsReady(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [resultData]);
+
+  // 2. 必要なデータを安全に取り出す
+  const answers = resultData?.answers || [];
+  const totalTime = resultData?.totalTime || 0;
+  const xpGained = resultData?.xpGained || 0;
+  const isLevelUp = resultData?.isLevelUp || false;
+  const streakInfo = resultData?.streakInfo || null;
+
+  const correctCount = answers.filter(a => a.isCorrect).length;
+  const accuracy = answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0;
+
+  // 3. XPアニメーション
+  useEffect(() => {
+    if (!isReady || !resultData || showCelebration) return;
+
     let start = 0;
     const duration = 1500;
     const stepTime = 20;
@@ -29,15 +161,30 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
     }, stepTime);
     
     return () => clearInterval(timer);
-  }, [xpGained]);
+  }, [xpGained, isReady, resultData, showCelebration]);
 
+  if (!resultData || !isReady) {
+    return <LoadingScreen />;
+  }
+
+  // ★ ストリーク演出画面
+  if (showCelebration) {
+    return (
+      <StreakCelebration 
+        days={streakInfo.days} 
+        type={celebrationType} 
+        onComplete={() => setShowCelebration(false)} 
+      />
+    );
+  }
+
+  // --- 通常のリザルト画面 ---
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 animate-fade-in">
-      {/* ヘッダーカード: スコアと称号 */}
-      <div className="glass p-8 rounded-3xl text-center shadow-xl mb-8 relative overflow-hidden border-t border-white/50">
+       {/* ヘッダーカード */}
+       <div className="glass p-8 rounded-3xl text-center shadow-xl mb-8 relative overflow-hidden border-t border-white/50">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
         
-        {/* レベルアップ演出 */}
         {isLevelUp && (
           <div className="absolute top-4 right-4 animate-bounce">
             <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-3 py-1 rounded-full shadow-lg border border-yellow-200">
@@ -64,9 +211,9 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
         </div>
         
         {streakInfo && streakInfo.isUpdated && (
-          <div className="mt-4 inline-flex items-center px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-sm font-bold animate-pulse-slow">
-            <Star size={16} className="mr-2 fill-current" />
-            {streakInfo.days}日連続学習達成！
+          <div className="mt-4 inline-flex items-center px-4 py-2 bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 text-orange-600 dark:text-orange-400 rounded-full text-sm font-bold border border-orange-200 dark:border-orange-800">
+            <Flame size={16} className="mr-2 fill-current animate-pulse" />
+            {streakInfo.days}日連続達成中！
           </div>
         )}
       </div>

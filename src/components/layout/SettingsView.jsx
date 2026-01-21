@@ -1,13 +1,12 @@
 // src/components/layout/SettingsView.jsx
 import React, { useRef } from 'react';
-import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Github } from 'lucide-react'; // Githubアイコンも追加（一般的によくあるので）
+import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock } from 'lucide-react'; 
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
 
-// ★ 修正1: "Creator Edition Pro" を削除し、シンプルに
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
-const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, user, onLogin, onLogout }) => {
+const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout }) => {
   const fileInputRef = useRef(null);
 
   const handleExport = () => {
@@ -36,7 +35,7 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
 
       <div className="p-6 space-y-8">
         
-        {/* クラウド同期 / アカウント設定 */}
+        {/* クラウド同期 */}
         <div className="space-y-4">
           <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
             <Cloud size={20} className="mr-2 text-blue-500" /> クラウド同期
@@ -44,7 +43,6 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
           
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
             {user ? (
-              // ログイン済みの場合
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex items-center">
                   {user.photoURL ? (
@@ -71,7 +69,6 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                 </button>
               </div>
             ) : (
-              // 未ログインの場合
               <div className="text-center sm:text-left sm:flex items-center justify-between gap-4">
                 <div className="mb-4 sm:mb-0">
                   <p className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">データをクラウドに保存</p>
@@ -151,18 +148,26 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
           {import.meta.env.DEV && (
             <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Developer Zone</h4>
-               <button 
-                onClick={onResetStats}
-                className="w-full flex items-center justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-              >
-                <Trash2 size={18} className="mr-2" />
-                ステータス初期化 (Dev Only)
-              </button>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <button 
+                  onClick={onDebugYesterday}
+                  className="flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 rounded-lg text-purple-600 dark:text-purple-400 font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
+                >
+                  <Clock size={18} className="mr-2" />
+                  昨日ログイン状態へ (Time Travel)
+                </button>
+                 <button 
+                  onClick={onResetStats}
+                  className="flex items-center justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                >
+                  <Trash2 size={18} className="mr-2" />
+                  ステータス初期化 (Reset)
+                </button>
+               </div>
             </div>
           )}
         </div>
 
-        {/* ★ 修正2: フッターを一般向けにシンプル化 */}
         <div className="text-center pt-8 pb-4">
           <p className="text-sm font-mono text-gray-400 dark:text-gray-500">
             {APP_VERSION}
