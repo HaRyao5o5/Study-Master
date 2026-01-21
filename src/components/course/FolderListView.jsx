@@ -2,15 +2,31 @@
 import React, { useRef } from 'react';
 import { Folder, Plus, X, Edit3, Share2, Upload } from 'lucide-react';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
+// ★ Contextを使うためのフック
+import { useApp } from '../../context/AppContext';
 
-const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCourse, onEditCourse, onImportCourse }) => {
+// Propsから courses, onDeleteCourse, onImportCourse が消えた
+const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
+  // ★ ここでContextからデータと操作関数を取得
+  const { courses, setCourses } = useApp();
+  
   const fileInputRef = useRef(null);
 
+  // インポート処理をここに移動
   const handleFileSelect = (e) => {
     importFromFile(e.target.files[0], 'course', (newCourseData) => {
-      onImportCourse(newCourseData);
+      // 既存のcoursesに新しいデータを追加して保存
+      setCourses(prevCourses => [...prevCourses, newCourseData]);
+      alert(`科目フォルダ「${newCourseData.title}」を追加しました！`);
     });
     e.target.value = ''; 
+  };
+
+  // 削除処理をここに移動
+  const handleDelete = (courseId) => {
+    if (confirm('このフォルダを削除しますか？中の問題もすべて消えます。')) {
+      setCourses(prevCourses => prevCourses.filter(c => c.id !== courseId));
+    }
   };
 
   return (
@@ -60,7 +76,10 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
             </button>
 
             <button 
-              onClick={(e) => { e.stopPropagation(); onDeleteCourse(course.id); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleDelete(course.id); // ★ 内部関数を呼ぶ
+              }}
               className="p-1.5 bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-gray-600 rounded-full transition-colors"
               title="削除"
             >
@@ -74,12 +93,10 @@ const FolderListView = ({ courses, onSelectCourse, onCreateCourse, onDeleteCours
         className="flex flex-col gap-2 min-h-[12rem] h-auto animate-slide-up"
         style={{ animationDelay: `${courses.length * 100}ms`, animationFillMode: 'both' }}
       >
-        {/* 新規作成ボタン (回転軸修正済み) */}
         <button 
           onClick={onCreateCourse}
           className="flex-1 bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex items-center justify-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:-translate-y-1 text-gray-400 dark:text-gray-500 hover:text-blue-500 group"
         >
-          {/* ★ 修正ポイント: mr-2 を回転要素の外側に出した */}
           <div className="mr-2">
             <div className="transform transition-transform duration-300 group-hover:rotate-90">
                <Plus size={24} />
