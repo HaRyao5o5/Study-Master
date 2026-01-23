@@ -61,15 +61,29 @@ const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
   const { courseId, quizId } = useParams();
   const { courses } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
   const course = courses.find(c => c.id === courseId);
   if (!course) return <div>コースが見つかりません</div>;
   let quiz;
   if (quizId === 'review-mode') {
     const wrongQuestions = [];
+    const addedIds = new Set(); // 重複防止用
     courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-      if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
+      if (wrongHistory.includes(ques.id) && !addedIds.has(ques.id)) {
+        wrongQuestions.push(ques);
+        addedIds.add(ques.id);
+      }
     })));
     quiz = { id: 'review-mode', title: '弱点克服（復習）', description: '間違えた問題のみ出題されます', questions: wrongQuestions };
+  } else if (quizId === 'mock-exam') {
+    // 実力診断テスト: location.stateから取得、なければ全問題
+    quiz = location.state?.quiz || {
+      id: 'mock-exam',
+      title: '実力診断テスト',
+      description: `${course.title}から出題`,
+      questions: course.quizzes.flatMap(q => q.questions),
+      isMock: true
+    };
   } else {
     quiz = course.quizzes.find(q => q.id === quizId);
   }
@@ -78,12 +92,19 @@ const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
     { title: course.title, id: course.id, type: 'course' },
     { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
   ];
+  
+  const handleStart = (rand, shuf, imm) => {
+    // quiz オブジェクトを navigate の state で渡す
+    onStart(courseId, quizId, rand, shuf, imm); // gameSettingsを設定
+    navigate(`/course/${courseId}/quiz/${quizId}/play`, { state: { quiz } }); // quizをstateで渡す
+  };
+  
   return (
     <>
       <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
       <QuizMenuView 
         quiz={quiz} 
-        onStart={(rand, shuf, imm) => onStart(courseId, quizId, rand, shuf, imm)} 
+        onStart={handleStart} 
         isReviewMode={quizId === 'review-mode'} 
         onClearHistory={onClearHistory} 
         onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} 
@@ -95,16 +116,29 @@ const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
 const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
   const { courseId, quizId } = useParams();
   const { courses } = useApp();
+  const location = useLocation();
   const course = courses.find(c => c.id === courseId);
   let quiz;
   if (quizId === 'review-mode') {
     const wrongQuestions = [];
+    const addedIds = new Set(); // 重複防止用
     courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-      if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
+      if (wrongHistory.includes(ques.id) && !addedIds.has(ques.id)) {
+        wrongQuestions.push(ques);
+        addedIds.add(ques.id);
+      }
     })));
     quiz = { id: 'review-mode', title: '弱点克服', questions: wrongQuestions };
+  } else if (quizId === 'mock-exam') {
+    // 実力診断テスト: location.stateから取得、なければ全問題
+    quiz = location.state?.quiz || {
+      id: 'mock-exam',
+      title: '実力診断テスト',
+      questions: course?.quizzes.flatMap(q => q.questions) || []
+    };
   } else {
-    quiz = course?.quizzes.find(q => q.id === quizId);
+    // location.stateからquizを優先的に取得（画像などのカスタムフィールドを保持）
+    quiz = location.state?.quiz || course?.quizzes.find(q => q.id === quizId);
   }
   if (!quiz) return <Navigate to="/" />;
   return (

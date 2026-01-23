@@ -185,13 +185,36 @@ const ResultView = ({ resultData, onRetry, onBackToMenu }) => {
         <div className="p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50"><h3 className="font-bold text-gray-700 dark:text-gray-300">回答の振り返り</h3></div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {answers.map((ans, idx) => (
-            <div key={idx} className="p-4 flex items-start space-x-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-              <div className="mt-1">{ans.isCorrect ? <CheckCircle size={20} className="text-green-500" /> : <XCircle size={20} className="text-red-500" />}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-800 dark:text-white mb-1 line-clamp-2">{ans.question.text}</p>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className={`px-2 py-0.5 rounded ${ans.isCorrect ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>あなたの回答: {ans.selectedAnswer}</span>
-                  {!ans.isCorrect && <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">正解: {ans.question.correctAnswer}</span>}
+            <div key={idx} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <div className="flex items-start space-x-4">
+                <div className="mt-1">{ans.isCorrect ? <CheckCircle size={20} className="text-green-500" /> : <XCircle size={20} className="text-red-500" />}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800 dark:text-white mb-2">{ans.question.text}</p>
+                  <div className="flex flex-wrap gap-2 text-xs mb-2">
+                    <span className={`px-2 py-0.5 rounded ${
+                      ans.isCorrect 
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      あなたの回答: {Array.isArray(ans.selectedAnswer) 
+                        ? ans.selectedAnswer.join(', ') 
+                        : ans.selectedAnswer}
+                    </span>
+                    {!ans.isCorrect && (
+                      <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        正解: {Array.isArray(ans.question.correctAnswer)
+                          ? ans.question.correctAnswer.join(', ')
+                          : ans.question.correctAnswer}
+                      </span>
+                    )}
+                  </div>
+                  {/* 解説表示 */}
+                  {ans.question.explanation && (
+                    <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-l-2 border-blue-500">
+                      <p className="text-xs font-bold text-gray-600 dark:text-gray-400 mb-1">解説</p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300">{ans.question.explanation}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

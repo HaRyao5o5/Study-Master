@@ -1,6 +1,7 @@
 // src/components/course/QuizListView.jsx
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Share2, Upload, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
 import GenerateQuizModal from './GenerateQuizModal';
 
@@ -9,6 +10,7 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
   const [mockQuestionCount, setMockQuestionCount] = useState(10);
   const [showAiModal, setShowAiModal] = useState(false); // AIモーダル表示用
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const allQuestions = useMemo(() => {
     return course.quizzes.flatMap(q => q.questions);
@@ -45,7 +47,7 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
       questions: selected,
       isMock: true
     };
-    onSelectQuiz(mockQuiz);
+    navigate(`/course/${course.id}/quiz/mock-exam`, { state: { quiz: mockQuiz } });
   };
 
   const startWeaknessReview = () => {

@@ -44,6 +44,42 @@ export const importFromFile = (file, expectedType, callback) => {
                  return;
              }
         }
+        
+        // ★ 新規追加: courseやquizの旧形式も救済
+        if (expectedType === 'course' || expectedType === 'quiz') {
+          // metaとdataがない場合、jsonそのものがデータと仮定
+          if (expectedType === 'course' && json.title && json.quizzes !== undefined) {
+            // courseっぽいデータ構造
+            if(confirm("古い形式のコースファイルです。読み込みますか？")) {
+              // ID振り直し処理
+              const processedData = {
+                ...json,
+                id: `course-${generateId()}`,
+                quizzes: (json.quizzes || []).map(q => ({
+                  ...q,
+                  id: `quiz-${generateId()}`
+                }))
+              };
+              callback(processedData);
+              return;
+            } else {
+              return;
+            }
+          } else if (expectedType === 'quiz' && json.title && json.questions !== undefined) {
+            // quizっぽいデータ構造
+            if(confirm("古い形式のクイズファイルです。読み込みますか？")) {
+              const processedData = {
+                ...json,
+                id: `quiz-${generateId()}`
+              };
+              callback(processedData);
+              return;
+            } else {
+              return;
+            }
+          }
+        }
+        
         throw new Error("このファイルはStudy Masterの有効なデータファイルではありません。");
       }
 

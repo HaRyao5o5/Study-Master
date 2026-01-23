@@ -1,12 +1,14 @@
 // src/components/course/FolderListView.jsx
-import React, { useRef } from 'react';
-import { Folder, Plus, X, Edit3, Share2, Upload, MoreVertical } from 'lucide-react'; // MoreVertical追加
+import React, { useRef, useState } from 'react';
+import { Folder, Plus, X, Edit3, Share2, Upload, MoreVertical } from 'lucide-react';
 import { importFromFile } from '../../utils/fileIO';
 import { useApp } from '../../context/AppContext';
+import Toast from '../common/Toast';
 
 const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
   const { courses, setCourses, user } = useApp();
   const fileInputRef = useRef(null);
+  const [toast, setToast] = useState(null);
 
   // ... (handleFileSelect, handleDelete, handleShare はそのまま) ...
   const handleFileSelect = (e) => {
@@ -26,21 +28,43 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
   };
 
   const handleShare = (course) => {
+    console.log('Share button clicked');
+    
+    // ログインチェック
     if (!user) {
-      alert("共有機能を使うにはログインが必要です。");
+      setToast({
+        type: 'warning',
+        message: '⚠️ 共有機能を使うにはログインが必要です。\n\n右上のメニューからログインしてください。'
+      });
       return;
     }
-    if (course.visibility === 'private') {
-      alert("このコースは「非公開」です。共有するには編集から「公開」または「限定公開」に設定してください。");
+    
+    // visibilityチェック
+    if (!course.visibility || course.visibility === 'private') {
+      setToast({
+        type: 'warning',
+        message: '⚠️ このコースは現在「非公開」設定です。\n\n共有するには：\n1. コースの編集ボタン（✏️）をクリック\n2. 公開設定を「公開」または「限定公開」に変更\n3. 保存してください'
+      });
       return;
     }
+    
+    // 共有URL生成とコピー
     const shareUrl = `${window.location.origin}/share/${user.uid}/${course.id}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      alert(`共有リンクをコピーしました！\n\n${shareUrl}\n\nこのURLを友達に教えてあげましょう。`);
-    }).catch(err => {
-      console.error('Copy failed', err);
-      alert('リンクのコピーに失敗しました。');
-    });
+    
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setToast({
+          type: 'success',
+          message: `✅ 共有リンクをコピーしました！\n\n${shareUrl}\n\nこのURLを友達に教えてあげましょう。`
+        });
+      })
+      .catch(err => {
+        console.error('Clipboard copy failed:', err);
+        setToast({
+          type: 'error',
+          message: `共有リンク：\n${shareUrl}\n\n※自動コピーに失敗しました。上記URLを手動でコピーしてください。`
+        });
+      });
   };
   // ... (ここまで既存ロジック) ...
 
@@ -143,6 +167,15 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
         </button>
         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
       </div>
+      
+      {/* Toast通知 */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
