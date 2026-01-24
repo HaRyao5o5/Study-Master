@@ -8,36 +8,14 @@ import { INITIAL_DATA } from '../data/initialData';
 
 export function useAppData() {
   const [user, setUser] = useState(null);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(true); // 初期認証中はtrue
+  const [authChecked, setAuthChecked] = useState(false); // 認証状態が確定したか
 
-  // 初期ステートの設定（ローカルストレージから読み込み）
-  const [userStats, setUserStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem('study-master-stats');
-      return saved ? JSON.parse(saved) : { totalXp: 0, level: 1, streak: 0, lastLogin: '' };
-    } catch (e) { return { totalXp: 0, level: 1, streak: 0, lastLogin: '' }; }
-  });
-
-  const [courses, setCourses] = useState(() => {
-    try {
-      const saved = localStorage.getItem('study-master-data');
-      return saved ? normalizeData(JSON.parse(saved)) : normalizeData(INITIAL_DATA);
-    } catch (e) { return normalizeData(INITIAL_DATA); }
-  });
-
-  const [wrongHistory, setWrongHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('study-master-wrong-history');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
-  });
-
-  const [errorStats, setErrorStats] = useState(() => {
-    try {
-      const saved = localStorage.getItem('study-master-error-stats');
-      return saved ? JSON.parse(saved) : {};
-    } catch (e) { return {}; }
-  });
+  // 初期ステートは空データから開始（localStorageは読み込まない）
+  const [userStats, setUserStats] = useState({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
+  const [courses, setCourses] = useState(() => normalizeData(INITIAL_DATA));
+  const [wrongHistory, setWrongHistory] = useState([]);
+  const [errorStats, setErrorStats] = useState({});
 
   // ローカルストレージへの保存（ゲストモードのみ）
   useEffect(() => {
@@ -101,10 +79,11 @@ export function useAppData() {
           console.error("Sync Error:", err);
         } finally {
           setIsSyncing(false);
+          setAuthChecked(true);
         }
       } else {
-        // ✅ ログアウト時: 状態を初期化し、localStorageから読み込む
-        console.log('User logged out, restoring from localStorage');
+        // ✅ ログアウト時/ゲストモード: localStorageから読み込む
+        console.log('Guest mode or logged out, loading from localStorage');
         try {
           const savedCourses = localStorage.getItem('study-master-data');
           const savedStats = localStorage.getItem('study-master-stats');
@@ -116,11 +95,14 @@ export function useAppData() {
           setWrongHistory(savedWrong ? JSON.parse(savedWrong) : []);
           setErrorStats(savedErrors ? JSON.parse(savedErrors) : {});
         } catch (e) {
-          console.error('Failed to restore from localStorage:', e);
+          console.error('Failed to load from localStorage:', e);
           setCourses(normalizeData(INITIAL_DATA));
           setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
           setWrongHistory([]);
           setErrorStats({});
+        } finally {
+          setIsSyncing(false);
+          setAuthChecked(true);
         }
       }
     });
