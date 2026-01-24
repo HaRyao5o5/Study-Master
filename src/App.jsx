@@ -210,14 +210,11 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      const confirmed = await showConfirm(CONFIRM.LOGOUT);
-      if (confirmed) {
-        await signOut(auth);
-        showSuccess(SUCCESS.LOGOUT_SUCCESS);
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
+    const confirmed = await showConfirm('ログアウトしますか？');
+    if (confirmed) {
+      await logout();
+      navigate('/');
+      showSuccess(SUCCESS.LOGOUT_SUCCESS);
     }
   };
 
