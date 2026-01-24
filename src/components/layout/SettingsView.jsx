@@ -5,7 +5,7 @@ import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
 import { updateUserProfile } from '../../lib/firebase';
 import { useToast } from '../../context/ToastContext';
-import { SUCCESS, ERROR, CONFIRM } from '../../utils/errorMessages';
+import { SUCCESS, ERROR } from '../../utils/errorMessages';
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
@@ -31,6 +31,13 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleLogout = async () => {
+    const confirmed = await showConfirm('ログアウトしますか？');
+    if (confirmed) {
+      onLogout();
+    }
   };
 
   const handleSaveProfile = async () => {
