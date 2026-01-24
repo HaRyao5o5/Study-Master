@@ -32,7 +32,7 @@ import CreateQuizPage from './pages/CreateQuizPage';
 // Context
 import { useApp } from './context/AppContext';
 import { useToast } from './context/ToastContext';
-import { handleError } from './utils/errorMessages';
+import { handleError, SUCCESS, CONFIRM } from './utils/errorMessages';
 
 
 // --- メイン App コンポーネント ---
@@ -114,8 +114,15 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    try { if (confirm("ログアウトしますか？")) { await signOut(auth); alert("ログアウトしました。"); } }
-    catch (error) { console.error("Logout failed:", error); }
+    try {
+      const confirmed = await showConfirm(CONFIRM.LOGOUT);
+      if (confirmed) {
+        await signOut(auth);
+        showSuccess(SUCCESS.LOGOUT_SUCCESS);
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const handleCreateCourse = (title, desc, visibility) => {
@@ -243,11 +250,13 @@ export default function App() {
       showSuccess("ステータスをリセットしました。");
     }
   };
-  const handleDebugYesterday = () => {
-    if (confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const handleDebugYesterday = async () => {
+    const confirmed = await showConfirm(CONFIRM.DEBUG_YESTERDAY);
+    if (confirmed) {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
       setUserStats(prev => ({ ...prev, streak: 1, lastLogin: yesterday.toDateString() }));
-      alert("最終ログイン日を昨日に変更しました！");
+      showSuccess(SUCCESS.DEBUG_DATE_UPDATED);
     }
   };
 

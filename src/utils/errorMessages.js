@@ -147,3 +147,52 @@ export const handleError = (error, context = '') => {
     // ユーザーフレンドリーなメッセージを返す
     return getErrorMessage(error);
 };
+
+// ========================================
+// 成功・確認・警告メッセージ（Phase 1で追加）
+// ========================================
+
+/**
+ * 成功メッセージ
+ */
+export const SUCCESS = {
+  FOLDER_CREATED: (name) => `科目フォルダ「${name}」を追加しました！`,
+  QUIZ_CREATED: (title) => `AIがクイズ「${title}」を作成しました！`,
+  PROFILE_UPDATED: 'プロフィール名を変更しました！',
+  LOGOUT_SUCCESS: 'ログアウトしました。',
+  IMPORT_SUCCESS: 'インポートが完了しました！',
+  DEBUG_DATE_UPDATED: '最終ログイン日を昨日に変更しました！',
+  COURSE_SAVED: 'コースを保存しました',
+  QUIZ_SAVED: 'クイズを保存しました',
+  STATS_RESET: 'ステータスをリセットしました。',
+};
+
+/**
+ * エラーメッセージ（alert用）
+ */
+export const ERROR = {
+  PROFILE_UPDATE_FAILED: '変更に失敗しました。',
+  FILE_LOAD_FAILED: (message) => `ファイルの読み込みに失敗しました。\n${message}`,
+  FILE_TYPE_MISMATCH: (actual, expected) => 
+    `エラー: このファイルは「${actual}」用です。\nここでは「${expected}」のみ読み込めます。`,
+  IMAGE_TOO_LARGE: '画像サイズが大きすぎます。読み込みが遅くなる可能性があります。',
+  MIN_OPTIONS_REQUIRED: '選択肢は最低2つ必要です',
+  SAVE_FAILED: 'データの保存に失敗しました',
+};
+
+/**
+ * 確認メッセージ（confirm用）
+ */
+export const CONFIRM = {
+  DELETE_FOLDER: 'このフォルダを削除しますか？中の問題もすべて消えます。',
+  DELETE_QUESTION: 'この問題を削除しますか？',
+  LOGOUT: 'ログアウトしますか？',
+  DEBUG_YESTERDAY: '【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)',
+  IMPORT_COURSE: (title) => `「${title}」をあなたのライブラリに追加しますか？`,
+  LOAD_OLD_BACKUP: '古い形式のバックアップファイルです。読み込みますか?',
+  LOAD_OLD_COURSE: '古い形式のコースファイルです。読み込みますか？',
+  LOAD_OLD_QUIZ: '古い形式のクイズファイルです。読み込みますか？',
+  RESET_STATS: 'ステータスをリセットしますか？',
+  CLEAR_HISTORY: '復習リストをリセットしますか？',
+};
+
