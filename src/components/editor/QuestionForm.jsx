@@ -26,7 +26,7 @@ const QuestionForm = ({ question, onSave, onCancel }) => {
     explanation: question.explanation || ''
   });
 
-  const { image, isUploading, error: imageError, handleFileSelect, clearImage, setImage } = useImageUpload();
+  const { image, isUploading, error: imageError, handleFileSelect, handleUrlInput, clearImage, setImage } = useImageUpload();
   const { validateQuestion, hasRequiredFields } = useQuestionValidation();
   const { showError } = useToast();
 
@@ -181,6 +181,7 @@ const QuestionForm = ({ question, onSave, onCancel }) => {
             isUploading={isUploading}
             error={imageError}
             onFileSelect={handleFileSelect}
+            onUrlInput={handleUrlInput}
             onClear={clearImage}
           />
         </div>
