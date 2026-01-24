@@ -13,7 +13,7 @@ const LoadingScreen = () => {
         Study Master
       </h2>
       <p className="text-gray-500 dark:text-gray-400 text-sm mt-2 font-bold">
-        Loading your workspace...
+        読み込んでいます...
       </p>
     </div>
   );

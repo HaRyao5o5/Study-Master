@@ -7,7 +7,7 @@ import { generateId } from '../../utils/helpers';
 const GenerateQuizModal = ({ onClose, onSave }) => {
   const [text, setText] = useState('');
   const [count, setCount] = useState(5);
-  const [apiKey, setApiKey] = useState(''); 
+  const [apiKey, setApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -15,7 +15,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
 
   const handleGenerate = async () => {
     if (!text.trim()) return;
-    
+
     const keyToUse = hasEnvKey ? undefined : apiKey;
     if (!hasEnvKey && !keyToUse) {
       setError("Gemini APIキーが必要です（設定画面か.envで設定してください）");
@@ -27,7 +27,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
 
     try {
       const generatedData = await generateQuizWithAI(text, count, keyToUse);
-      
+
       const newQuiz = {
         ...generatedData,
         id: `quiz-${generateId()}`,
@@ -50,13 +50,13 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
   return (
     // ★ 修正: アニメーションクラス(animate-fade-in)を削除し、確実に画面を覆う
     // style={{ margin: 0, top: 0 }} で強制的にリセット
-    <div 
-      className="fixed top-0 left-0 w-full h-full bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] m-0 p-4" 
+    <div
+      className="fixed top-0 left-0 w-full h-full bg-black/40 backdrop-blur-sm flex items-center justify-center z-[9999] m-0 p-4"
       style={{ margin: 0, top: 0 }}
       onClick={onClose}
     >
       {/* カード部分にだけアニメーション(animate-pop-in)を適用 */}
-      <div 
+      <div
         className="glass w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-pop-in border border-white/20"
         onClick={e => e.stopPropagation()}
       >
@@ -67,7 +67,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
               <Sparkles size={20} />
             </span>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400">
-              AI Quiz Generator
+              AIクイズ生成
             </span>
           </h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-full transition-colors text-gray-500">
@@ -80,8 +80,8 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800 text-xs text-yellow-800 dark:text-yellow-200 mb-4">
               <AlertCircle size={14} className="inline mr-1" />
               APIキーが設定されていません。.envファイルを確認するか、以下に入力してください。
-              <input 
-                type="password" 
+              <input
+                type="password"
                 placeholder="Gemini API Key"
                 className="mt-2 w-full p-2 rounded border border-yellow-300 dark:border-yellow-700 bg-white/50 dark:bg-black/20"
                 value={apiKey}
@@ -91,7 +91,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Source Text / Topic</label>
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">元になるテキスト / トピック</label>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -101,12 +101,12 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Number of Questions: {count}</label>
-            <input 
-              type="range" 
-              min="1" 
-              max="10" 
-              value={count} 
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">問題数: {count}</label>
+            <input
+              type="range"
+              min="1"
+              max="10"
+              value={count}
               onChange={(e) => setCount(parseInt(e.target.value))}
               className="w-full h-2 bg-purple-200 dark:bg-purple-900/30 rounded-lg appearance-none cursor-pointer accent-purple-500"
             />
@@ -125,7 +125,7 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
               disabled={loading}
               className="flex-1 px-4 py-3 rounded-xl font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
-              Cancel
+              キャンセル
             </button>
             <button
               onClick={handleGenerate}
@@ -135,12 +135,12 @@ const GenerateQuizModal = ({ onClose, onSave }) => {
               {loading ? (
                 <>
                   <Loader size={18} className="mr-2 animate-spin" />
-                  Generating...
+                  生成中...
                 </>
               ) : (
                 <>
                   <Sparkles size={18} className="mr-2" />
-                  Generate Quiz
+                  クイズを生成
                 </>
               )}
             </button>

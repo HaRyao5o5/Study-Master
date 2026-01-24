@@ -30,10 +30,10 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
     setShowFeedback(false);
   }, [currentQuestionIndex]);
 
-  if (questions.length === 0) return <div>Loading...</div>;
+  if (questions.length === 0) return <div>読み込み中...</div>;
 
   const currentQuestion = questions[currentQuestionIndex];
-  
+
   const getOptions = () => {
     if (!currentQuestion) return [];
     return currentQuestion.options || [];
@@ -48,7 +48,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
     const safeOption = String(option).trim();
     const safeCorrect = String(currentQuestion.correctAnswer).trim();
     const isCorrect = safeOption === safeCorrect;
-    
+
     setTimeout(() => {
       if (immediateFeedback) {
         playSound(isCorrect ? 'correct' : 'wrong');
@@ -61,7 +61,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
       question: currentQuestion,
       selectedAnswer: option,
       isCorrect: isCorrect,
-      timeTaken: 0 
+      timeTaken: 0
     };
 
     const newAnswers = [...userAnswers, newAnswer];
@@ -79,8 +79,8 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
   // 複数選択のトグル
   const handleMultiToggle = (option) => {
     if (showFeedback) return;
-    setSelectedMultiple(prev => 
-      prev.includes(option) 
+    setSelectedMultiple(prev =>
+      prev.includes(option)
         ? prev.filter(o => o !== option)
         : [...prev, option]
     );
@@ -90,15 +90,15 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
   const handleMultiSubmit = () => {
     if (showFeedback || selectedMultiple.length === 0) return;
 
-    const correctAnswers = Array.isArray(currentQuestion.correctAnswer) 
-      ? currentQuestion.correctAnswer 
+    const correctAnswers = Array.isArray(currentQuestion.correctAnswer)
+      ? currentQuestion.correctAnswer
       : [currentQuestion.correctAnswer];
-    
+
     const selectedSet = new Set(selectedMultiple.map(s => String(s).trim()));
     const correctSet = new Set(correctAnswers.map(c => String(c).trim()));
-    
-    const isCorrect = selectedSet.size === correctSet.size && 
-                     [...selectedSet].every(s => correctSet.has(s));
+
+    const isCorrect = selectedSet.size === correctSet.size &&
+      [...selectedSet].every(s => correctSet.has(s));
 
     setTimeout(() => {
       if (immediateFeedback) {
@@ -134,8 +134,8 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
     const correctAnswers = Array.isArray(currentQuestion.correctAnswer)
       ? currentQuestion.correctAnswer
       : [currentQuestion.correctAnswer];
-    
-    const isCorrect = correctAnswers.some(ans => 
+
+    const isCorrect = correctAnswers.some(ans =>
       String(ans).trim() === inputValue.trim()
     );
 
@@ -197,7 +197,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
           <span>{currentQuestionIndex + 1} / {questions.length}</span>
         </div>
         <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div 
+          <div
             className="h-full bg-blue-500 transition-all duration-300"
             style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
           ></div>
@@ -210,7 +210,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
           Q.{currentQuestionIndex + 1}
         </span>
 
-        <button 
+        <button
           onClick={handleSpeak}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition-colors"
           title="読み上げ"
@@ -221,9 +221,9 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
         {/* 画像表示 */}
         {currentQuestion.image && (
           <div className="mb-6 max-w-md">
-            <img 
-              src={currentQuestion.image} 
-              alt="Question" 
+            <img
+              src={currentQuestion.image}
+              alt="Question"
               className="rounded-xl shadow-lg w-full h-auto"
             />
           </div>
@@ -233,9 +233,9 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
           {currentQuestion.text}
         </h2>
         <p className="text-sm text-gray-400 font-bold mt-2">
-          {questionType === 'input' ? '答えを入力してください' : 
-           questionType === 'multi-select' ? '正しい答えをすべて選んでください' :
-           '正しい答えを選んでください'}
+          {questionType === 'input' ? '答えを入力してください' :
+            questionType === 'multi-select' ? '正しい答えをすべて選んでください' :
+              '正しい答えを選んでください'}
         </p>
       </div>
 
@@ -273,15 +273,13 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
                   key={idx}
                   onClick={() => handleMultiToggle(option)}
                   disabled={showFeedback}
-                  className={`group w-full p-5 text-left rounded-2xl glass border-2 transition-all duration-200 flex items-center ${
-                    isSelected 
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40' 
+                  className={`group w-full p-5 text-left rounded-2xl glass border-2 transition-all duration-200 flex items-center ${isSelected
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/40'
                       : 'border-transparent hover:bg-white/80 dark:hover:bg-gray-700/80'
-                  } ${showFeedback ? 'cursor-not-allowed' : ''}`}
+                    } ${showFeedback ? 'cursor-not-allowed' : ''}`}
                 >
-                  <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                    isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-                  }`}>
+                  <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                    }`}>
                     {isSelected && <Check size={14} className="text-white" />}
                   </div>
                   <span className="font-bold text-lg">{option}</span>
@@ -307,22 +305,22 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
             let icon = null;
 
             if (showFeedback || (selectedOption === option && !immediateFeedback)) {
-               const isThisCorrect = String(option).trim() === String(currentQuestion.correctAnswer).trim();
-               const isSelected = option === selectedOption;
+              const isThisCorrect = String(option).trim() === String(currentQuestion.correctAnswer).trim();
+              const isSelected = option === selectedOption;
 
-               if (isThisCorrect && showFeedback) {
-                   stateClass = "bg-green-100 dark:bg-green-900/40 border-green-500 text-green-700 dark:text-green-300 ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900";
-                   icon = <CheckCircle className="ml-auto text-green-500" size={20} />;
-               } else if (isSelected) {
-                   if (showFeedback && !isThisCorrect) {
-                      stateClass = "bg-red-100 dark:bg-red-900/40 border-red-500 text-red-700 dark:text-red-300 ring-2 ring-red-500 ring-offset-2 dark:ring-offset-gray-900";
-                      icon = <XCircle className="ml-auto text-red-500" size={20} />;
-                   } else if (!showFeedback) {
-                      stateClass = "bg-blue-50 dark:bg-blue-900/40 border-blue-500 text-blue-700 dark:text-blue-300";
-                   }
-               } else if (showFeedback) {
-                   stateClass = "opacity-50 grayscale";
-               }
+              if (isThisCorrect && showFeedback) {
+                stateClass = "bg-green-100 dark:bg-green-900/40 border-green-500 text-green-700 dark:text-green-300 ring-2 ring-green-500 ring-offset-2 dark:ring-offset-gray-900";
+                icon = <CheckCircle className="ml-auto text-green-500" size={20} />;
+              } else if (isSelected) {
+                if (showFeedback && !isThisCorrect) {
+                  stateClass = "bg-red-100 dark:bg-red-900/40 border-red-500 text-red-700 dark:text-red-300 ring-2 ring-red-500 ring-offset-2 dark:ring-offset-gray-900";
+                  icon = <XCircle className="ml-auto text-red-500" size={20} />;
+                } else if (!showFeedback) {
+                  stateClass = "bg-blue-50 dark:bg-blue-900/40 border-blue-500 text-blue-700 dark:text-blue-300";
+                }
+              } else if (showFeedback) {
+                stateClass = "opacity-50 grayscale";
+              }
             }
 
             return (
@@ -365,7 +363,7 @@ const GameView = ({ quiz, isRandom, shuffleOptions, immediateFeedback, onFinish 
             </div>
           )}
 
-          <button 
+          <button
             onClick={() => handleNext()}
             className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-lg shadow-blue-200 dark:shadow-none hover:-translate-y-1 transition-all flex items-center justify-center"
           >

@@ -34,15 +34,15 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
 
   // 称号のアンロック状況を判定
   const unlockedTitleIds = TITLES.filter(t => t.condition(userStats)).map(t => t.id);
-  
+
   // 「次に解放可能な称号」のインデックスを探す
   // (リストの上から順に見て、最初に未開放だったものが「次の目標」)
   const nextUnlockIndex = TITLES.findIndex(t => !unlockedTitleIds.includes(t.id));
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-fade-in relative">
-       {/* ヘッダー */}
-       <div className="flex items-center mb-6">
+      {/* ヘッダー */}
+      <div className="flex items-center mb-6">
         <button onClick={onBack} className="mr-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
           <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
         </button>
@@ -50,7 +50,7 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* ① メインステータスカード */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
@@ -64,11 +64,11 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
             <div className="mb-6">
               <div className="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">
                 <span>EXP {currentXp}</span>
-                <span>NEXT {xpForNextLevel}</span>
+                <span>次のレベル {xpForNextLevel}</span>
               </div>
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out relative" 
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000 ease-out relative"
                   style={{ width: `${progressPercent}%` }}
                 >
                   <div className="absolute inset-0 bg-white/30 animate-[shimmer_2s_infinite]"></div>
@@ -100,53 +100,53 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
 
         {/* ② 弱点分析カード */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 flex flex-col">
-           <div className="flex items-center mb-4">
-             <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg mr-3">
-               <AlertTriangle size={20} className="text-red-500" />
-             </div>
-             <div>
-               <h3 className="text-lg font-bold text-gray-800 dark:text-white leading-none">弱点分析</h3>
-               <p className="text-xs text-gray-400 font-bold">最も間違えた問題 TOP 5</p>
-             </div>
-           </div>
-           
-           <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
-             {topWeaknesses.length > 0 ? (
-               <div className="space-y-3">
-                 {topWeaknesses.map((w, i) => (
-                   <div key={i} className="flex items-start p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 group hover:border-red-200 dark:hover:border-red-900/50 transition-colors">
-                     <div className="bg-red-500 text-white font-bold w-6 h-6 rounded flex items-center justify-center text-xs mr-3 flex-shrink-0 shadow-sm mt-0.5">
-                       {i + 1}
-                     </div>
-                     <div className="flex-1 min-w-0">
-                       <p className="text-sm font-bold text-gray-700 dark:text-gray-200 line-clamp-2">{w.text}</p>
-                       <p className="text-xs text-red-500 font-bold mt-1 flex items-center">
-                         <XCircleIcon size={12} className="mr-1" /> {w.count}回 ミス
-                       </p>
-                     </div>
-                   </div>
-                 ))}
-               </div>
-             ) : (
-               <div className="h-full flex flex-col items-center justify-center text-gray-400 py-8">
-                 <Star size={48} className="mb-2 opacity-20" />
-                 <p className="text-sm font-bold">Excellent!</p>
-                 <p className="text-xs">まだ苦手な問題はありません</p>
-               </div>
-             )}
-           </div>
+          <div className="flex items-center mb-4">
+            <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg mr-3">
+              <AlertTriangle size={20} className="text-red-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white leading-none">弱点分析</h3>
+              <p className="text-xs text-gray-400 font-bold">最も間違えた問題 TOP 5</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            {topWeaknesses.length > 0 ? (
+              <div className="space-y-3">
+                {topWeaknesses.map((w, i) => (
+                  <div key={i} className="flex items-start p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg border border-gray-100 dark:border-gray-700/50 group hover:border-red-200 dark:hover:border-red-900/50 transition-colors">
+                    <div className="bg-red-500 text-white font-bold w-6 h-6 rounded flex items-center justify-center text-xs mr-3 flex-shrink-0 shadow-sm mt-0.5">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-700 dark:text-gray-200 line-clamp-2">{w.text}</p>
+                      <p className="text-xs text-red-500 font-bold mt-1 flex items-center">
+                        <XCircleIcon size={12} className="mr-1" /> {w.count}回 ミス
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-gray-400 py-8">
+                <Star size={48} className="mb-2 opacity-20" />
+                <p className="text-sm font-bold">Excellent!</p>
+                <p className="text-xs">まだ苦手な問題はありません</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ③ 称号コレクション */}
         <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
           <div className="flex items-center mb-6">
-             <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-3">
-               <Medal size={20} className="text-purple-500" />
-             </div>
-             <div>
-               <h3 className="text-lg font-bold text-gray-800 dark:text-white leading-none">称号コレクション</h3>
-               <p className="text-xs text-gray-400 font-bold">獲得済み: {unlockedTitleIds.length} / {TITLES.length}</p>
-             </div>
+            <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-3">
+              <Medal size={20} className="text-purple-500" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 dark:text-white leading-none">称号コレクション</h3>
+              <p className="text-xs text-gray-400 font-bold">獲得済み: {unlockedTitleIds.length} / {TITLES.length}</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -156,24 +156,22 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
               const isNext = !isUnlocked && (index === nextUnlockIndex);
 
               return (
-                <div 
-                  key={title.id} 
+                <div
+                  key={title.id}
                   onClick={() => setSelectedTitle({ ...title, isUnlocked, isNext })} // クリックで詳細セット
-                  className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center transition-all duration-300 relative overflow-hidden cursor-pointer ${
-                    isUnlocked 
-                      ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:scale-105 hover:shadow-md' 
+                  className={`p-3 rounded-xl border-2 flex flex-col items-center justify-center text-center transition-all duration-300 relative overflow-hidden cursor-pointer ${isUnlocked
+                      ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 hover:scale-105 hover:shadow-md'
                       : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 opacity-60 hover:opacity-80'
-                  }`}
+                    }`}
                 >
                   {isUnlocked && (
                     <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-white/0 via-white/20 to-white/0 transform rotate-45 translate-x-8 -translate-y-8 animate-[shimmer_3s_infinite]"></div>
                   )}
-                  
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-sm ${
-                    isUnlocked 
-                    ? 'bg-white dark:bg-gray-800 text-purple-500 dark:text-purple-300' 
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
-                  }`}>
+
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-sm ${isUnlocked
+                      ? 'bg-white dark:bg-gray-800 text-purple-500 dark:text-purple-300'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                    }`}>
                     {isUnlocked ? <Medal size={20} /> : <Lock size={18} />}
                   </div>
                   <div className={`font-bold text-xs ${isUnlocked ? 'text-purple-900 dark:text-purple-100' : 'text-gray-400'}`}>
@@ -189,15 +187,15 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
 
       {/* ★ 称号詳細モーダル */}
       {selectedTitle && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in"
           onClick={() => setSelectedTitle(null)}
         >
-          <div 
+          <div
             className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full relative animate-pop-in border border-gray-100 dark:border-gray-700"
             onClick={(e) => e.stopPropagation()} // 中身クリックで閉じないように
           >
-            <button 
+            <button
               onClick={() => setSelectedTitle(null)}
               className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
@@ -205,11 +203,10 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
             </button>
 
             <div className="flex flex-col items-center text-center">
-              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-md ${
-                selectedTitle.isUnlocked
-                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
-              }`}>
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 shadow-md ${selectedTitle.isUnlocked
+                  ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+                }`}>
                 {selectedTitle.isUnlocked ? <Medal size={40} /> : <Lock size={40} />}
               </div>
 
@@ -217,11 +214,10 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
                 {selectedTitle.isUnlocked ? selectedTitle.name : '？？？'}
               </h3>
 
-              <div className={`px-3 py-1 rounded-full text-xs font-bold mb-6 ${
-                selectedTitle.isUnlocked
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
-                : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-              }`}>
+              <div className={`px-3 py-1 rounded-full text-xs font-bold mb-6 ${selectedTitle.isUnlocked
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                  : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                }`}>
                 {selectedTitle.isUnlocked ? '獲得済み' : '未開放'}
               </div>
 
@@ -232,8 +228,8 @@ const StatsView = ({ userStats, errorStats, courses, onBack }) => {
                      未開放(Next): 条件を表示
                      未開放(それ以外): ？？？で隠す
                   */}
-                  {selectedTitle.isUnlocked || selectedTitle.isNext 
-                    ? selectedTitle.requirement 
+                  {selectedTitle.isUnlocked || selectedTitle.isNext
+                    ? selectedTitle.requirement
                     : '？？？？？？？？'}
                 </p>
               </div>
