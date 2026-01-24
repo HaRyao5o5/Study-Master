@@ -10,6 +10,14 @@ service cloud.firestore {
       // ユーザードキュメント本体: 自分のデータのみ読み書き可能
       allow read, write: if request.auth != null && request.auth.uid == userId;
       
+      // サブコレクション: profile（プロフィール）
+      match /profile/{profileId} {
+        // 読み取り: すべての認証済みユーザー（他人のプロフィール表示のため）
+        allow read: if request.auth != null;
+        // 書き込み: 本人のみ
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+      
       // サブコレクション: courses（コース一覧）
       match /courses/{courseId} {
         // 自分のコースのみ読み書き可能
@@ -28,6 +36,15 @@ service cloud.firestore {
     // ========================================
     match /rankings/{userId} {
       // 読み取り: すべての認証済みユーザー（ランキング表示のため）
+      allow read: if request.auth != null;
+      
+      // 書き込み: 本人のみ
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // leaderboardコレクション（rankingsと同じルール）
+    match /leaderboard/{userId} {
+      // 読み取り: すべての認証済みユーザー
       allow read: if request.auth != null;
       
       // 書き込み: 本人のみ
