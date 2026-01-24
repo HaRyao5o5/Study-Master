@@ -1,5 +1,5 @@
 // src/components/course/QuizListView.jsx
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { Layers, Target, Brain, RotateCcw, Plus, FileText, Trash2, ChevronRight, Play, Share2, Upload, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
@@ -240,5 +240,6 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
     </div>
   );
 };
+});
 
 export default QuizListView;

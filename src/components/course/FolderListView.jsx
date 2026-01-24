@@ -1,5 +1,5 @@
 // src/components/course/FolderListView.jsx
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, memo } from 'react';
 import { Folder, Plus, X, Edit3, Share2, Upload, MoreVertical } from 'lucide-react';
 import { importFromFile } from '../../utils/fileIO';
 import { useApp } from '../../context/AppContext';
@@ -182,5 +182,6 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
     </div>
   );
 };
+});
 
 export default FolderListView;
