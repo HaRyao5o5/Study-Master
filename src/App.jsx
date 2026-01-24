@@ -1,9 +1,9 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   BookOpen, Settings, Bell, Trophy, Flame, BarChart2
 } from 'lucide-react';
-import { Routes, Route, useNavigate, useParams, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Firebase imports
 import { signInWithPopup, signOut } from "firebase/auth";
@@ -12,187 +12,27 @@ import { auth, googleProvider } from "./lib/firebase";
 import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
 
-import Breadcrumbs from './components/common/Breadcrumbs';
 import LoadingScreen from './components/common/LoadingScreen';
 import FolderListView from './components/course/FolderListView';
-import QuizListView from './components/course/QuizListView';
 import CreateCourseModal from './components/course/CreateCourseModal';
-import QuizEditor from './components/editor/QuizEditor';
-import QuizMenuView from './components/course/QuizMenuView';
-import GameView from './components/game/GameView';
-import ResultView from './components/game/ResultView';
 import SettingsView from './components/layout/SettingsView';
 import ChangelogModal from './components/layout/ChangelogModal';
 import StatsView from './components/layout/StatsView';
 import SharedCourseView from './components/course/SharedCourseView';
-import RankingView from './components/layout/RankingView'; // ★ 追加
+import RankingView from './components/layout/RankingView';
+
+// Page Components
+import CoursePage from './pages/CoursePage';
+import QuizMenuPage from './pages/QuizMenuPage';
+import GamePage from './pages/GamePage';
+import ResultPage from './pages/ResultPage';
+import EditQuizPage from './pages/EditQuizPage';
+import CreateQuizPage from './pages/CreateQuizPage';
 
 // Context
 import { useApp } from './context/AppContext';
+import { useToast } from './context/ToastContext';
 
-// --- ルート用コンポーネント ---
-const CoursePage = ({ wrongHistory, onCreateQuiz, onDeleteQuiz, onImportQuiz }) => {
-  const { courseId } = useParams();
-  const { courses } = useApp();
-  const navigate = useNavigate();
-  const course = courses.find(c => c.id === courseId);
-  if (!course) return <div className="p-8 text-center">コースが見つかりません</div>;
-  return (
-    <>
-      <div className="mb-6 animate-slide-up">
-        <Breadcrumbs path={[{ title: course.title, id: course.id, type: 'course' }]} onNavigate={() => navigate('/')} />
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mt-4">{course.title}</h2>
-        <p className="text-gray-500 dark:text-gray-400">{course.description}</p>
-      </div>
-      <QuizListView 
-        course={course} 
-        onSelectQuiz={(q) => navigate(`/course/${course.id}/quiz/${q.id}`)} 
-        wrongHistory={wrongHistory} 
-        onSelectReview={() => navigate(`/course/${course.id}/quiz/review-mode`)}
-        onCreateQuiz={() => onCreateQuiz(course.id)}
-        onDeleteQuiz={(qid) => onDeleteQuiz(qid, course.id)}
-        onImportQuiz={(q) => onImportQuiz(q, course.id)}
-      />
-    </>
-  );
-};
-
-const QuizMenuPage = ({ wrongHistory, onStart, onClearHistory }) => {
-  const { courseId, quizId } = useParams();
-  const { courses } = useApp();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const course = courses.find(c => c.id === courseId);
-  if (!course) return <div>コースが見つかりません</div>;
-  let quiz;
-  if (quizId === 'review-mode') {
-    const wrongQuestions = [];
-    const addedIds = new Set(); // 重複防止用
-    courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-      if (wrongHistory.includes(ques.id) && !addedIds.has(ques.id)) {
-        wrongQuestions.push(ques);
-        addedIds.add(ques.id);
-      }
-    })));
-    quiz = { id: 'review-mode', title: '弱点克服（復習）', description: '間違えた問題のみ出題されます', questions: wrongQuestions };
-  } else if (quizId === 'mock-exam') {
-    // 実力診断テスト: location.stateから取得、なければ全問題
-    quiz = location.state?.quiz || {
-      id: 'mock-exam',
-      title: '実力診断テスト',
-      description: `${course.title}から出題`,
-      questions: course.quizzes.flatMap(q => q.questions),
-      isMock: true
-    };
-  } else {
-    quiz = course.quizzes.find(q => q.id === quizId);
-  }
-  if (!quiz) return <div>問題セットが見つかりません</div>;
-  const path = [
-    { title: course.title, id: course.id, type: 'course' },
-    { title: quiz.title, id: quiz.id, type: 'quiz_menu' }
-  ];
-  
-  const handleStart = (rand, shuf, imm) => {
-    // quiz オブジェクトを navigate の state で渡す
-    onStart(courseId, quizId, rand, shuf, imm); // gameSettingsを設定
-    navigate(`/course/${courseId}/quiz/${quizId}/play`, { state: { quiz } }); // quizをstateで渡す
-  };
-  
-  return (
-    <>
-      <Breadcrumbs path={path} onNavigate={(type, id) => { if(type === 'home') navigate('/'); if(type === 'course') navigate(`/course/${courseId}`); }} />
-      <QuizMenuView 
-        quiz={quiz} 
-        onStart={handleStart} 
-        isReviewMode={quizId === 'review-mode'} 
-        onClearHistory={onClearHistory} 
-        onEdit={quizId === 'review-mode' ? null : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)} 
-      />
-    </>
-  );
-};
-
-const GamePage = ({ gameSettings, wrongHistory, onFinish }) => {
-  const { courseId, quizId } = useParams();
-  const { courses } = useApp();
-  const location = useLocation();
-  const course = courses.find(c => c.id === courseId);
-  let quiz;
-  if (quizId === 'review-mode') {
-    const wrongQuestions = [];
-    const addedIds = new Set(); // 重複防止用
-    courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
-      if (wrongHistory.includes(ques.id) && !addedIds.has(ques.id)) {
-        wrongQuestions.push(ques);
-        addedIds.add(ques.id);
-      }
-    })));
-    quiz = { id: 'review-mode', title: '弱点克服', questions: wrongQuestions };
-  } else if (quizId === 'mock-exam') {
-    // 実力診断テスト: location.stateから取得、なければ全問題
-    quiz = location.state?.quiz || {
-      id: 'mock-exam',
-      title: '実力診断テスト',
-      questions: course?.quizzes.flatMap(q => q.questions) || []
-    };
-  } else {
-    // location.stateからquizを優先的に取得（画像などのカスタムフィールドを保持）
-    quiz = location.state?.quiz || course?.quizzes.find(q => q.id === quizId);
-  }
-  if (!quiz) return <Navigate to="/" />;
-  return (
-    <GameView 
-      quiz={quiz} 
-      isRandom={gameSettings.randomize} 
-      shuffleOptions={gameSettings.shuffleOptions} 
-      immediateFeedback={gameSettings.immediateFeedback} 
-      onFinish={(ans, time) => onFinish(ans, time, courseId, quizId)} 
-    />
-  );
-};
-
-const ResultPage = ({ resultData, gameSettings, onRetry }) => {
-  const { courseId, quizId } = useParams();
-  const navigate = useNavigate();
-  if (!resultData) return <Navigate to={`/course/${courseId}`} />;
-  return (
-    <ResultView 
-      resultData={resultData} 
-      onRetry={() => onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)} 
-      onBackToMenu={() => navigate(`/course/${courseId}`)} 
-    />
-  );
-};
-
-const EditQuizPage = ({ onSave }) => {
-  const { courseId, quizId } = useParams();
-  const { courses } = useApp();
-  const navigate = useNavigate();
-  const course = courses.find(c => c.id === courseId);
-  const quiz = course?.quizzes.find(q => q.id === quizId);
-  if (!course || !quiz) return <Navigate to="/" />;
-  return (
-    <QuizEditor 
-      quiz={quiz} 
-      onSave={(updated) => onSave(updated, courseId)} 
-      onCancel={() => navigate(`/course/${courseId}/quiz/${quizId}`)} 
-    />
-  );
-};
-
-const CreateQuizPage = ({ onSave }) => {
-  const { courseId } = useParams();
-  const navigate = useNavigate();
-  const newQuiz = { id: `quiz-${generateId()}`, title: '新規問題セット', description: '', questions: [] };
-  return (
-    <QuizEditor 
-      quiz={newQuiz} 
-      onSave={(updated) => onSave(updated, courseId)} 
-      onCancel={() => navigate(`/course/${courseId}`)} 
-    />
-  );
-};
 
 // --- メイン App コンポーネント ---
 export default function App() {
@@ -207,16 +47,16 @@ export default function App() {
     return 'system';
   });
 
-  const { 
-    user, isSyncing, 
-    courses, setCourses, 
-    userStats, setUserStats, 
-    wrongHistory, setWrongHistory, 
-    errorStats, setErrorStats 
+  const {
+    user, isSyncing,
+    courses, setCourses,
+    userStats, setUserStats,
+    wrongHistory, setWrongHistory,
+    errorStats, setErrorStats
   } = useApp();
 
   const navigate = useNavigate();
-  
+
   const levelInfo = getLevelInfo(userStats.totalXp);
   const xpPercentage = Math.min(100, Math.max(0, (levelInfo.currentXp / (levelInfo.xpForNextLevel || 1)) * 100));
   const titles = getUnlockedTitles(userStats);
@@ -226,7 +66,7 @@ export default function App() {
     if (!isSyncing) {
       const timer = setTimeout(() => {
         setIsInitialLoading(false);
-      }, 1000); 
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [isSyncing]);
@@ -254,12 +94,12 @@ export default function App() {
   }, [theme]);
 
   const handleLogin = async () => {
-    try { await signInWithPopup(auth, googleProvider); } 
+    try { await signInWithPopup(auth, googleProvider); }
     catch (error) { console.error("Login failed:", error); alert("ログインに失敗しました。"); }
   };
 
   const handleLogout = async () => {
-    try { if(confirm("ログアウトしますか？")) { await signOut(auth); alert("ログアウトしました。"); } } 
+    try { if (confirm("ログアウトしますか？")) { await signOut(auth); alert("ログアウトしました。"); } }
     catch (error) { console.error("Logout failed:", error); }
   };
 
@@ -270,7 +110,7 @@ export default function App() {
   };
 
   const handleEditCourseRequest = (course) => { setCourseToEdit(course); navigate('/edit-course'); };
-  
+
   const handleUpdateCourse = (title, desc, visibility) => {
     const updatedCourses = courses.map(c => c.id === courseToEdit.id ? { ...c, title, description: desc, visibility: visibility || 'private' } : c);
     setCourses(updatedCourses); setCourseToEdit(null); navigate('/');
@@ -327,20 +167,20 @@ export default function App() {
     let newLastLogin = userStats.lastLogin;
 
     if (userStats.lastLogin !== today) {
-      if (!userStats.lastLogin) { newStreak = 1; } 
+      if (!userStats.lastLogin) { newStreak = 1; }
       else {
         const last = new Date(userStats.lastLogin);
         const current = new Date(today);
         const diffTime = Math.abs(current - last);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         if (diffDays === 1) { newStreak += 1; } else { newStreak = 1; }
       }
       isStreakUpdated = true;
       newLastLogin = today;
     }
 
-    const resultWithXp = { 
-      answers, totalTime, xpGained, 
+    const resultWithXp = {
+      answers, totalTime, xpGained,
       currentLevel: levelInfo.level,
       isLevelUp: getLevelInfo(userStats.totalXp + xpGained).level > levelInfo.level,
       streakInfo: isStreakUpdated ? { days: newStreak, isUpdated: true } : null
@@ -350,7 +190,7 @@ export default function App() {
     navigate(`/course/${courseId}/quiz/${quizId}/result`);
 
     setTimeout(() => {
-        setUserStats(prev => ({ ...prev, totalXp: prev.totalXp + xpGained, streak: isStreakUpdated ? newStreak : prev.streak, lastLogin: newLastLogin }));
+      setUserStats(prev => ({ ...prev, totalXp: prev.totalXp + xpGained, streak: isStreakUpdated ? newStreak : prev.streak, lastLogin: newLastLogin }));
     }, 600);
 
     const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
@@ -372,14 +212,14 @@ export default function App() {
       return newHistory;
     });
   };
-  
+
   const clearHistory = () => { if (confirm('復習リストをリセットしますか？')) { setWrongHistory([]); navigate('/'); } };
-  const handleResetStats = () => { if(confirm("【デバッグ用】ステータスを初期化しますか？")) { setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' }); alert("ステータスをリセットしました。"); } };
+  const handleResetStats = () => { if (confirm("【デバッグ用】ステータスを初期化しますか？")) { setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' }); alert("ステータスをリセットしました。"); } };
   const handleDebugYesterday = () => {
-    if(confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
-       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-       setUserStats(prev => ({ ...prev, streak: 1, lastLogin: yesterday.toDateString() }));
-       alert("最終ログイン日を昨日に変更しました！");
+    if (confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      setUserStats(prev => ({ ...prev, streak: 1, lastLogin: yesterday.toDateString() }));
+      alert("最終ログイン日を昨日に変更しました！");
     }
   };
 
@@ -388,7 +228,7 @@ export default function App() {
   return (
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
       <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 pointer-events-none -z-10"></div>
-      
+
       <header className="sticky top-0 z-50 glass shadow-sm transition-all">
         <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer group" onClick={() => navigate('/')}>
@@ -405,7 +245,7 @@ export default function App() {
 
           <div className="flex items-center space-x-4">
             {/* ★ 変更: クリックでランキングへ飛ぶように cursor-pointer と onClick を追加 */}
-            <div 
+            <div
               className="hidden sm:flex flex-col items-end mr-2 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => navigate('/ranking')}
             >
@@ -417,14 +257,14 @@ export default function App() {
                 <span>{userStats.streak}日連続</span>
               </div>
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden relative">
-                <div 
-                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500" 
+                <div
+                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 transition-all duration-500"
                   style={{ width: `${xpPercentage}%` }}
                 ></div>
                 {isSyncing && (
-                   <div className="absolute inset-0 bg-white/50 animate-pulse flex items-center justify-center">
-                     <div className="w-full h-full bg-blue-400 blur-sm"></div>
-                   </div>
+                  <div className="absolute inset-0 bg-white/50 animate-pulse flex items-center justify-center">
+                    <div className="w-full h-full bg-blue-400 blur-sm"></div>
+                  </div>
                 )}
               </div>
             </div>
@@ -450,9 +290,9 @@ export default function App() {
           <Routes>
             <Route path="/" element={
               <>
-                <div 
-                    className="sm:hidden mb-6 glass p-4 rounded-xl shadow-sm flex justify-between items-center animate-slide-up cursor-pointer hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
-                    onClick={() => navigate('/ranking')}
+                <div
+                  className="sm:hidden mb-6 glass p-4 rounded-xl shadow-sm flex justify-between items-center animate-slide-up cursor-pointer hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
+                  onClick={() => navigate('/ranking')}
                 >
                   <div className="flex items-center">
                     <div className="bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded-lg mr-3 text-yellow-600 dark:text-yellow-400"><Trophy size={20} /></div>
@@ -464,23 +304,23 @@ export default function App() {
                   </div>
                 </div>
                 <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white animate-slide-up delay-75">科目の選択</h2>
-                <FolderListView 
-                  onSelectCourse={(c) => navigate(`/course/${c.id}`)} 
-                  onCreateCourse={() => navigate('/create-course')} 
+                <FolderListView
+                  onSelectCourse={(c) => navigate(`/course/${c.id}`)}
+                  onCreateCourse={() => navigate('/create-course')}
                   onEditCourse={handleEditCourseRequest}
                 />
               </>
             } />
-            
+
             <Route path="/create-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleCreateCourse} />} />
             <Route path="/edit-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleUpdateCourse} initialData={courseToEdit} />} />
             <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} onDebugYesterday={handleDebugYesterday} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
-            
+
             {/* ★ 追加: ランキングページへのルート */}
             <Route path="/ranking" element={<RankingView onBack={() => navigate('/')} currentUser={user} />} />
-            
+
             <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />
             <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuPage wrongHistory={wrongHistory} onStart={startQuiz} onClearHistory={clearHistory} />} />
             <Route path="/course/:courseId/quiz/:quizId/play" element={<GamePage gameSettings={gameSettings} wrongHistory={wrongHistory} onFinish={finishQuiz} />} />
