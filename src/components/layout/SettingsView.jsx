@@ -3,12 +3,15 @@ import React, { useRef, useState } from 'react'; // useState追加
 import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock, Edit2, Check, X } from 'lucide-react'; // アイコン追加
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
-import { updateUserProfile } from '../../lib/firebase'; // ★ 追加
+import { updateUserProfile } from '../../lib/firebase';
+import { useToast } from '../../context/ToastContext';
+import { SUCCESS, ERROR } from '../../utils/errorMessages';
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
-const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout }) => {
+const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, on Login, onLogout }) => {
   const fileInputRef = useRef(null);
+  const { showSuccess, showError } = useToast();
   
   // プロフィール編集用ステート
   const [isEditing, setIsEditing] = useState(false);
@@ -30,18 +33,15 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
     fileInputRef.current?.click();
   };
 
-  // プロフィール保存処理
   const handleSaveProfile = async () => {
     if (!editName.trim()) return;
     setIsSaving(true);
     try {
       await updateUserProfile(user, editName);
       setIsEditing(false);
-      // リロードしなくても反映されるように、userオブジェクト自体はReactの再レンダリングを待つか、
-      // ここでは簡易的にalertを出して更新を促す（本来はContext更新が望ましいが、firebase authの変更は自動検知される場合が多い）
-      alert("プロフィール名を変更しました！");
+      showSuccess(SUCCESS.PROFILE_UPDATED);
     } catch (error) {
-      alert("変更に失敗しました。");
+      showError(ERROR.PROFILE_UPDATE_FAILED);
     } finally {
       setIsSaving(false);
     }

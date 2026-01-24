@@ -3,13 +3,16 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPublicCourse } from '../../utils/cloudSync';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../../context/ToastContext';
+import { SUCCESS, CONFIRM } from '../../utils/errorMessages';
 import { Download, AlertTriangle, Loader, BookOpen, User } from 'lucide-react';
 import { generateId } from '../../utils/helpers';
 
 const SharedCourseView = () => {
   const { targetUid, courseId } = useParams();
   const navigate = useNavigate();
-  const { user, setCourses } = useApp(); // インポート用に使う
+  const { user, setCourses } = useApp();
+  const { showSuccess, showConfirm } = useToast();
   
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -30,8 +33,9 @@ const SharedCourseView = () => {
     loadData();
   }, [targetUid, courseId]);
 
-  const handleImport = () => {
-    if (!confirm(`「${course.title}」をあなたのライブラリに追加しますか？`)) return;
+  const handleImport = async () => {
+    const confirmed = await showConfirm(CONFIRM.IMPORT_COURSE(course.title));
+    if (!confirmed) return;
 
     // 新しいIDを割り振って自分のものにする（ディープコピー）
     const newCourse = {
@@ -45,7 +49,7 @@ const SharedCourseView = () => {
     };
 
     setCourses(prev => [...prev, newCourse]);
-    alert("インポートが完了しました！ホーム画面に戻ります。");
+    showSuccess(SUCCESS.IMPORT_SUCCESS);
     navigate('/');
   };
 

@@ -72,7 +72,7 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
   // AI生成完了時の処理
   const handleAiQuizGenerated = (newQuiz) => {
     onImportQuiz(newQuiz);
-    alert(`AIがクイズ「${newQuiz.title}」を作成しました！`);
+    showSuccess(SUCCESS.QUIZ_CREATED(newQuiz.title));
   };
 
   const weaknessCount = allQuestions.filter(q => wrongHistory.includes(q.id)).length;

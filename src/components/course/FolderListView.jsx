@@ -3,26 +3,29 @@ import React, { useRef, useState } from 'react';
 import { Folder, Plus, X, Edit3, Share2, Upload, MoreVertical } from 'lucide-react';
 import { importFromFile } from '../../utils/fileIO';
 import { useApp } from '../../context/AppContext';
+import { useToast } from '../../context/ToastContext';
+import { SUCCESS, CONFIRM } from '../../utils/errorMessages';
 import Toast from '../common/Toast';
 
 const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
   const { courses, setCourses, user } = useApp();
+  const { showSuccess, showConfirm } = useToast();
   const fileInputRef = useRef(null);
   const [toast, setToast] = useState(null);
 
   // ... (handleFileSelect, handleDelete, handleShare はそのまま) ...
   const handleFileSelect = (e) => {
-    // 中身は既存のまま
     if (!e.target.files.length) return;
     importFromFile(e.target.files[0], 'course', (newCourseData) => {
       setCourses(prevCourses => [...prevCourses, newCourseData]);
-      alert(`科目フォルダ「${newCourseData.title}」を追加しました！`);
+      showSuccess(SUCCESS.FOLDER_CREATED(newCourseData.title));
     });
     e.target.value = ''; 
   };
 
-  const handleDelete = (courseId) => {
-    if (confirm('このフォルダを削除しますか？中の問題もすべて消えます。')) {
+  const handleDelete = async (courseId) => {
+    const confirmed = await showConfirm(CONFIRM.DELETE_FOLDER);
+    if (confirmed) {
       setCourses(prevCourses => prevCourses.filter(c => c.id !== courseId));
     }
   };
