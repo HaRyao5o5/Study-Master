@@ -240,6 +240,5 @@ const QuizListView = ({ course, onSelectQuiz, wrongHistory, onSelectReview, onCr
     </div>
   );
 };
-});
 
-export default QuizListView;
+export default memo(QuizListView);
