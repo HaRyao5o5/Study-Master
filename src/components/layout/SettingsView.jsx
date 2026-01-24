@@ -9,7 +9,7 @@ import { SUCCESS, ERROR } from '../../utils/errorMessages';
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
-const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, on Login, onLogout }) => {
+const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout }) => {
   const fileInputRef = useRef(null);
   const { showSuccess, showError } = useToast();
   

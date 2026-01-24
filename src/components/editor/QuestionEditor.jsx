@@ -3,17 +3,20 @@ import React, { useState, useRef } from 'react';
 // ↓ Camera アイコンを追加
 import { List, CheckSquare, Type, ImageIcon, X, PlusCircle, MinusCircle, CircleHelp, Camera } from 'lucide-react';
 import { convertImageToBase64 } from '../../utils/helpers';
+import { useToast } from '../../context/ToastContext';
+import { ERROR, WARNING } from '../../utils/errorMessages';
 
 const QuestionEditor = ({ question, onSave, onCancel }) => {
   const [q, setQ] = useState(question);
+  const { showWarning, showError } = useToast();
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null); // ← カメラ用のRefを追加
+  const cameraInputRef = useRef(null);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 5000000) { // 5MBくらいまでは許容しよう (最近のスマホ写真はデカいからな)
-        alert("画像サイズが大きすぎます。読み込みが遅くなる可能性があります。");
+      if (file.size > 5000000) {
+        showWarning(ERROR.IMAGE_TOO_LARGE);
       }
       try {
         const base64 = await convertImageToBase64(file);
@@ -36,7 +39,7 @@ const QuestionEditor = ({ question, onSave, onCancel }) => {
 
   const removeOption = (idx) => {
     if (q.options.length <= 2) {
-      alert('選択肢は最低2つ必要です');
+      showError(ERROR.MIN_OPTIONS_REQUIRED);
       return;
     }
     const optionToRemove = q.options[idx];
