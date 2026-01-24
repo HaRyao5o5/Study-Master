@@ -17,31 +17,35 @@ export function useAppData() {
   const [wrongHistory, setWrongHistory] = useState([]);
   const [errorStats, setErrorStats] = useState({});
 
-  // ローカルストレージへの保存（ゲストモードのみ）
+  // ローカルストレージへの保存（ゲストモードのみ、認証確定後のみ）
   useEffect(() => {
+    if (!authChecked) return; // 認証状態が確定するまで保存しない
     if (!user) {
       // ログインしていない場合のみlocalStorageに保存
       localStorage.setItem('study-master-data', JSON.stringify(courses));
     }
-  }, [courses, user]);
+  }, [courses, user, authChecked]);
   
   useEffect(() => {
+    if (!authChecked) return;
     if (!user) {
       localStorage.setItem('study-master-wrong-history', JSON.stringify(wrongHistory));
     }
-  }, [wrongHistory, user]);
+  }, [wrongHistory, user, authChecked]);
   
   useEffect(() => {
+    if (!authChecked) return;
     if (!user) {
       localStorage.setItem('study-master-error-stats', JSON.stringify(errorStats));
     }
-  }, [errorStats, user]);
+  }, [errorStats, user, authChecked]);
   
   useEffect(() => {
+    if (!authChecked) return;
     if (!user) {
       localStorage.setItem('study-master-stats', JSON.stringify(userStats));
     }
-  }, [userStats, user]);
+  }, [userStats, user, authChecked]);
 
   // 認証とクラウド同期
   useEffect(() => {
@@ -69,12 +73,11 @@ export function useAppData() {
           }
           
           // ✅ ログイン後はlocalStorageをクリア（データ混在を防ぐ）
-          // ただし、ゲストデータはそのまま保持（ログアウト時に復元可能）
           localStorage.removeItem('study-master-data');
           localStorage.removeItem('study-master-wrong-history');
           localStorage.removeItem('study-master-error-stats');
           localStorage.removeItem('study-master-stats');
-          console.log('localStorage cleared after login (guest data preserved in browser)');
+          console.log('localStorage cleared after login');
         } catch (err) {
           console.error("Sync Error:", err);
         } finally {
