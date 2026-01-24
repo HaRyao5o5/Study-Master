@@ -182,6 +182,5 @@ const FolderListView = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
     </div>
   );
 };
-});
 
-export default FolderListView;
+export default memo(FolderListView);
