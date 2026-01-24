@@ -233,7 +233,11 @@ export default function App() {
         showSuccess('データの復元が完了しました！');
         navigate('/');
       }
-    } catch (e) { console.error(e); showError('読み込みに失敗しました。'); }
+    } catch (e) { 
+      console.error(e); 
+      showError('読み込みに失敗しました。'); 
+    }
+  };
 
   const startQuiz = (courseId, quizId, randomize, shuffleOptions, immediateFeedback) => {
     setGameSettings({ randomize, shuffleOptions, immediateFeedback });
