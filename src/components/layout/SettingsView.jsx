@@ -142,7 +142,7 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                       同期有効
                     </p>
                     <button 
-                      onClick={onLogout}
+                      onClick={handleLogout}
                       className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
                     >
                       <LogOut size={14} className="mr-2" /> ログアウト
