@@ -9,6 +9,8 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase';
 
+const googleProvider = new GoogleAuthProvider();
+
 import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
 
@@ -202,7 +204,7 @@ export default function App() {
   // --- イベントハンドラー ---
   const handleLogin = async () => {
     try {
-      await login();
+      await signInWithPopup(auth, googleProvider);
     } catch (error) {
       console.error("Login failed:", error);
       showError('ログインに失敗しました。');
