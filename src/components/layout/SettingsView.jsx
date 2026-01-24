@@ -1,4 +1,3 @@
-```javascript
 // src/components/layout/SettingsView.jsx
 import React, { useRef, useState } from 'react'; // useState追加
 import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock, Edit2, Check, X } from 'lucide-react'; // アイコン追加
