@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ========================================
+    // ユーザーデータ（メインの個人データ保存場所）
+    // ========================================
+    match /users/{userId} {
+      // ユーザードキュメント本体: 自分のデータのみ読み書き可能
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // サブコレクション: courses（コース一覧）
+      match /courses/{courseId} {
+        // 自分のコースのみ読み書き可能
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+        
+        // サブコレクション: quizzes（各コースのクイズ）
+        match /quizzes/{quizId} {
+          // 自分のクイズのみ読み書き可能
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+    
+    // ========================================
+    // ランキングコレクション
+    // ========================================
+    match /rankings/{userId} {
+      // 読み取り: すべての認証済みユーザー（ランキング表示のため）
+      allow read: if request.auth != null;
+      
+      // 書き込み: 本人のみ
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // ========================================
+    // 共有コースコレクション（将来の機能拡張用）
+    // ========================================
+    match /sharedCourses/{courseId} {
+      // 読み取り: 誰でも可能（共有リンクでアクセス可能にするため）
+      allow read: if true;
+      
+      // 作成: ログインユーザーのみ
+      allow create: if request.auth != null
+                    && request.resource.data.createdBy == request.auth.uid;
+      
+      // 更新: 作成者本人のみ
+      allow update: if request.auth != null 
+                    && request.auth.uid == resource.data.createdBy;
+      
+      // 削除: 作成者本人のみ
+      allow delete: if request.auth != null 
+                    && request.auth.uid == resource.data.createdBy;
+    }
+  }
+}
