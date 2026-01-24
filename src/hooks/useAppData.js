@@ -79,6 +79,9 @@ export function useAppData() {
           localStorage.removeItem('study-master-error-stats');
           localStorage.removeItem('study-master-stats');
           console.log('localStorage cleared after login');
+          
+          // プロフィール読み込み
+          loadProfile(currentUser.uid);
         } catch (err) {
           console.error("Sync Error:", err);
         } finally {
@@ -138,20 +141,16 @@ export function useAppData() {
     return () => clearTimeout(saveTimeoutRef.current);
   }, [courses, userStats, wrongHistory, errorStats, user]);
 
-  return {
-    user,
-    isSyncing,
-    saveError,
-    courses, setCourses,
-    userStats, setUserStats,
-    wrongHistory, setWrongHistory,
-    errorStats, setErrorStats
-  };
+  // プロフィール状態
+  const [profile, setProfile] = useState(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [hasProfile, setHasProfile] = useState(false);
 
   // プロフィール取得
   const loadProfile = async (uid) => {
     setIsProfileLoading(true);
     try {
+      const { getProfile } = await import('../lib/firebaseProfile');
       const profileData = await getProfile(uid);
       if (profileData) {
         setProfile(profileData);
@@ -172,8 +171,9 @@ export function useAppData() {
   // プロフィール更新
   const updateProfile = async (profileData) => {
     if (!user) return;
-    
+   
     try {
+      const { updateProfile: updateFirebaseProfile } = await import('../lib/firebaseProfile');
       await updateFirebaseProfile(user.uid, profileData);
       setProfile(profileData);
       setHasProfile(true);
@@ -181,5 +181,21 @@ export function useAppData() {
       console.error('Failed to update profile:', error);
       throw error;
     }
+  };
+
+  return {
+    user,
+    isSyncing,
+    saveError,
+    courses, setCourses,
+    userStats, setUserStats,
+    wrongHistory, setWrongHistory,
+    errorStats, setErrorStats,
+    // プロフィール関連
+    profile,
+    isProfileLoading,
+    hasProfile,
+    updateProfile,
+    loadProfile
   };
 }
