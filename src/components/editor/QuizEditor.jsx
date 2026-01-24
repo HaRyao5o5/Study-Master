@@ -3,18 +3,20 @@ import React, { useState, useRef } from 'react';
 import { Save, X, Plus, Trash2, CheckCircle, AlertCircle, FileText, ChevronRight, Image as ImageIcon, Check, Upload } from 'lucide-react';
 import { generateId } from '../../utils/helpers';
 import { resizeImage, getBase64Size } from '../../utils/imageUtils';
+import { useToast } from '../../context/ToastContext';
 
 const QuizEditor = ({ quiz, onSave, onCancel }) => {
   const [title, setTitle] = useState(quiz.title || '');
   const [description, setDescription] = useState(quiz.description || '');
   const [questions, setQuestions] = useState(quiz.questions || []);
-  
+
   const [editingQuestion, setEditingQuestion] = useState(null);
+  const { showError, showConfirm } = useToast();
 
   const handleSaveQuiz = () => {
     if (!title.trim()) return;
     if (questions.length === 0) {
-      alert("少なくとも1つの問題を作成してください。");
+      showError("少なくとも1つの問題を作成してください。");
       return;
     }
 
@@ -42,23 +44,23 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
   const handleSaveQuestion = (q) => {
     // バリデーション
     if (!q.text.trim()) {
-      alert("問題文を入力してください。");
+      showError("問題文を入力してください。");
       return;
     }
 
     if (q.type === 'input') {
       if (!q.correctAnswer) {
-        alert("正解を入力してください。");
+        showError("正解を入力してください。");
         return;
       }
     } else {
       const filledOptions = q.options.filter(o => o.trim());
       if (filledOptions.length < 2) {
-        alert("最低2つの選択肢を入力してください。");
+        showError("最低2つの選択肢を入力してください。");
         return;
       }
       if (!q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer.length === 0)) {
-        alert("正解を選択してください。");
+        showError("正解を選択してください。");
         return;
       }
     }
@@ -72,7 +74,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
   };
 
   const handleDeleteQuestion = (id) => {
-    if(confirm("この問題を削除しますか？")) {
+    if (confirm("この問題を削除しますか？")) {
       setQuestions(questions.filter(q => q.id !== id));
     }
   };
@@ -85,7 +87,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
     const handleOptionChange = (idx, val) => {
       const newOptions = [...qData.options];
       newOptions[idx] = val;
-      
+
       // 正解が変更された選択肢だった場合、正解も更新
       if (qData.type === 'select' && qData.correctAnswer === qData.options[idx]) {
         setQData({ ...qData, options: newOptions, correctAnswer: val });
@@ -124,23 +126,23 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
       if (!file) return;
 
       if (!file.type.startsWith('image/')) {
-        alert('画像ファイルを選択してください');
+        showError('画像ファイルを選択してください');
         return;
       }
 
       try {
         const resizedBase64 = await resizeImage(file, 800, 600);
         const size = getBase64Size(resizedBase64);
-        
+
         if (size > 500) {
-          alert(`画像サイズが大きすぎます (${Math.round(size)}KB)。500KB以下の画像を選択してください。`);
+          showError(`画像サイズが大きすぎます (${Math.round(size)}KB)。500KB以下の画像を選択してください。`);
           return;
         }
 
         setQData({ ...qData, image: resizedBase64 });
       } catch (error) {
         console.error(error);
-        alert('画像の処理に失敗しました');
+        showError('画像の処理に失敗しました');
       }
     };
 
@@ -180,11 +182,10 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
                 key={type.value}
                 type="button"
                 onClick={() => setQData({ ...qData, type: type.value, correctAnswer: type.value === 'multi-select' ? [] : '' })}
-                className={`py-2 px-3 rounded-lg font-bold text-sm transition-all ${
-                  qData.type === type.value
+                className={`py-2 px-3 rounded-lg font-bold text-sm transition-all ${qData.type === type.value
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-                }`}
+                  }`}
               >
                 {type.label}
               </button>
@@ -197,7 +198,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Question Text</label>
           <textarea
             value={qData.text}
-            onChange={e => setQData({...qData, text: e.target.value})}
+            onChange={e => setQData({ ...qData, text: e.target.value })}
             className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white resize-none h-24 shadow-sm"
             placeholder="問題文を入力..."
             autoFocus
@@ -213,7 +214,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
             <input
               type="text"
               value={qData.image && !qData.image.startsWith('data:') ? qData.image : ''}
-              onChange={e => setQData({...qData, image: e.target.value})}
+              onChange={e => setQData({ ...qData, image: e.target.value })}
               className="w-full px-4 py-2 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white shadow-sm"
               placeholder="画像URLを入力 または 下のボタンでファイルを選択"
             />
@@ -228,7 +229,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
               {qData.image && (
                 <button
                   type="button"
-                  onClick={() => setQData({...qData, image: ''})}
+                  onClick={() => setQData({ ...qData, image: '' })}
                   className="py-2 px-4 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg text-sm font-bold transition-colors"
                 >
                   削除
@@ -305,12 +306,11 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
                   {qData.type === 'select' ? (
                     <button
                       type="button"
-                      onClick={() => setQData({...qData, correctAnswer: opt})}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        qData.correctAnswer === opt && opt !== '' 
-                          ? 'bg-green-500 border-green-500 text-white shadow-md' 
+                      onClick={() => setQData({ ...qData, correctAnswer: opt })}
+                      className={`p-3 rounded-lg border-2 transition-all ${qData.correctAnswer === opt && opt !== ''
+                          ? 'bg-green-500 border-green-500 text-white shadow-md'
                           : 'bg-gray-100 dark:bg-gray-700 border-transparent text-gray-400 hover:bg-gray-200'
-                      }`}
+                        }`}
                       disabled={!opt}
                     >
                       <CheckCircle size={20} />
@@ -319,11 +319,10 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
                     <button
                       type="button"
                       onClick={() => toggleMultiSelect(opt)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        Array.isArray(qData.correctAnswer) && qData.correctAnswer.includes(opt) && opt !== ''
-                          ? 'bg-green-500 border-green-500 text-white shadow-md' 
+                      className={`p-3 rounded-lg border-2 transition-all ${Array.isArray(qData.correctAnswer) && qData.correctAnswer.includes(opt) && opt !== ''
+                          ? 'bg-green-500 border-green-500 text-white shadow-md'
                           : 'bg-gray-100 dark:bg-gray-700 border-transparent text-gray-400 hover:bg-gray-200'
-                      }`}
+                        }`}
                       disabled={!opt}
                     >
                       <Check size={20} />
@@ -333,11 +332,10 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
                     type="text"
                     value={opt}
                     onChange={e => handleOptionChange(idx, e.target.value)}
-                    className={`flex-1 px-4 py-3 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white shadow-sm ${
-                        (qData.type === 'select' && qData.correctAnswer === opt && opt !== '') ||
+                    className={`flex-1 px-4 py-3 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white shadow-sm ${(qData.type === 'select' && qData.correctAnswer === opt && opt !== '') ||
                         (qData.type === 'multi-select' && Array.isArray(qData.correctAnswer) && qData.correctAnswer.includes(opt) && opt !== '')
-                          ? 'border-green-500/50' : ''
-                    }`}
+                        ? 'border-green-500/50' : ''
+                      }`}
                     placeholder={`選択肢 ${idx + 1}`}
                   />
                   {qData.options.length > 2 && (
@@ -362,7 +360,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
               </button>
             )}
             {(!qData.correctAnswer || (Array.isArray(qData.correctAnswer) && qData.correctAnswer.length === 0)) && (
-              <p className="text-xs text-red-500 mt-2 flex items-center"><AlertCircle size={12} className="mr-1"/> 正解の選択肢のボタンをクリックして選択してください</p>
+              <p className="text-xs text-red-500 mt-2 flex items-center"><AlertCircle size={12} className="mr-1" /> 正解の選択肢のボタンをクリックして選択してください</p>
             )}
           </div>
         )}
@@ -372,7 +370,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
           <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Explanation (Optional)</label>
           <textarea
             value={qData.explanation || ''}
-            onChange={e => setQData({...qData, explanation: e.target.value})}
+            onChange={e => setQData({ ...qData, explanation: e.target.value })}
             className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white resize-none h-20 shadow-sm"
             placeholder="解説を入力（任意）..."
           />
@@ -380,8 +378,8 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
 
         <div className="flex gap-3 pt-4">
           <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">Cancel</button>
-          <button 
-            onClick={() => onSave(qData)} 
+          <button
+            onClick={() => onSave(qData)}
             className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all"
           >
             Done
@@ -396,7 +394,7 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
       {/* ヘッダーカード */}
       <div className="glass p-6 rounded-3xl mb-6 flex justify-between items-center shadow-lg border-white/40 dark:border-gray-700/50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-        
+
         <div className="flex items-center z-10">
           <button onClick={onCancel} className="mr-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <X size={24} className="text-gray-500" />
@@ -408,8 +406,8 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
             <p className="text-sm text-gray-500 dark:text-gray-400 font-bold">問題セットの内容を編集</p>
           </div>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleSaveQuiz}
           className="z-10 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg transition-transform hover:-translate-y-1 flex items-center"
         >
@@ -420,98 +418,98 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 左側：基本情報 */}
         <div className="lg:col-span-1 space-y-6">
-            <div className="glass p-6 rounded-2xl">
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Title</label>
-                <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white font-bold mb-4"
-                    placeholder="Ex: 英単語 第1章"
-                />
-                
-                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Description</label>
-                <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white resize-none h-32"
-                    placeholder="説明を入力..."
-                />
-            </div>
-            
-            <div className="glass p-6 rounded-2xl text-center">
-                <p className="text-4xl font-black text-blue-600 dark:text-blue-400 mb-1">{questions.length}</p>
-                <p className="text-xs font-bold text-gray-400 uppercase">Questions</p>
-            </div>
+          <div className="glass p-6 rounded-2xl">
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white font-bold mb-4"
+              placeholder="Ex: 英単語 第1章"
+            />
+
+            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-blue-500 focus:outline-none transition-all dark:text-white resize-none h-32"
+              placeholder="説明を入力..."
+            />
+          </div>
+
+          <div className="glass p-6 rounded-2xl text-center">
+            <p className="text-4xl font-black text-blue-600 dark:text-blue-400 mb-1">{questions.length}</p>
+            <p className="text-xs font-bold text-gray-400 uppercase">Questions</p>
+          </div>
         </div>
 
         {/* 右側：質問リスト / 編集フォーム */}
         <div className="lg:col-span-2">
-            <div className="glass p-6 rounded-2xl min-h-[500px]">
-                {editingQuestion ? (
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
-                            <span className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-2 text-blue-600"><FileText size={18}/></span>
-                            {questions.find(q => q.id === editingQuestion.id) ? 'Edit Question' : 'Add Question'}
-                        </h3>
-                        <QuestionForm 
-                            initialData={editingQuestion} 
-                            onSave={handleSaveQuestion} 
-                            onCancel={() => setEditingQuestion(null)} 
-                        />
+          <div className="glass p-6 rounded-2xl min-h-[500px]">
+            {editingQuestion ? (
+              <div>
+                <h3 className="text-lg font-bold text-gray-700 dark:text-gray-200 mb-4 flex items-center">
+                  <span className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg mr-2 text-blue-600"><FileText size={18} /></span>
+                  {questions.find(q => q.id === editingQuestion.id) ? 'Edit Question' : 'Add Question'}
+                </h3>
+                <QuestionForm
+                  initialData={editingQuestion}
+                  onSave={handleSaveQuestion}
+                  onCancel={() => setEditingQuestion(null)}
+                />
+              </div>
+            ) : (
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-gray-700 dark:text-gray-200">Questions List</h3>
+                  <button
+                    onClick={handleAddQuestion}
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg font-bold text-sm transition-colors flex items-center"
+                  >
+                    <Plus size={16} className="mr-1" /> Add New
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {questions.length === 0 ? (
+                    <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                      <p className="text-gray-400 font-bold">問題がまだありません</p>
+                      <p className="text-xs text-gray-400 mt-1">"Add New" から作成してください</p>
                     </div>
-                ) : (
-                    <div>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-bold text-gray-700 dark:text-gray-200">Questions List</h3>
-                            <button 
-                                onClick={handleAddQuestion}
-                                className="px-4 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg font-bold text-sm transition-colors flex items-center"
-                            >
-                                <Plus size={16} className="mr-1" /> Add New
-                            </button>
+                  ) : (
+                    questions.map((q, idx) => (
+                      <div
+                        key={q.id}
+                        onClick={() => setEditingQuestion(q)}
+                        className="group p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-xl cursor-pointer transition-all flex justify-between items-center"
+                      >
+                        <div className="flex items-center min-w-0">
+                          <span className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 font-bold rounded-lg mr-3 text-xs flex-shrink-0">
+                            Q{idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-bold text-gray-700 dark:text-gray-200 truncate pr-4">{q.text}</p>
+                            <p className="text-xs text-gray-400">
+                              {q.type === 'select' ? '単一選択' : q.type === 'multi-select' ? '複数選択' : '記述式'}
+                            </p>
+                          </div>
                         </div>
-                        
-                        <div className="space-y-3">
-                            {questions.length === 0 ? (
-                                <div className="text-center py-10 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-                                    <p className="text-gray-400 font-bold">問題がまだありません</p>
-                                    <p className="text-xs text-gray-400 mt-1">"Add New" から作成してください</p>
-                                </div>
-                            ) : (
-                                questions.map((q, idx) => (
-                                    <div 
-                                        key={q.id}
-                                        onClick={() => setEditingQuestion(q)}
-                                        className="group p-4 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-xl cursor-pointer transition-all flex justify-between items-center"
-                                    >
-                                        <div className="flex items-center min-w-0">
-                                            <span className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-500 font-bold rounded-lg mr-3 text-xs flex-shrink-0">
-                                                Q{idx + 1}
-                                            </span>
-                                            <div className="min-w-0">
-                                              <p className="font-bold text-gray-700 dark:text-gray-200 truncate pr-4">{q.text}</p>
-                                              <p className="text-xs text-gray-400">
-                                                {q.type === 'select' ? '単一選択' : q.type === 'multi-select' ? '複数選択' : '記述式'}
-                                              </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id); }}
-                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                            <ChevronRight size={16} className="text-gray-300" />
-                                        </div>
-                                    </div>
-                                ))
-                            )}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteQuestion(q.id); }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <ChevronRight size={16} className="text-gray-300" />
                         </div>
-                    </div>
-                )}
-            </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -15,7 +15,7 @@ export const exportToFile = (data, type, fileNamePrefix) => {
   const dataStr = JSON.stringify(exportObject, null, 2);
   const blob = new Blob([dataStr], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  
+
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
   const fileName = `${fileNamePrefix}-${date}.json`;
 
@@ -34,23 +34,23 @@ export const importFromFile = (file, expectedType, callback) => {
   reader.onload = (event) => {
     try {
       const json = JSON.parse(event.target.result);
-      
+
       // 1. ファイル形式チェック
       if (!json.meta || !json.data) {
         // 旧バックアップ形式の救済措置
         if (expectedType === 'backup' && Array.isArray(json)) {
-             if(confirm("古い形式のバックアップファイルです。読み込みますか？")) {
-                 callback(json); 
-                 return;
-             }
+          if (confirm("古い形式のバックアップファイルです。読み込みますか?")) {
+            return callback(json);
+            return;
+          }
         }
-        
+
         // ★ 新規追加: courseやquizの旧形式も救済
         if (expectedType === 'course' || expectedType === 'quiz') {
           // metaとdataがない場合、jsonそのものがデータと仮定
           if (expectedType === 'course' && json.title && json.quizzes !== undefined) {
             // courseっぽいデータ構造
-            if(confirm("古い形式のコースファイルです。読み込みますか？")) {
+            if (confirm("古い形式のコースファイルです。読み込みますか？")) {
               // ID振り直し処理
               const processedData = {
                 ...json,
@@ -67,7 +67,7 @@ export const importFromFile = (file, expectedType, callback) => {
             }
           } else if (expectedType === 'quiz' && json.title && json.questions !== undefined) {
             // quizっぽいデータ構造
-            if(confirm("古い形式のクイズファイルです。読み込みますか？")) {
+            if (confirm("古い形式のクイズファイルです。読み込みますか？")) {
               const processedData = {
                 ...json,
                 id: `quiz-${generateId()}`
@@ -79,7 +79,7 @@ export const importFromFile = (file, expectedType, callback) => {
             }
           }
         }
-        
+
         throw new Error("このファイルはStudy Masterの有効なデータファイルではありません。");
       }
 

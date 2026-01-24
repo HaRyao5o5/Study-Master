@@ -56,6 +56,7 @@ export default function App() {
   } = useApp();
 
   const navigate = useNavigate();
+  const { showSuccess, showError, showConfirm } = useToast();
 
   const levelInfo = getLevelInfo(userStats.totalXp);
   const xpPercentage = Math.min(100, Math.max(0, (levelInfo.currentXp / (levelInfo.xpForNextLevel || 1)) * 100));
@@ -116,13 +117,16 @@ export default function App() {
     setCourses(updatedCourses); setCourseToEdit(null); navigate('/');
   };
 
-  const handleImportBackup = (importedData) => {
+  const handleImportBackup = async (importedData) => {
     try {
-      if (!Array.isArray(importedData)) { alert('データの形式が正しくありません。'); return; }
-      if (confirm('現在のデータを上書きして、バックアップから復元しますか？')) {
-        setCourses(importedData); alert('データの復元が完了しました！'); navigate('/');
+      if (!Array.isArray(importedData)) { showError('データの形式が正しくありません。'); return; }
+      const confirmed = await showConfirm('現在のデータを上書きして、バックアップから復元しますか？');
+      if (confirmed) {
+        setCourses(importedData);
+        showSuccess('データの復元が完了しました！');
+        navigate('/');
       }
-    } catch (e) { console.error(e); alert('読み込みに失敗しました。'); }
+    } catch (e) { console.error(e); showError('読み込みに失敗しました。'); }
   };
 
   const handleImportQuiz = (newQuizData, courseId) => {
@@ -132,7 +136,7 @@ export default function App() {
     const newCourses = [...courses];
     newCourses[courseIndex] = updatedCourse;
     setCourses(newCourses);
-    alert(`問題セット「${newQuizData.title}」を追加しました！`);
+    showSuccess(`問題セット「${newQuizData.title}」を追加しました！`);
   };
 
   const handleCreateQuiz = (courseId) => { navigate(`/course/${courseId}/create-quiz`); };
@@ -146,8 +150,9 @@ export default function App() {
     setCourses(newCourses); navigate(`/course/${courseId}`);
   };
 
-  const handleDeleteQuiz = (quizId, courseId) => {
-    if (!confirm('この問題セットを削除しますか？')) return;
+  const handleDeleteQuiz = async (quizId, courseId) => {
+    const confirmed = await showConfirm('この問題セットを削除しますか？', { type: 'danger' });
+    if (!confirmed) return;
     const courseIndex = courses.findIndex(c => c.id === courseId);
     const newCourses = [...courses];
     newCourses[courseIndex].quizzes = newCourses[courseIndex].quizzes.filter(q => q.id !== quizId);
@@ -213,8 +218,17 @@ export default function App() {
     });
   };
 
-  const clearHistory = () => { if (confirm('復習リストをリセットしますか？')) { setWrongHistory([]); navigate('/'); } };
-  const handleResetStats = () => { if (confirm("【デバッグ用】ステータスを初期化しますか？")) { setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' }); alert("ステータスをリセットしました。"); } };
+  const clearHistory = async () => {
+    const confirmed = await showConfirm('復習リストをリセットしますか？');
+    if (confirmed) { setWrongHistory([]); navigate('/'); }
+  };
+  const handleResetStats = async () => {
+    const confirmed = await showConfirm("【デバッグ用】ステータスを初期化しますか？");
+    if (confirmed) {
+      setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
+      showSuccess("ステータスをリセットしました。");
+    }
+  };
   const handleDebugYesterday = () => {
     if (confirm("【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)")) {
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);

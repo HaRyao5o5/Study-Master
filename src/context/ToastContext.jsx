@@ -1,6 +1,7 @@
 // src/context/ToastContext.jsx
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import Toast from '../components/common/Toast';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const ToastContext = createContext();
 
@@ -9,6 +10,7 @@ const ToastContext = createContext();
  */
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
     /**
      * Toast通知を表示する
@@ -52,6 +54,32 @@ export function ToastProvider({ children }) {
     }, [showToast]);
 
     /**
+     * 確認ダイアログを表示（Promiseベース）
+     * @param {string} message - 確認メッセージ
+     * @param {Object} options - オプション設定
+     * @returns {Promise<boolean>} - ユーザーの選択
+     */
+    const showConfirm = useCallback((message, options = {}) => {
+        return new Promise((resolve) => {
+            setConfirmDialog({
+                title: options.title || '確認',
+                message,
+                type: options.type || 'warning',
+                confirmText: options.confirmText || '実行',
+                cancelText: options.cancelText || 'キャンセル',
+                onConfirm: () => {
+                    setConfirmDialog(null);
+                    resolve(true);
+                },
+                onCancel: () => {
+                    setConfirmDialog(null);
+                    resolve(false);
+                }
+            });
+        });
+    }, []);
+
+    /**
      * 特定のToastを閉じる
      */
     const closeToast = useCallback((id) => {
@@ -59,7 +87,7 @@ export function ToastProvider({ children }) {
     }, []);
 
     return (
-        <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo }}>
+        <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo, showConfirm }}>
             {children}
             <div className="fixed top-4 right-4 z-[9999] space-y-2">
                 {toasts.map((toast) => (
@@ -72,6 +100,7 @@ export function ToastProvider({ children }) {
                     />
                 ))}
             </div>
+            {confirmDialog && <ConfirmDialog {...confirmDialog} />}
         </ToastContext.Provider>
     );
 }
