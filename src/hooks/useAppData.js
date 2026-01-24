@@ -75,11 +75,14 @@ export function useAppData() {
         try {
           const cloudData = await loadFromCloud(currentUser.uid);
           if (!cloudData) {
-            // クラウドにデータがない場合、現在のlocalStorageデータを初回アップロード
-            await saveToCloud(currentUser.uid, { courses, userStats, wrongHistory, errorStats });
-            console.log('Initial data uploaded to Firebase');
+            // ✅ Firebaseにデータがない場合: 初期データを使用（ゲストデータはアップロードしない）
+            console.log('No Firebase data found, using initial data');
+            setCourses(normalizeData(INITIAL_DATA));
+            setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
+            setWrongHistory([]);
+            setErrorStats({});
           } else {
-            // クラウドからデータを読み込み
+            // ✅ Firebaseからデータを読み込み
             if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
             if (cloudData.userStats) setUserStats(cloudData.userStats);
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
@@ -88,11 +91,12 @@ export function useAppData() {
           }
           
           // ✅ ログイン後はlocalStorageをクリア（データ混在を防ぐ）
+          // ただし、ゲストデータはそのまま保持（ログアウト時に復元可能）
           localStorage.removeItem('study-master-data');
           localStorage.removeItem('study-master-wrong-history');
           localStorage.removeItem('study-master-error-stats');
           localStorage.removeItem('study-master-stats');
-          console.log('localStorage cleared after login');
+          console.log('localStorage cleared after login (guest data preserved in browser)');
         } catch (err) {
           console.error("Sync Error:", err);
         } finally {
