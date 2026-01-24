@@ -234,17 +234,6 @@ export default function App() {
         navigate('/');
       }
     } catch (e) { console.error(e); showError('読み込みに失敗しました。'); }
-  };
-
-  const handleImportQuiz = (newQuizData, courseId) => {
-    const courseIndex = courses.findIndex(c => c.id === courseId);
-    if (courseIndex === -1) return;
-    const updatedCourse = { ...courses[courseIndex], quizzes: [...courses[courseIndex].quizzes, newQuizData] };
-    const newCourses = [...courses];
-    newCourses[courseIndex] = updatedCourse;
-    setCourses(newCourses);
-    showSuccess(`問題セット「${newQuizData.title}」を追加しました！`);
-  };
 
   const startQuiz = (courseId, quizId, randomize, shuffleOptions, immediateFeedback) => {
     setGameSettings({ randomize, shuffleOptions, immediateFeedback });
