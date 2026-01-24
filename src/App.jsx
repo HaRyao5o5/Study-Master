@@ -32,6 +32,7 @@ import CreateQuizPage from './pages/CreateQuizPage';
 // Context
 import { useApp } from './context/AppContext';
 import { useToast } from './context/ToastContext';
+import { handleError } from './utils/errorMessages';
 
 
 // --- メイン App コンポーネント ---
@@ -95,8 +96,12 @@ export default function App() {
   }, [theme]);
 
   const handleLogin = async () => {
-    try { await signInWithPopup(auth, googleProvider); }
-    catch (error) { console.error("Login failed:", error); alert("ログインに失敗しました。"); }
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      const message = handleError(error, 'Login');
+      showError(message);
+    }
   };
 
   const handleLogout = async () => {
