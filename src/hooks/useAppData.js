@@ -10,6 +10,7 @@ export function useAppData() {
   const [user, setUser] = useState(null);
   const [isSyncing, setIsSyncing] = useState(true); // 初期認証中はtrue
   const [authChecked, setAuthChecked] = useState(false); // 認証状態が確定したか
+  const [saveError, setSaveError] = useState(null); // 保存エラー状態
 
   // 初期ステートは空データから開始（localStorageは読み込まない）
   const [userStats, setUserStats] = useState({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
@@ -119,10 +120,17 @@ export function useAppData() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
       setIsSyncing(true);
+      setSaveError(null); // エラーをクリア
       try {
         await saveToCloud(user.uid, { courses, userStats, wrongHistory, errorStats });
+        console.log('Auto-save successful');
       } catch (err) {
         console.error("Auto-save failed:", err);
+        setSaveError({
+          message: 'データの保存に失敗しました',
+          details: err.message,
+          timestamp: new Date().toISOString()
+        });
       } finally {
         setIsSyncing(false);
       }
@@ -133,6 +141,7 @@ export function useAppData() {
   return {
     user,
     isSyncing,
+    saveError,
     courses, setCourses,
     userStats, setUserStats,
     wrongHistory, setWrongHistory,

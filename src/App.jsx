@@ -49,7 +49,7 @@ export default function App() {
   });
 
   const {
-    user, isSyncing,
+    user, isSyncing, saveError,
     courses, setCourses,
     userStats, setUserStats,
     wrongHistory, setWrongHistory,
@@ -65,13 +65,22 @@ export default function App() {
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
   useEffect(() => {
-    if (!isSyncing) {
-      const timer = setTimeout(() => {
-        setIsInitialLoading(false);
-      }, 1000);
-      return () => clearTimeout(timer);
+    const timer = setTimeout(() => setIsInitialLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 保存エラーの監視とToast表示
+  useEffect(() => {
+    if (saveError) {
+      showError(saveError.message, {
+        duration: 8000, // 8秒間表示
+        action: {
+          label: '詳細',
+          onClick: () => console.error('Save error details:', saveError)
+        }
+      });
     }
-  }, [isSyncing]);
+  }, [saveError, showError]);
 
   useEffect(() => {
     localStorage.setItem('study-master-theme', theme);
