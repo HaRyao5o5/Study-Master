@@ -51,8 +51,11 @@ export default function App() {
     courses, setCourses,
     userStats, setUserStats,
     wrongHistory, setWrongHistory,
-    errorStats, setErrorStats
+    errorStats, setErrorStats,
+    profile, hasProfile, updateProfile, isProfileLoading
   } = useApp();
+
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
 
   const navigate = useNavigate();
   const { showSuccess, showError, showConfirm } = useToast();
@@ -175,6 +178,13 @@ export default function App() {
     const timer = setTimeout(() => setIsInitialLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // 初回ログイン時にプロフィール設定を促す
+  useEffect(() => {
+    if (user && !isProfileLoading && !hasProfile) {
+      setShowProfileEditor(true);
+    }
+  }, [user, hasProfile, isProfileLoading]);
 
   // 保存エラーの監視とToast表示
   useEffect(() => {
@@ -304,20 +314,33 @@ export default function App() {
               {/* ユーザーアカウント表示 */}
               {user ? (
                 <div className="flex items-center space-x-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
-                  {user.photoURL ? (
-                    <img 
-                      src={user.photoURL} 
-                      alt={user.displayName || 'User'}
-                      className="w-8 h-8 rounded-full ring-2 ring-blue-500 dark:ring-blue-400"
-                    />
+                  {profile && !isProfileLoading ? (
+                    // カスタムプロフィール表示
+                    <>
+                      <div className="text-3xl">{getAvatarById(profile.avatar).emoji}</div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block max-w-[100px] truncate">
+                        {profile.displayName}
+                      </span>
+                    </>
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
-                      <User size={16} className="text-white" />
-                    </div>
+                    // プロフィール読み込み中またはGoogle情報表示
+                    <>
+                      {user.photoURL ? (
+                        <img 
+                          src={user.photoURL} 
+                          alt={user.displayName || 'User'}
+                          className="w-8 h-8 rounded-full ring-2 ring-gray-300 dark:ring-gray-600"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center">
+                          <User size={16} className="text-white" />
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400 hidden sm:block max-w-[100px] truncate">
+                        {isProfileLoading ? '読み込み中...' : (user.displayName || user.email)}
+                      </span>
+                    </>
                   )}
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block max-w-[100px] truncate">
-                    {user.displayName || user.email}
-                  </span>
                 </div>
               ) : (
                 <button
