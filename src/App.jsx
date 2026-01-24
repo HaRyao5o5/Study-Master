@@ -29,9 +29,10 @@ import ResultPage from './pages/ResultPage';
 import EditQuizPage from './pages/EditQuizPage';
 import CreateQuizPage from './pages/CreateQuizPage';
 
-// Context
+// Context & Hooks
 import { useApp } from './context/AppContext';
 import { useToast } from './context/ToastContext';
+import { useTheme } from './hooks/useTheme';
 import { handleError, SUCCESS, CONFIRM } from './utils/errorMessages';
 
 
@@ -43,10 +44,7 @@ export default function App() {
   const [courseToEdit, setCourseToEdit] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem('study-master-theme') || 'system';
-    return 'system';
-  });
+  const { theme, setTheme } = useTheme();
 
   const {
     user, isSyncing, saveError,
@@ -81,23 +79,6 @@ export default function App() {
       });
     }
   }, [saveError, showError]);
-
-  useEffect(() => {
-    localStorage.setItem('study-master-theme', theme);
-    const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
-    else if (theme === 'light') root.classList.remove('dark');
-    else {
-      if (window.matchMedia('(prefers-color-scheme: dark)').matches) root.classList.add('dark');
-      else root.classList.remove('dark');
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    if (theme !== 'system') return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e) => {
-      if (e.matches) document.documentElement.classList.add('dark');
       else document.documentElement.classList.remove('dark');
     };
     mediaQuery.addEventListener('change', handleChange);
