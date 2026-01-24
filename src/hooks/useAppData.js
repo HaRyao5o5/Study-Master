@@ -147,4 +147,39 @@ export function useAppData() {
     wrongHistory, setWrongHistory,
     errorStats, setErrorStats
   };
+
+  // プロフィール取得
+  const loadProfile = async (uid) => {
+    setIsProfileLoading(true);
+    try {
+      const profileData = await getProfile(uid);
+      if (profileData) {
+        setProfile(profileData);
+        setHasProfile(true);
+      } else {
+        setProfile(null);
+        setHasProfile(false);
+      }
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      setProfile(null);
+      setHasProfile(false);
+    } finally {
+      setIsProfileLoading(false);
+    }
+  };
+
+  // プロフィール更新
+  const updateProfile = async (profileData) => {
+    if (!user) return;
+    
+    try {
+      await updateFirebaseProfile(user.uid, profileData);
+      setProfile(profileData);
+      setHasProfile(true);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      throw error;
+    }
+  };
 }
