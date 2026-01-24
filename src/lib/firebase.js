@@ -1,23 +1,24 @@
 // src/lib/firebase.js
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut,
-  updateProfile // ★ 追加
+  updateProfile
 } from "firebase/auth";
-import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  updateDoc, // ★ 追加
-  getDoc, 
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  updateDoc,
+  getDoc,
   collection,
   query,
   orderBy,
   limit,
-  getDocs 
+  getDocs,
+  enableIndexedDbPersistence
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -34,7 +35,28 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-export const db = getFirestore(app);
+
+// Firestoreの設定
+const firestoreDb = getFirestore(app);
+
+// オフライン永続化を有効にする（エラーは無視）
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(firestoreDb, {
+    synchronizeTabs: true
+  }).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      // 複数のタブが開いている場合
+      console.warn('Firestore: 複数のタブが開いているため、永続化は最初のタブでのみ有効です');
+    } else if (err.code === 'unimplemented') {
+      // ブラウザが対応していない場合
+      console.warn('Firestore: このブラウザは永続化をサポートしていません');
+    } else {
+      console.warn('Firestore persistence error:', err);
+    }
+  });
+}
+
+export const db = firestoreDb;
 export const storage = getStorage(app);
 
 // --- 既存の関数 ---
@@ -44,7 +66,7 @@ export const saveUserData = async (user) => {
   try {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
-    
+
     if (!userSnap.exists()) {
       await setDoc(userRef, {
         uid: user.uid,
@@ -79,17 +101,16 @@ export const getUserData = async (uid) => {
   }
 };
 
-// ★ 追加: プロフィール更新関数
 export const updateUserProfile = async (user, newName) => {
   if (!user || !newName) return;
   try {
     // 1. Firebase Authのキャッシュ更新
     await updateProfile(user, { displayName: newName });
-    
+
     // 2. Firestoreのユーザーデータ更新（ランキング用）
     const userRef = doc(db, "users", user.uid);
     await updateDoc(userRef, { displayName: newName });
-    
+
     return true;
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -101,10 +122,10 @@ export const getLeaderboard = async () => {
   try {
     const usersRef = collection(db, "users");
     const q = query(usersRef, orderBy("userStats.totalXp", "desc"), limit(50));
-    
+
     const querySnapshot = await getDocs(q);
     const leaderboard = [];
-    
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       leaderboard.push({
@@ -116,11 +137,12 @@ export const getLeaderboard = async () => {
         streak: data.userStats?.streak || 0
       });
     });
-    
+
     return leaderboard;
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
-    throw error;
+    // エラー時は空の配列を返す
+    return [];
   }
 };
 
