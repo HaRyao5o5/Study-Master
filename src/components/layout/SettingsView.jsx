@@ -11,7 +11,7 @@ const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
 
 const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout }) => {
   const fileInputRef = useRef(null);
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showConfirm } = useToast();
   
   // プロフィール編集用ステート
   const [isEditing, setIsEditing] = useState(false);
