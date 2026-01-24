@@ -6,8 +6,8 @@ import {
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Firebase imports
-import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider } from "./lib/firebase";
+import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { auth } from './lib/firebase';
 
 import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
@@ -212,7 +212,7 @@ export default function App() {
   const handleLogout = async () => {
     const confirmed = await showConfirm('ログアウトしますか？');
     if (confirmed) {
-      await logout();
+      await signOut(auth);
       navigate('/');
       showSuccess('ログアウトしました');
     }
