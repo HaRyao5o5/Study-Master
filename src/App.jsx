@@ -202,14 +202,19 @@ export default function App() {
   // --- イベントハンドラー ---
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      await login();
     } catch (error) {
-      const message = handleError(error, 'Login');
-      showError(message);
+      console.error("Login failed:", error);
+      showError('ログインに失敗しました。');
     }
   };
 
-      showSuccess(SUCCESS.LOGOUT_SUCCESS);
+  const handleLogout = async () => {
+    const confirmed = await showConfirm('ログアウトしますか？');
+    if (confirmed) {
+      await logout();
+      navigate('/');
+      showSuccess('ログアウトしました');
     }
   };
 
