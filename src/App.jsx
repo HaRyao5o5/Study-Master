@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import {
-  BookOpen, Settings, Bell, Trophy, Flame, BarChart2
+  BookOpen, Settings, Bell, Trophy, Flame, BarChart2, User, LogIn
 } from 'lucide-react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
@@ -300,6 +300,34 @@ export default function App() {
               <button onClick={() => navigate('/settings')} className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'}`}>
                 <Settings size={20} />
               </button>
+              
+              {/* ユーザーアカウント表示 */}
+              {user ? (
+                <div className="flex items-center space-x-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                  {user.photoURL ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'User'}
+                      className="w-8 h-8 rounded-full ring-2 ring-blue-500 dark:ring-blue-400"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                      <User size={16} className="text-white" />
+                    </div>
+                  )}
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block max-w-[100px] truncate">
+                    {user.displayName || user.email}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="ml-2 pl-2 border-l border-gray-200 dark:border-gray-700 flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium transition-all transform hover:scale-105 shadow-md"
+                >
+                  <LogIn size={16} />
+                  <span className="hidden sm:inline">ログイン</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
