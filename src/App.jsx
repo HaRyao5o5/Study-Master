@@ -209,11 +209,6 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
-    const confirmed = await showConfirm('ログアウトしますか？');
-    if (confirmed) {
-      await logout();
-      navigate('/');
       showSuccess(SUCCESS.LOGOUT_SUCCESS);
     }
   };
