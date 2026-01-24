@@ -73,8 +73,8 @@ const QuizEditor = ({ quiz, onSave, onCancel }) => {
     setEditingQuestion(null);
   };
 
-  const handleDeleteQuestion = (id) => {
-    if (confirm("この問題を削除しますか？")) {
+  const handleDeleteQuestion = async (id) => {
+    if (await showConfirm(CONFIRM.DELETE_QUESTION)) {
       setQuestions(questions.filter(q => q.id !== id));
     }
   };
