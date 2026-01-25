@@ -173,7 +173,9 @@ export default function App() {
     }
 
     // 結果画面へ遷移
-    navigate(`/course/${window.location.pathname.split('/')[2]}/quiz/${currentQuiz.id}/result`, { 
+    const courseId = window.location.pathname.split('/')[2];
+    const quizId = currentQuiz?.id || 'unknown';
+    navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
       state: { resultData, isReviewMode } 
     });
   },
