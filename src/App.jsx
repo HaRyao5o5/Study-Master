@@ -215,10 +215,10 @@ export default function App() {
         
         // 目標達成通知
         if (achievedToday) {
-          setTimeout(() => showToast('🎯 今日の目標達成！おめでとう！', 'success'), 500);
+          setTimeout(() => showSuccess('🎯 今日の目標達成！おめでとう！'), 500);
         }
         if (achievedThisWeek) {
-          setTimeout(() => showToast('🏆 今週の目標達成！素晴らしい！', 'success'), 800);
+          setTimeout(() => showSuccess('🏆 今週の目標達成！素晴らしい！'), 800);
         }
         
         return {
@@ -231,7 +231,7 @@ export default function App() {
       });
 
       if (leveledUp) {
-        showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
+        showSuccess(`🎉 レベル${newLevel}にアップ！`);
       }
     }
 
