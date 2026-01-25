@@ -37,6 +37,7 @@ import CreateQuizPage from './pages/CreateQuizPage';
 
 // Context & Hooks
 import { useApp } from './context/AppContext';
+import { useAppData } from './hooks/useAppData';
 import { useToast } from './context/ToastContext';
 import { useTheme } from './hooks/useTheme';
 import { handleError, SUCCESS } from './utils/errorMessages';
