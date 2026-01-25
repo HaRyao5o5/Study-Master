@@ -121,11 +121,23 @@ export default function App() {
 
       if (!currentQuiz) return;
 
+      // 回答配列をマップに変換 (GameViewからは配列が渡されるため)
+      const answerMap = {};
+      if (Array.isArray(userAnswers)) {
+        userAnswers.forEach(ans => {
+          if (ans.question && ans.question.id) {
+            answerMap[ans.question.id] = ans.selectedAnswer;
+          }
+        });
+      } else {
+        Object.assign(answerMap, userAnswers);
+      }
+
       // 2. 結果の計算
       const results = currentQuiz.questions.map((q) => ({
         ...q,
-        selectedAnswer: userAnswers[q.id] || '',
-        isCorrect: checkAnswer(q, userAnswers[q.id])
+        selectedAnswer: answerMap[q.id] || '',
+        isCorrect: checkAnswer(q, answerMap[q.id])
       }));
 
       const score = results.filter(r => r.isCorrect).length;
