@@ -492,6 +492,7 @@ export default function App() {
                   onCreate={handleCreateCourse}
                   onDelete={handleDeleteCourse}
                   onToggleFavorite={handleToggleFavorite}
+                  onEdit={handleEditCourse}
                 />
               </>
             } />
