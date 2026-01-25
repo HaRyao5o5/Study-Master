@@ -23,6 +23,7 @@ import StatsView from './components/layout/StatsView';
 import SharedCourseView from './components/course/SharedCourseView';
 import RankingView from './components/layout/RankingView';
 import ProfileEditor from './components/profile/ProfileEditor';
+import { getAvatarById } from './constants/avatars';
 
 // Page Components
 import CoursePage from './pages/CoursePage';
