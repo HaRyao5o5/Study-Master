@@ -77,40 +77,12 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                       </div>
                     )}
                     
-                    {/* 名前表示エリア (通常時 / 編集時) */}
+                    {/* ユーザー情報表示 */}
                     <div className="flex-1 min-w-0">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2">
-                          <input 
-                            type="text" 
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="w-full px-2 py-1 text-sm font-bold border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            autoFocus
-                          />
-                          <button 
-                            onClick={handleSaveProfile}
-                            disabled={isSaving || !editName.trim()}
-                            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
-                          >
-                            <Check size={16} />
-                          </button>
-                          <button 
-                            onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
-                            className="p-2 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => { setIsEditing(true); setEditName(user.displayName || ''); }}
-                          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 rounded-full transition-colors"
-                          title="名前を変更"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                      )}
+                      <p className="text-sm font-bold text-gray-800 dark:text-white truncate">
+                        {user.displayName || user.email}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                     </div>
                   </div>
                 </div>
