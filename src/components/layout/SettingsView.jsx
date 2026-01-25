@@ -37,9 +37,9 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
     if (!editName.trim()) return;
     setIsSaving(true);
     try {
-      await updateUserProfile(user, editName);
+      await updateUserProfile(user, editName.trim());
+      showSuccess(SUCCESS.PROFILE_UPDATE_SUCCESS);
       setIsEditing(false);
-      showSuccess(SUCCESS.PROFILE_UPDATED);
     } catch (error) {
       showError(ERROR.PROFILE_UPDATE_FAILED);
     } finally {
@@ -88,58 +88,51 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                             className="w-full px-2 py-1 text-sm font-bold border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                             autoFocus
                           />
+                          <button 
+                            onClick={handleSaveProfile}
+                            disabled={isSaving || !editName.trim()}
+                            className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors disabled:opacity-50"
+                          >
+                            <Check size={16} />
+                          </button>
+                          < onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
+                            className="p-2 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       ) : (
-                        <p className="text-lg font-bold text-gray-800 dark:text-white truncate">
-                          {user.displayName || 'ユーザー'}
-                        </p>
-                      )}
-                      
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-                    </div>
-                  </div>
-
-                  {/* 編集ボタン */}
-                  <div className="ml-4">
-                    {isEditing ? (
-                      <div className="flex items-center gap-2">
-                         <button 
-                          onClick={handleSaveProfile} 
-                          disabled={isSaving}
-                          className="p-2 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
-                        >
-                          <Check size={16} />
-                        </button>
                         <button 
-                          onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
-                          className="p-2 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                          onClick={() => { setIsEditing(true); setEditName(user.displayName || ''); }}
+                          className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 rounded-full transition-colors"
+                          title="名前を変更"
                         >
-                          <X size={16} />
+                          <Edit2 size={18} />
                         </button>
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => { setIsEditing(true); setEditName(user.displayName || ''); }}
-                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-800 rounded-full transition-colors"
-                        title="名前を変更"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-blue-100 dark:border-blue-900/30 pt-4 mt-2">
                    <p className="text-[10px] text-green-600 dark:text-green-400 font-bold flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
-                      同期有効
-                    </p>
-                    <button 
-                      onClick={onLogout}
-                      className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
-                    >
-                      <LogOut size={14} className="mr-2" /> ログアウト
-                    </button>
+                     <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
+                     同期有効
+                   </p>
+                   <div className="flex gap-2">
+                     <button 
+                       onClick={onEditProfile}
+                       className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-colors flex items-center"
+                     >
+                       <Edit2 size={14} className="mr-1" /> プロフィール
+                     </button>
+                     <button 
+                       onClick={onLogout}
+                       className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
+                     >
+                       <LogOut size={14} className="mr-2" /> ログアウト
+                     </button>
+                   </div>
                 </div>
               </div>
             ) : (
@@ -162,28 +155,26 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
           </div>
         </div>
 
-        {/* テーマ設定 */}
+        {/* テーマ */}
         <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-             <Monitor size={20} className="mr-2 text-purple-500" /> 外観設定
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2">テーマ</h3>
+          <div className="grid grid-cols-3 gap-4">
             {[
-              { id: 'light', label: 'ライト', icon: Sun },
-              { id: 'dark', label: 'ダーク', icon: Moon },
-              { id: 'system', label: 'システム', icon: Monitor }
-            ].map((mode) => (
+              { value: 'light', icon: Sun, label: 'ライト' },
+              { value: 'dark', icon: Moon, label: 'ダーク' },
+              { value: 'auto', icon: Monitor, label: '自動' },
+            ].map(({ value, icon: Icon, label }) => (
               <button
-                key={mode.id}
-                onClick={() => changeTheme(mode.id)}
-                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all ${
-                  theme === mode.id 
-                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' 
-                    : 'border-transparent bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-500'
+                key={value}
+                onClick={() => changeTheme(value)}
+                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                  theme === value
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
               >
-                <mode.icon size={24} className="mb-2" />
-                <span className="text-xs font-bold">{mode.label}</span>
+                <Icon size={24} />
+                <span className="text-sm font-bold">{label}</span>
               </button>
             ))}
           </div>
@@ -192,63 +183,51 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
         {/* データ管理 */}
         <div className="space-y-4">
           <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-            <Database size={20} className="mr-2 text-green-500" /> データ管理
+            <Database size={20} className="mr-2 text-purple-500" /> データ管理
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button 
-              onClick={handleExport}
-              className="flex items-center justify-center p-4 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-blue-500 hover:text-blue-600 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-all font-bold text-gray-600 dark:text-gray-300 group"
-            >
-              <Download size={20} className="mr-2 group-hover:-translate-y-1 transition-transform" />
-              バックアップを保存
+            <button onClick={handleExport} className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors flex items-center justify-center gap-3 text-green-700 dark:text-green-400 font-bold">
+              <Download size={20} />
+              エクスポート
             </button>
-            <button 
-              onClick={handleImportClick}
-              className="flex items-center justify-center p-4 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:border-green-500 hover:text-green-600 dark:hover:border-green-400 dark:hover:text-green-400 transition-all font-bold text-gray-600 dark:text-gray-300 group"
-            >
-              <Upload size={20} className="mr-2 group-hover:-translate-y-1 transition-transform" />
-              データを復元
+            <button onClick={handleImportClick} className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors flex items-center justify-center gap-3 text-orange-700 dark:text-orange-400 font-bold">
+              <Upload size={20} />
+              インポート
             </button>
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              className="hidden" 
-              accept=".json" 
-              onChange={handleFileChange}
-            />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
           </div>
-
-          {/* デバッグ用エリア (開発環境のみ表示) */}
-          {import.meta.env.DEV && (
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-               <h4 className="text-xs font-bold text-gray-400 uppercase mb-3">Developer Zone</h4>
-               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <button 
-                  onClick={onDebugYesterday}
-                  className="flex items-center justify-center p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 rounded-lg text-purple-600 dark:text-purple-400 font-bold hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
-                >
-                  <Clock size={18} className="mr-2" />
-                  昨日ログイン状態へ (Time Travel)
-                </button>
-                 <button 
-                  onClick={onResetStats}
-                  className="flex items-center justify-center p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-lg text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                >
-                  <Trash2 size={18} className="mr-2" />
-                  ステータス初期化 (Reset)
-                </button>
-               </div>
-            </div>
-          )}
         </div>
 
-        <div className="text-center pt-8 pb-4">
-          <p className="text-sm font-mono text-gray-400 dark:text-gray-500">
-            {APP_VERSION}
-          </p>
-          <p className="text-[10px] text-gray-300 dark:text-gray-600 mt-1">
-            © 2026 Study Master Project
-          </p>
+        {/* リセット */}
+        <div className="space-y-4">
+          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
+            <Trash2 size={20} className="mr-2 text-red-500" /> リセット
+          </h3>
+          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-900/30">
+            <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+              以下の操作は元に戻せません。実行前に必ずバックアップを取ってください。
+            </p>
+            <button onClick={onResetStats} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold transition-colors">
+              統計データをリセット
+            </button>
+          </div>
+        </div>
+
+        {/* デバッグ機能 (開発用) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="space-y-4">
+            <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
+              <Clock size={20} className="mr-2 text-gray-500" /> デバッグ
+            </h3>
+            <button onClick={onDebugYesterday} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+              昨日ログインしたことにする
+            </button>
+          </div>
+        )}
+
+        {/* バージョン情報 */}
+        <div className="text-center text-gray-500 dark:text-gray-400 text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
+          {APP_VERSION}
         </div>
       </div>
     </div>
