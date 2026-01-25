@@ -56,9 +56,10 @@ export default function App() {
     courses, setCourses,
     userStats, setUserStats,
     wrongHistory, setWrongHistory,
+    masteredQuestions, setMasteredQuestions,
     errorStats, setErrorStats,
     profile, hasProfile, updateProfile, isProfileLoading
-  } = useApp();
+  } = useAppData();
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
 

@@ -16,6 +16,7 @@ export function useAppData() {
   const [userStats, setUserStats] = useState({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
   const [courses, setCourses] = useState(() => normalizeData(INITIAL_DATA));
   const [wrongHistory, setWrongHistory] = useState([]);
+  const [masteredQuestions, setMasteredQuestions] = useState({}); // NEW: 復習完了した問題
   const [errorStats, setErrorStats] = useState({});
 
   // ローカルストレージへの保存（ゲストモードのみ、認証確定後のみ）
@@ -47,6 +48,13 @@ export function useAppData() {
       localStorage.setItem('study-master-stats', JSON.stringify(userStats));
     }
   }, [userStats, user, authChecked]);
+  
+  useEffect(() => {
+    if (!authChecked) return;
+    if (!user) {
+      localStorage.setItem('study-master-mastered', JSON.stringify(masteredQuestions));
+    }
+  }, [masteredQuestions, user, authChecked]);
 
   // 認証とクラウド同期
   useEffect(() => {
@@ -63,12 +71,14 @@ export function useAppData() {
             setCourses(normalizeData(INITIAL_DATA));
             setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
             setWrongHistory([]);
+            setMasteredQuestions({});
             setErrorStats({});
           } else {
             // ✅ Firebaseからデータを読み込み
             if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
             if (cloudData.userStats) setUserStats(cloudData.userStats);
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+            if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
             if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
             console.log('Data loaded from Firebase');
           }
@@ -76,6 +86,7 @@ export function useAppData() {
           // ✅ ログイン後はlocalStorageをクリア（データ混在を防ぐ）
           localStorage.removeItem('study-master-data');
           localStorage.removeItem('study-master-wrong-history');
+          localStorage.removeItem('study-master-mastered');
           localStorage.removeItem('study-master-error-stats');
           localStorage.removeItem('study-master-stats');
           console.log('localStorage cleared after login');
@@ -95,17 +106,20 @@ export function useAppData() {
           const savedCourses = localStorage.getItem('study-master-data');
           const savedStats = localStorage.getItem('study-master-stats');
           const savedWrong = localStorage.getItem('study-master-wrong-history');
+          const savedMastered = localStorage.getItem('study-master-mastered');
           const savedErrors = localStorage.getItem('study-master-error-stats');
           
           setCourses(savedCourses ? normalizeData(JSON.parse(savedCourses)) : normalizeData(INITIAL_DATA));
           setUserStats(savedStats ? JSON.parse(savedStats) : { totalXp: 0, level: 1, streak: 0, lastLogin: '' });
           setWrongHistory(savedWrong ? JSON.parse(savedWrong) : []);
+          setMasteredQuestions(savedMastered ? JSON.parse(savedMastered) : {});
           setErrorStats(savedErrors ? JSON.parse(savedErrors) : {});
         } catch (e) {
           console.error('Failed to load from localStorage:', e);
           setCourses(normalizeData(INITIAL_DATA));
           setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
           setWrongHistory([]);
+          setMasteredQuestions({});
           setErrorStats({});
         } finally {
           setIsSyncing(false);
@@ -125,7 +139,7 @@ export function useAppData() {
       setIsSyncing(true);
       setSaveError(null); // エラーをクリア
       try {
-        await saveToCloud(user.uid, { courses, userStats, wrongHistory, errorStats });
+        await saveToCloud(user.uid, { courses, userStats, wrongHistory, masteredQuestions, errorStats });
         console.log('Auto-save successful');
       } catch (err) {
         console.error("Auto-save failed:", err);
@@ -139,7 +153,7 @@ export function useAppData() {
       }
     }, 3000);
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [courses, userStats, wrongHistory, errorStats, user]);
+  }, [courses, userStats, wrongHistory, masteredQuestions, errorStats, user]);
 
   // プロフィール状態
   const [profile, setProfile] = useState(null);
@@ -190,6 +204,7 @@ export function useAppData() {
     courses, setCourses,
     userStats, setUserStats,
     wrongHistory, setWrongHistory,
+    masteredQuestions, setMasteredQuestions,
     errorStats, setErrorStats,
     // プロフィール関連
     profile,
