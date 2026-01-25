@@ -99,22 +99,55 @@ export default function App() {
       });
       setCourses(newCourses);
     },
+    finishQuiz: ({ results, currentQuiz, xpGained, isReviewMode }) => {
+      setResultData({ results, currentQuiz, xpGained });
 
-      if (currentWrongs.length > 0) {
-        setErrorStats(prev => {
-          const newStats = { ...prev };
-          currentWrongs.forEach(id => { newStats[id] = (newStats[id] || 0) + 1; });
-          return newStats;
-        });
+      // 復習モード: 正解した問題をマスター済みに追加
+      const newMastered = { ...masteredQuestions };
+      const courseId = window.location.pathname.split('/')[2];
+      
+      if (!newMastered[courseId]) {
+        newMastered[courseId] = {};
       }
 
-      setWrongHistory(prev => {
-        let newHistory = [...prev];
-        currentWrongs.forEach(id => { if (!newHistory.includes(id)) newHistory.push(id); });
-        if (isReview) newHistory = newHistory.filter(id => !currentCorrects.includes(id));
-        return newHistory;
+      results.forEach(result => {
+        if (result.isCorrect) {
+          newMastered[courseId][result.id] = true;
+        }
       });
-    },
+
+      setMasteredQuestions(newMastered);
+    
+      // 通常モード: 間違えた問題をwrongHistoryに追加
+      const wrongQuestionIds = results.filter(r => !r.isCorrect).map(r => r.id);
+      if (wrongQuestionIds.length > 0) {
+        const updatedWrongHistory = [...new Set([...wrongHistory, ...wrongQuestionIds])];
+        setWrongHistory(updatedWrongHistory);
+      }
+    
+
+    // XP加算とレベルアップ処理
+    if (xpGained > 0) {
+      const newTotalXp = userStats.totalXp + xpGained;
+      const newLevel = getLevelInfo(newTotalXp).level;
+      const leveledUp = newLevel > userStats.level;
+
+      setUserStats(prev => ({
+        ...prev,
+        totalXp: newTotalXp,
+        level: newLevel
+      }));
+
+      if (leveledUp) {
+        showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
+      }
+    }
+
+    // 結果画面へ遷移
+    navigate(`/course/${window.location.pathname.split('/')[2]}/quiz/${currentQuiz.id}/result`, { 
+      state: { resultData, isReviewMode } 
+    });
+  },
     clearHistory: async () => {
       const confirmed = await showConfirm('復習リストをリセットしますか？');
       if (confirmed) { setWrongHistory([]); navigate('/'); }
