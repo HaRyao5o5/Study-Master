@@ -385,7 +385,7 @@ export default function App() {
 
             <Route path="/create-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleCreateCourse} />} />
             <Route path="/edit-course" element={<CreateCourseModal onClose={() => navigate('/')} onSave={handleUpdateCourse} initialData={courseToEdit} />} />
-            <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} onDebugYesterday={handleDebugYesterday} user={user} onLogin={handleLogin} onLogout={handleLogout} />} />
+            <Route path="/settings" element={<SettingsView theme={theme} changeTheme={setTheme} onBack={() => navigate('/')} courses={courses} onImportData={handleImportBackup} onResetStats={handleResetStats} onDebugYesterday={handleDebugYesterday} user={user} onLogin={handleLogin} onLogout={handleLogout} onEditProfile={() => setShowProfileEditor(true)} />} />
             <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
 
