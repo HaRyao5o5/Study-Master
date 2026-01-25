@@ -105,26 +105,28 @@ export default function App() {
       setResultData({ results, currentQuiz, xpGained });
 
       // 復習モード: 正解した問題をマスター済みに追加
-      const newMastered = { ...masteredQuestions };
-      const courseId = window.location.pathname.split('/')[2];
-      
-      if (!newMastered[courseId]) {
-        newMastered[courseId] = {};
-      }
-
-      results.forEach(result => {
-        if (result.isCorrect) {
-          newMastered[courseId][result.id] = true;
+      if (isReviewMode && results && Array.isArray(results)) {
+        const newMastered = { ...masteredQuestions };
+        const courseId = window.location.pathname.split('/')[2];
+        
+        if (!newMastered[courseId]) {
+          newMastered[courseId] = {};
         }
-      });
 
-      setMasteredQuestions(newMastered);
-    
-      // 通常モード: 間違えた問題をwrongHistoryに追加
-      const wrongQuestionIds = results.filter(r => !r.isCorrect).map(r => r.id);
-      if (wrongQuestionIds.length > 0) {
-        const updatedWrongHistory = [...new Set([...wrongHistory, ...wrongQuestionIds])];
-        setWrongHistory(updatedWrongHistory);
+        results.forEach(result => {
+          if (result && result.isCorrect && result.id) {
+            newMastered[courseId][result.id] = true;
+          }
+        });
+
+        setMasteredQuestions(newMastered);
+      } else if (!isReviewMode && results && Array.isArray(results)) {
+        // 通常モード: 間違えた問題をwrongHistoryに追加
+        const wrongQuestionIds = results.filter(r => r && !r.isCorrect && r.id).map(r => r.id);
+        if (wrongQuestionIds.length > 0) {
+          const updatedWrongHistory = [...new Set([...wrongHistory, ...wrongQuestionIds])];
+          setWrongHistory(updatedWrongHistory);
+        }
       }
     
 
