@@ -1,7 +1,6 @@
-```javascript
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Home, BookOpen, Settings, Moon, Sun, LogOut, LogIn, Bell, Flame, Trophy, Share2, BarChart3, RefreshCw } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User, LogIn, RefreshCw, Home, Moon, Sun, LogOut, Share2 } from 'lucide-react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Firebase imports
