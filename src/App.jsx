@@ -135,7 +135,7 @@ export default function App() {
 
       // 2. 結果の計算
       const results = currentQuiz.questions.map((q) => ({
-        ...q,
+        question: q,
         selectedAnswer: answerMap[q.id] || '',
         isCorrect: checkAnswer(q, answerMap[q.id])
       }));
@@ -177,15 +177,15 @@ export default function App() {
         }
 
         results.forEach(result => {
-          if (result && result.isCorrect && result.id) {
-            newMastered[courseId][result.id] = true;
+          if (result && result.isCorrect && result.question && result.question.id) {
+            newMastered[courseId][result.question.id] = true;
           }
         });
 
         setMasteredQuestions(newMastered);
       } else if (!isReviewMode && results && Array.isArray(results)) {
         // 通常モード: 間違えた問題をwrongHistoryに追加
-        const wrongQuestionIds = results.filter(r => r && !r.isCorrect && r.id).map(r => r.id);
+        const wrongQuestionIds = results.filter(r => r && !r.isCorrect && r.question && r.question.id).map(r => r.question.id);
         if (wrongQuestionIds.length > 0) {
           const updatedWrongHistory = [...new Set([...wrongHistory, ...wrongQuestionIds])];
           setWrongHistory(updatedWrongHistory);
