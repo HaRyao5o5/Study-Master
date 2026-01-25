@@ -185,10 +185,11 @@ export default function App() {
 
   // 初回ログイン時にプロフィール設定を促す
   useEffect(() => {
-    if (user && !isProfileLoading && !hasProfile) {
+    // プロフィールデータの読み込みが完了して、かつプロフィールが存在しない場合のみ表示
+    if (user && !isProfileLoading && !hasProfile && !profile) {
       setShowProfileEditor(true);
     }
-  }, [user, hasProfile, isProfileLoading]);
+  }, [user, hasProfile, isProfileLoading, profile]);
 
   // 保存エラーの監視とToast表示
   useEffect(() => {
