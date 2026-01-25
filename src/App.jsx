@@ -221,12 +221,6 @@ export default function App() {
       if (leveledUp) {
         showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
       }
-    }
-
-    // 結果画面へ遷移
-    const courseId = window.location.pathname.split('/')[2];
-    const quizId = currentQuiz?.id || 'unknown';
-    navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
       state: { resultData, isReviewMode } 
     });
   },
