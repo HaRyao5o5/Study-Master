@@ -24,6 +24,8 @@ import ReviewView from './components/layout/ReviewView';
 import ProfileEditor from './components/profile/ProfileEditor';
 import { getAvatarById } from './constants/avatars';
 import InstallPrompt from './components/common/InstallPrompt';
+import GoalSettingsModal from './components/common/GoalSettingsModal';
+import GoalProgress from './components/common/GoalProgress';
 
 // Page Components
 import CoursePage from './pages/CoursePage';
@@ -138,6 +140,31 @@ export default function App() {
         level: newLevel
       }));
 
+      // 学習目標の進捗更新
+      setGoals(prev => {
+        const newDailyProgress = prev.dailyProgress + xpGained;
+        const newWeeklyProgress = prev.weeklyProgress + xpGained;
+        
+        const achievedToday = !prev.achievedToday && newDailyProgress >= prev.dailyXpGoal;
+        const achievedThisWeek = !prev.achievedThisWeek && newWeeklyProgress >= prev.weeklyXpGoal;
+        
+        // 目標達成通知
+        if (achievedToday) {
+          setTimeout(() => showToast('🎯 今日の目標達成！おめでとう！', 'success'), 500);
+        }
+        if (achievedThisWeek) {
+          setTimeout(() => showToast('🏆 今週の目標達成！素晴らしい！', 'success'), 800);
+        }
+        
+        return {
+          ...prev,
+          dailyProgress: newDailyProgress,
+          weeklyProgress: newWeeklyProgress,
+          achievedToday: achievedToday || prev.achievedToday,
+          achievedThisWeek: achievedThisWeek || prev.achievedThisWeek
+        };
+      });
+
       if (leveledUp) {
         showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
       }
@@ -181,6 +208,37 @@ export default function App() {
     const timer = setTimeout(() => setIsInitialLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
+
+  // 学習目標のリセット（日次・週次）
+  useEffect(() => {
+    if (!goals) return;
+    
+    const today = new Date().toDateString();
+    const dayOfWeek = new Date().getDay(); // 0=日曜, 1=月曜
+    
+    let needsUpdate = false;
+    const updates = {};
+    
+    // 日次リセット（日付が変わった場合）
+    if (goals.lastResetDate !== today) {
+      updates.dailyProgress = 0;
+      updates.achievedToday = false;
+      updates.lastResetDate = today;
+      needsUpdate = true;
+    }
+    
+    // 週次リセット（月曜日の場合）
+    if (dayOfWeek === 1 && goals.lastWeekResetDate !== today) {
+      updates.weeklyProgress = 0;
+      updates.achievedThisWeek = false;
+      updates.lastWeekResetDate = today;
+      needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+      setGoals(prev => ({ ...prev, ...updates }));
+    }
+  }, [goals, setGoals]);
 
   // 初回ログイン時にプロフィール設定を促す（1回のみ）
   useEffect(() => {
@@ -417,6 +475,17 @@ export default function App() {
 
             {/* ★ 追加: ランキングページへのルート */}
             <Route path="/ranking" element={<RankingView onBack={() => navigate('/')} />} />
+            <Route path="/" element={
+              <>
+                {user && goals && <GoalProgress goals={goals} />}
+                <FolderListView
+                  courses={courses}
+                  onCreate={handleCreateCourse}
+                  onDelete={handleDeleteCourse}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              </>
+            } />
             <Route path="/review" element={
               <ReviewView 
                 wrongHistory={wrongHistory}
@@ -439,6 +508,21 @@ export default function App() {
 
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
       
+      {/* Goal Settings Modal */}
+      {showGoalSettings && (
+        <GoalSettingsModal
+          goals={goals}
+          onSave={(newGoals) => {
+            setGoals(prev => ({
+              ...prev,
+              dailyXpGoal: newGoals.dailyXpGoal,
+              weeklyXpGoal: newGoals.weeklyXpGoal
+            }));
+          }}
+          onClose={() => setShowGoalSettings(false)}
+        />
+      )}
+
       {/* プロフィール編集モーダル */}
       {showProfileEditor && user && (
         <ProfileEditor
