@@ -233,9 +233,12 @@ export default function App() {
       if (leveledUp) {
         showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
       }
-      state: { resultData, isReviewMode } 
-    });
-  },
+
+      // 結果画面へ遷移
+      navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
+        state: { resultData, isReviewMode } 
+      });
+    },
     clearHistory: async () => {
       const confirmed = await showConfirm('復習リストをリセットしますか？');
       if (confirmed) { setWrongHistory([]); navigate('/'); }

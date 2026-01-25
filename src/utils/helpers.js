@@ -90,6 +90,49 @@ export const normalizeData = (rawData) => {
           explanation: q.explanation || ''
         };
       })
+      })
     }))
   }));
+};
+
+/**
+ * 回答の正誤判定を行うヘルパー関数
+ * @param {Object} question - 問題オブジェクト
+ * @param {string|Array} userAnswer - ユーザーの回答
+ * @returns {boolean} 正解かどうか
+ */
+export const checkAnswer = (question, userAnswer) => {
+  if (!question || userAnswer === undefined || userAnswer === null) return false;
+
+  const type = question.type || 'multiple';
+  const correct = question.correctAnswer;
+
+  // 文字列化とトリムを行うヘルパー
+  const normalize = (val) => String(val).trim();
+
+  // 単一選択 / ○×クイズ
+  if (type === 'multiple' || type === 'true-false') {
+    return normalize(userAnswer) === normalize(correct);
+  }
+
+  // 記述式
+  if (type === 'input') {
+    const correctAnswers = Array.isArray(correct) ? correct : [correct];
+    return correctAnswers.some(ans => normalize(ans) === normalize(userAnswer));
+  }
+
+  // 複数選択
+  if (type === 'multi-select') {
+    if (!Array.isArray(userAnswer)) return false;
+    const correctAnswers = Array.isArray(correct) ? correct : [correct];
+    
+    const userSet = new Set(userAnswer.map(normalize));
+    const correctSet = new Set(correctAnswers.map(normalize));
+
+    return userSet.size === correctSet.size && 
+           [...userSet].every(s => correctSet.has(s));
+  }
+
+  // デフォルト
+  return normalize(userAnswer) === normalize(correct);
 };
