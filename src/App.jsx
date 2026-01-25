@@ -1,6 +1,6 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User, LogIn, RefreshCw, Home, Moon, Sun, LogOut, Share2 } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User, LogIn, RefreshCw, Home, Moon, Sun, LogOut, Share2, Target } from 'lucide-react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 
 // Firebase imports
@@ -371,6 +371,15 @@ export default function App() {
                 <BarChart3 size={20} />
                 <span className="hidden sm:inline text-sm font-bold">統計</span>
               </button>
+              {user && (
+                <button 
+                  onClick={() => setShowGoalSettings(true)} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Target size={20} />
+                  <span className="hidden sm:inline text-sm font-bold">目標</span>
+                </button>
+              )}
               <button 
                 onClick={() => navigate('/review')} 
                 className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
