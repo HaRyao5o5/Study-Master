@@ -94,7 +94,10 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                    </p>
                    <div className="flex gap-2">
                      <button 
-                       onClick={onEditProfile}
+                       onClick={() => {
+                         console.log('Profile button clicked, onEditProfile:', onEditProfile);
+                         if (onEditProfile) onEditProfile();
+                       }}
                        className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-colors flex items-center"
                      >
                        <Edit2 size={14} className="mr-1" /> プロフィール
