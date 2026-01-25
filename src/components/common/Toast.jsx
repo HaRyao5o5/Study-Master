@@ -25,7 +25,7 @@ const Toast = ({ message, type = 'info', onClose, duration = 5000 }) => {
   };
 
   return (
-    <div className={`fixed top-4 right-4 z-[9999] animate-slide-in-right max-w-md`}>
+    <div className={`w-full max-w-md animate-slide-in-right`}>
       <div className={`${typeStyles[type]} border-l-4 rounded-lg shadow-lg p-4 flex items-start gap-3`}>
         <div className="flex-shrink-0 mt-0.5">
           {icons[type]}
