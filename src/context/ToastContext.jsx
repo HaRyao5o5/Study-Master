@@ -89,15 +89,19 @@ export function ToastProvider({ children }) {
     return (
         <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo, showConfirm }}>
             {children}
-            <div className="fixed top-4 right-4 z-[9999] space-y-2">
+            <div 
+                className="fixed top-4 right-4 z-[9999] space-y-2 flex flex-col items-end pointer-events-none"
+                style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 9999 }}
+            >
                 {toasts.map((toast) => (
-                    <Toast
-                        key={toast.id}
-                        message={toast.message}
-                        type={toast.type}
-                        duration={toast.duration}
-                        onClose={() => closeToast(toast.id)}
-                    />
+                    <div key={toast.id} className="pointer-events-auto w-full max-w-md">
+                        <Toast
+                            message={toast.message}
+                            type={toast.type}
+                            duration={toast.duration}
+                            onClose={() => closeToast(toast.id)}
+                        />
+                    </div>
                 ))}
             </div>
             {confirmDialog && <ConfirmDialog {...confirmDialog} />}
