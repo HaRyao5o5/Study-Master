@@ -88,11 +88,10 @@ export const normalizeData = (rawData) => {
           image: q.image || null,
           tableData: q.tableData || q.table_data || null,
           explanation: q.explanation || ''
-        };
-      })
       })
     }))
   }));
+};
 };
 
 /**
