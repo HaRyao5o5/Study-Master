@@ -428,6 +428,9 @@ export default function App() {
           isWelcome={!hasProfile}
         />
       )}
+      
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
     </div>
   );
 }
