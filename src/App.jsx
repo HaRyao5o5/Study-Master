@@ -57,11 +57,13 @@ export default function App() {
     userStats, setUserStats,
     wrongHistory, setWrongHistory,
     masteredQuestions, setMasteredQuestions,
+    goals, setGoals,
     errorStats, setErrorStats,
     profile, hasProfile, updateProfile, isProfileLoading
   } = useAppData();
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
+  const [showGoalSettings, setShowGoalSettings] = useState(false);
 
   const navigate = useNavigate();
   const { showSuccess, showError, showConfirm } = useToast();
