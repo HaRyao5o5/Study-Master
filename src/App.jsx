@@ -45,11 +45,10 @@ import { handleError, SUCCESS } from './utils/errorMessages';
 
 // --- メイン App コンポーネント ---
 export default function App() {
-  const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: false, immediateFeedback: false });
-  const [resultData, setResultData] = useState(null);
-  const [showChangelog, setShowChangelog] = useState(false);
-  const [courseToEdit, setCourseToEdit] = useState(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [showChangelog, setShowChangelog] = useState(false);
+  const [gameSettings, setGameSettings] = useState({ randomize: false, shuffleOptions: true, immediateFeedback: false });
+  const [resultData, setResultData] = useState(null);
 
   const { theme, setTheme } = useTheme();
 
@@ -282,7 +281,29 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      showError('ログアウトに失敗しました。');
     }
+  };
+
+  const handleDeleteCourse = async (courseId) => {
+    const confirmed = await showConfirm('このコースを削除しますか？');
+    if (confirmed) {
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+      showSuccess('コースを削除しました。');
+    }
+  };
+
+  const handleToggleFavorite = (courseId) => {
+    setCourses(prev => prev.map(c => 
+      c.id === courseId ? { ...c, favorite: !c.favorite } : c
+    ));
+  };
+
+  const handleEditCourse = (course) => {
+    setCourseToEdit(course);
+    navigate('/edit-course');
   };
 
   const handleCreateCourse = (title, desc, visibility) => {
