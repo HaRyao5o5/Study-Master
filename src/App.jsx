@@ -22,6 +22,7 @@ import ChangelogModal from './components/layout/ChangelogModal';
 import StatsView from './components/layout/StatsView';
 import SharedCourseView from './components/course/SharedCourseView';
 import RankingView from './components/layout/RankingView';
+import ReviewView from './components/layout/ReviewView';
 import ProfileEditor from './components/profile/ProfileEditor';
 import { getAvatarById } from './constants/avatars';
 import InstallPrompt from './components/common/InstallPrompt';
@@ -97,44 +98,6 @@ export default function App() {
       });
       setCourses(newCourses);
     },
-    finishQuiz: (answers, totalTime, courseId, quizId) => {
-      const levelInfo = getLevelInfo(userStats.totalXp);
-      const xpGained = calculateXpGain({ answers, totalTime });
-      const today = new Date().toDateString();
-      let newStreak = userStats.streak;
-      let isStreakUpdated = false;
-      let newLastLogin = userStats.lastLogin;
-
-      if (userStats.lastLogin !== today) {
-        if (!userStats.lastLogin) { newStreak = 1; }
-        else {
-          const last = new Date(userStats.lastLogin);
-          const current = new Date(today);
-          const diffTime = Math.abs(current - last);
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays === 1) { newStreak += 1; } else { newStreak = 1; }
-        }
-        isStreakUpdated = true;
-        newLastLogin = today;
-      }
-
-      const resultWithXp = {
-        answers, totalTime, xpGained,
-        currentLevel: levelInfo.level,
-        isLevelUp: getLevelInfo(userStats.totalXp + xpGained).level > levelInfo.level,
-        streakInfo: isStreakUpdated ? { days: newStreak, isUpdated: true } : null
-      };
-
-      setResultData(resultWithXp);
-      navigate(`/course/${courseId}/quiz/${quizId}/result`);
-
-      setTimeout(() => {
-        setUserStats(prev => ({ ...prev, totalXp: prev.totalXp + xpGained, streak: isStreakUpdated ? newStreak : prev.streak, lastLogin: newLastLogin }));
-      }, 600);
-
-      const currentWrongs = answers.filter(a => !a.isCorrect).map(a => a.question.id);
-      const currentCorrects = answers.filter(a => a.isCorrect).map(a => a.question.id);
-      const isReview = quizId === 'review-mode';
 
       if (currentWrongs.length > 0) {
         setErrorStats(prev => {
@@ -312,8 +275,25 @@ export default function App() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <button onClick={() => navigate('/stats')} className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors">
-                <BarChart2 size={20} />
+              <button onClick={() => navigate('/stats')} className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <BarChart3 size={20} />
+                <span className="hidden sm:inline text-sm font-bold">統計</span>
+              </button>
+              <button 
+                onClick={() => navigate('/review')} 
+                className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+              >
+                <RefreshCw size={20} />
+                <span className="hidden sm:inline text-sm font-bold">復習</span>
+                {wrongHistory.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wrongHistory.length}
+                  </span>
+                )}
+              </button>
+              <button onClick={() => navigate('/ranking')} className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Trophy size={20} />
+                <span className="hidden sm:inline text-sm font-bold">ランキング</span>
               </button>
               <button onClick={() => setShowChangelog(true)} className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors">
                 <Bell size={20} />
@@ -402,8 +382,15 @@ export default function App() {
             <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
 
             {/* ★ 追加: ランキングページへのルート */}
-            <Route path="/ranking" element={<RankingView onBack={() => navigate('/')} currentUser={user} />} />
-
+            <Route path="/ranking" element={<RankingView onBack={() => navigate('/')} />} />
+            <Route path="/review" element={
+              <ReviewView 
+                wrongHistory={wrongHistory}
+                masteredQuestions={masteredQuestions}
+                courses={courses}
+                onBack={() => navigate('/')}
+              />
+            } />
             <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />
             <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuPage wrongHistory={wrongHistory} onStart={startQuiz} onClearHistory={clearHistory} />} />
             <Route path="/course/:courseId/quiz/:quizId/play" element={<GamePage gameSettings={gameSettings} wrongHistory={wrongHistory} onFinish={finishQuiz} />} />
