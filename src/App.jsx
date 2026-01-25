@@ -11,6 +11,7 @@ const googleProvider = new GoogleAuthProvider();
 
 import { generateId } from './utils/helpers';
 import { getLevelInfo, calculateXpGain, getUnlockedTitles } from './utils/gamification';
+import { checkAnswer } from './utils/helpers'; // Helperからインポート
 
 import LoadingScreen from './components/common/LoadingScreen';
 import FolderListView from './components/course/FolderListView';
@@ -101,8 +102,58 @@ export default function App() {
       });
       setCourses(newCourses);
     },
-    finishQuiz: ({ results, currentQuiz, xpGained, isReviewMode }) => {
-      setResultData({ results, currentQuiz, xpGained });
+    finishQuiz: (userAnswers, totalTime, courseId, quizId) => {
+      // 1. クイズデータの取得
+      const course = courses.find(c => c.id === courseId);
+      let currentQuiz;
+      let isReviewMode = false;
+
+      if (quizId === 'review-mode') {
+        isReviewMode = true;
+        const wrongQuestions = [];
+        courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => {
+            if (wrongHistory.includes(ques.id)) wrongQuestions.push(ques);
+        })));
+        currentQuiz = { id: 'review-mode', title: '弱点克服', questions: wrongQuestions };
+      } else {
+        currentQuiz = course?.quizzes.find(q => q.id === quizId);
+      }
+
+      if (!currentQuiz) return;
+
+      // 2. 結果の計算
+      const results = currentQuiz.questions.map((q) => ({
+        ...q,
+        selectedAnswer: userAnswers[q.id] || '',
+        isCorrect: checkAnswer(q, userAnswers[q.id])
+      }));
+
+      const score = results.filter(r => r.isCorrect).length;
+      const totalQuestions = results.length;
+      const percentage = Math.round((score / totalQuestions) * 100);
+      const passed = percentage >= 70;
+
+      // 3. XP計算
+      let xpGained = 0;
+      if (passed) {
+        const baseXp = totalQuestions * 10;
+        const bonusXp = percentage === 100 ? Math.floor(baseXp * 0.5) : 0;
+        xpGained = baseXP + bonusXp; // Note: using variable defined below, wait, simple calc here
+        xpGained = Math.round(baseXp + bonusXp);
+      }
+      
+      const resultData = {
+        score,
+        totalQuestions,
+        percentage,
+        passed,
+        xpGained,
+        results,
+        totalTime,
+        answers: results // ResultView expects 'answers'
+      };
+
+      setResultData(resultData);
 
       // 復習モード: 正解した問題をマスター済みに追加
       if (isReviewMode && results && Array.isArray(results)) {
