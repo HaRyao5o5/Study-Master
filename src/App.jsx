@@ -183,13 +183,20 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // 初回ログイン時にプロフィール設定を促す
+  // 初回ログイン時にプロフィール設定を促す（1回のみ）
   useEffect(() => {
-    // プロフィールデータの読み込みが完了して、かつプロフィールが存在しない場合のみ表示
-    if (user && !isProfileLoading && !hasProfile && !profile) {
+    if (!user) return;
+    
+    // ローカルストレージでウェルカム画面表示済みかチェック
+    const hasSeenWelcome = localStorage.getItem(`profile_welcome_${user.uid}`);
+    
+    // プロフィールが存在しない、かつウェルカム未表示の場合のみ
+    if (!isProfileLoading && !hasProfile && !hasSeenWelcome) {
       setShowProfileEditor(true);
+      // 表示済みフラグを立てる
+      localStorage.setItem(`profile_welcome_${user.uid}`, 'true');
     }
-  }, [user, hasProfile, isProfileLoading, profile]);
+  }, [user, hasProfile, isProfileLoading]);
 
   // 保存エラーの監視とToast表示
   useEffect(() => {
