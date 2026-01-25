@@ -120,22 +120,32 @@ export const updateUserProfile = async (user, newName) => {
 
 export const getLeaderboard = async () => {
   try {
+    // usersコレクションから直接取得（userStatsフィールドを使用）
     const usersRef = collection(db, "users");
-    const q = query(usersRef, orderBy("userStats.totalXp", "desc"), limit(50));
+    
+    // userStats.totalXpでソート、上位50件を取得
+    const q = query(
+      usersRef,
+      orderBy("userStats.totalXp", "desc"),
+      limit(50)
+    );
 
     const querySnapshot = await getDocs(q);
     const leaderboard = [];
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      leaderboard.push({
-        id: doc.id,
-        displayName: data.displayName || 'Unknown Warrior',
-        photoURL: data.photoURL || null,
-        totalXp: data.userStats?.totalXp || 0,
-        level: data.userStats?.level || 1,
-        streak: data.userStats?.streak || 0
-      });
+      // userStatsが存在し、totalXpがある場合のみ追加
+      if (data.userStats && data.userStats.totalXp > 0) {
+        leaderboard.push({
+          id: doc.id,
+          displayName: data.displayName || 'Unknown Warrior',
+          photoURL: data.photoURL || null,
+          totalXp: data.userStats.totalXp || 0,
+          level: data.userStats.level || 1,
+          streak: data.userStats.streak || 0
+        });
+      }
     });
 
     return leaderboard;
