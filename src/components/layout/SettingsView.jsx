@@ -95,7 +95,8 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
                           >
                             <Check size={16} />
                           </button>
-                          < onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
+                          <button 
+                            onClick={() => { setIsEditing(false); setEditName(user.displayName || ''); }} 
                             className="p-2 bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                           >
                             <X size={16} />
