@@ -22,6 +22,7 @@ import ChangelogModal from './components/layout/ChangelogModal';
 import StatsView from './components/layout/StatsView';
 import SharedCourseView from './components/course/SharedCourseView';
 import RankingView from './components/layout/RankingView';
+import ProfileEditor from './components/profile/ProfileEditor';
 
 // Page Components
 import CoursePage from './pages/CoursePage';
@@ -405,6 +406,19 @@ export default function App() {
       </main>
 
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
+      
+      {/* プロフィール編集モーダル */}
+      {showProfileEditor && user && (
+        <ProfileEditor
+          initialProfile={profile}
+          onSave={async (profileData) => {
+            await updateProfile(profileData);
+            setShowProfileEditor(false);
+          }}
+          onClose={() => setShowProfileEditor(false)}
+          isWelcome={!hasProfile}
+        />
+      )}
     </div>
   );
 }
