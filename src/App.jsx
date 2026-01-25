@@ -24,6 +24,7 @@ import SharedCourseView from './components/course/SharedCourseView';
 import RankingView from './components/layout/RankingView';
 import ProfileEditor from './components/profile/ProfileEditor';
 import { getAvatarById } from './constants/avatars';
+import InstallPrompt from './components/common/InstallPrompt';
 
 // Page Components
 import CoursePage from './pages/CoursePage';
