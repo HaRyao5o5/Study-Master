@@ -150,7 +150,7 @@ export default function App() {
       if (passed) {
         const baseXp = totalQuestions * 10;
         const bonusXp = percentage === 100 ? Math.floor(baseXp * 0.5) : 0;
-        xpGained = baseXP + bonusXp; // Note: using variable defined below, wait, simple calc here
+
         xpGained = Math.round(baseXp + bonusXp);
       }
       
@@ -233,12 +233,13 @@ export default function App() {
       if (leveledUp) {
         showToast(`🎉 レベル${newLevel}にアップ！`, 'success');
       }
+    }
 
-      // 結果画面へ遷移
-      navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
-        state: { resultData, isReviewMode } 
-      });
-    },
+    // 結果画面へ遷移
+    navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
+      state: { resultData, isReviewMode } 
+    });
+  },
     clearHistory: async () => {
       const confirmed = await showConfirm('復習リストをリセットしますか？');
       if (confirmed) { setWrongHistory([]); navigate('/'); }
@@ -269,7 +270,9 @@ export default function App() {
   const currentTitle = titles.length > 0 ? titles[titles.length - 1].name : "駆け出しの学習者";
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsInitialLoading(false), 500);
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 
