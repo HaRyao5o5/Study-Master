@@ -2,13 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
-const Toast = ({ message, type = 'info', onClose, duration = 5000 }) => {
+const Toast = ({ id, message, type = 'info', onClose, duration = 5000 }) => {
+  const handleDismiss = React.useCallback(() => {
+    onClose(id);
+  }, [id, onClose]);
+
   useEffect(() => {
     if (duration > 0) {
-      const timer = setTimeout(onClose, duration);
+      const timer = setTimeout(handleDismiss, duration);
       return () => clearTimeout(timer);
     }
-  }, [duration, onClose]);
+  }, [duration, handleDismiss]);
 
   const typeStyles = {
     success: 'bg-green-50 dark:bg-green-900/30 border-green-500 text-green-800 dark:text-green-200',
@@ -34,7 +38,7 @@ const Toast = ({ message, type = 'info', onClose, duration = 5000 }) => {
           {message}
         </div>
         <button
-          onClick={onClose}
+          onClick={handleDismiss}
           className="flex-shrink-0 p-1 hover:bg-black/10 rounded transition-colors"
         >
           <X size={16} />

@@ -98,10 +98,11 @@ export function ToastProvider({ children }) {
                     {toasts.map((toast) => (
                         <div key={toast.id} className="pointer-events-auto w-full max-w-md">
                             <Toast
+                                id={toast.id}
                                 message={toast.message}
                                 type={toast.type}
                                 duration={toast.duration}
-                                onClose={() => closeToast(toast.id)}
+                                onClose={closeToast}
                             />
                         </div>
                     ))}
