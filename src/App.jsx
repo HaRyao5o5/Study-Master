@@ -66,6 +66,7 @@ export default function App() {
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [showGoalSettings, setShowGoalSettings] = useState(false);
+  const [courseToEdit, setCourseToEdit] = useState(null);
 
   const navigate = useNavigate();
   const { showSuccess, showError, showConfirm } = useToast();
@@ -279,11 +280,8 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    const confirmed = await showConfirm('ログアウトしますか？');
-    if (confirmed) {
+    try {
       await signOut(auth);
-      navigate('/');
-      showSuccess('ログアウトしました');
     }
   };
 
