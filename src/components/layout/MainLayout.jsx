@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User, LogIn, RefreshCw, Target } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User, LogIn, RefreshCw, Target, Menu, X } from 'lucide-react';
 import { getAvatarById } from '../../constants/avatars';
 
 const MainLayout = ({
@@ -19,6 +19,27 @@ const MainLayout = ({
   setShowChangelog
 }) => {
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+
+  const MobileMenuItem = ({ icon: Icon, label, onClick, badge }) => (
+    <button 
+      onClick={() => {
+        onClick();
+        setIsMenuOpen(false);
+      }}
+      className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-gray-700 dark:text-gray-200"
+    >
+      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600 dark:text-blue-400">
+        <Icon size={20} />
+      </div>
+      <span className="font-bold flex-1 text-left">{label}</span>
+      {badge && (
+        <span className="bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
 
   return (
     <div className={`min-h-screen font-sans text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-900 transition-colors duration-200`}>
@@ -68,66 +89,75 @@ const MainLayout = ({
               </div>
             </div>
 
-            <div className="flex items-center space-x-1">
-              <button 
-                id="tutorial-stats-btn"
-                onClick={() => navigate('/stats')} 
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
-                title="統計"
-              >
-                <BarChart3 size={20} />
-              </button>
-              
-              {user && (
+              <div className="hidden md:flex items-center space-x-1">
                 <button 
-                  id="tutorial-goal-btn"
-                  onClick={() => setShowGoalSettings(true)} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                  title="学習目標"
+                  id="tutorial-stats-btn"
+                  onClick={() => navigate('/stats')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  title="統計"
                 >
-                  <Target size={20} />
+                  <BarChart3 size={20} />
                 </button>
-              )}
-              
-              <button 
-                id="tutorial-review-btn"
-                onClick={() => navigate('/review')} 
-                className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
-                title="復習"
-              >
-                <RefreshCw size={20} />
-                {wrongHistory.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {wrongHistory.length}
-                  </span>
+                
+                {user && (
+                  <button 
+                    id="tutorial-goal-btn"
+                    onClick={() => setShowGoalSettings(true)} 
+                    className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                    title="学習目標"
+                  >
+                    <Target size={20} />
+                  </button>
                 )}
-              </button>
-              
+                
+                <button 
+                  id="tutorial-review-btn"
+                  onClick={() => navigate('/review')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                  title="復習"
+                >
+                  <RefreshCw size={20} />
+                  {wrongHistory.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {wrongHistory.length}
+                    </span>
+                  )}
+                </button>
+                
+                <button 
+                  id="tutorial-ranking-btn"
+                  onClick={() => navigate('/ranking')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  title="ランキング"
+                >
+                  <Trophy size={20} />
+                </button>
+                
+                <button 
+                  id="tutorial-changelog-btn"
+                  onClick={() => setShowChangelog(true)} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  title="お知らせ"
+                >
+                  <Bell size={20} />
+                </button>
+                
+                <button 
+                  id="tutorial-settings-btn"
+                  onClick={() => navigate('/settings')} 
+                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} 
+                  title="設定"
+                >
+                  <Settings size={20} />
+                </button>
+              </div>
+
+              {/* Mobile Menu Button */}
               <button 
-                id="tutorial-ranking-btn"
-                onClick={() => navigate('/ranking')} 
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
-                title="ランキング"
+                onClick={() => setIsMenuOpen(true)}
+                className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >
-                <Trophy size={20} />
-              </button>
-              
-              <button 
-                id="tutorial-changelog-btn"
-                onClick={() => setShowChangelog(true)} 
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
-                title="お知らせ"
-              >
-                <Bell size={20} />
-              </button>
-              
-              <button 
-                id="tutorial-settings-btn"
-                onClick={() => navigate('/settings')} 
-                className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} 
-                title="設定"
-              >
-                <Settings size={20} />
+                <Menu size={24} />
               </button>
               
               {/* ユーザーアカウント表示 */}
@@ -172,8 +202,65 @@ const MainLayout = ({
               </div>
             </div>
           </div>
-        </div>
       </header>
+
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 z-[100] md:hidden">
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in"
+            onClick={() => setIsMenuOpen(false)}
+          ></div>
+          <div className="absolute right-0 top-0 bottom-0 w-[280px] bg-white dark:bg-gray-800 shadow-2xl p-6 animate-slide-in-right flex flex-col">
+             <div className="flex justify-between items-center mb-6">
+                <span className="font-bold text-lg text-gray-800 dark:text-white">メニュー</span>
+                <button 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  <X size={24} />
+                </button>
+             </div>
+
+             <div className="space-y-2 flex-1 overflow-y-auto">
+                <MobileMenuItem icon={BarChart3} label="統計データ" onClick={() => navigate('/stats')} />
+                {user && <MobileMenuItem icon={Target} label="学習目標" onClick={() => setShowGoalSettings(true)} />}
+                <MobileMenuItem 
+                  icon={RefreshCw} 
+                  label="復習モード" 
+                  onClick={() => navigate('/review')} 
+                  badge={wrongHistory.length > 0 ? wrongHistory.length : null}
+                />
+                <MobileMenuItem icon={Trophy} label="ランキング" onClick={() => navigate('/ranking')} />
+                <MobileMenuItem icon={Bell} label="お知らせ" onClick={() => setShowChangelog(true)} />
+                <MobileMenuItem icon={Settings} label="設定" onClick={() => navigate('/settings')} />
+             </div>
+
+             <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                  {user && profile ? (
+                     <>
+                      <div className="text-2xl">{getAvatarById(profile.avatar).emoji}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm truncate dark:text-white">{profile.displayName}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">Lv.{levelInfo.level}</div>
+                      </div>
+                     </>
+                  ) : (
+                    <div className="flex-1 text-center">
+                      <button 
+                        onClick={() => { onLogin(); setIsMenuOpen(false); }}
+                        className="text-blue-600 font-bold text-sm"
+                      >
+                        ログインして保存
+                      </button>
+                    </div>
+                  )}
+                </div>
+             </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
         <div className="animate-fade-in">

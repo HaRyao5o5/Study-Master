@@ -3,23 +3,44 @@
 @tailwind utilities;
 
 /* アニメーション遅延用ユーティリティ */
-.delay-0 { animation-delay: 0ms; }
-.delay-100 { animation-delay: 100ms; }
-.delay-200 { animation-delay: 200ms; }
-.delay-300 { animation-delay: 300ms; }
-.delay-400 { animation-delay: 400ms; }
-.delay-500 { animation-delay: 500ms; }
-.delay-75 { animation-delay: 75ms; }
-.delay-150 { animation-delay: 150ms; }
+.delay-0 {
+  animation-delay: 0ms;
+}
+.delay-100 {
+  animation-delay: 100ms;
+}
+.delay-200 {
+  animation-delay: 200ms;
+}
+.delay-300 {
+  animation-delay: 300ms;
+}
+.delay-400 {
+  animation-delay: 400ms;
+}
+.delay-500 {
+  animation-delay: 500ms;
+}
+.delay-75 {
+  animation-delay: 75ms;
+}
+.delay-150 {
+  animation-delay: 150ms;
+}
 
 /* src/index.css の末尾に追加 */
+
+/* 画面外の背景色修正 (Rubber banding対策) */
+html {
+  @apply bg-gray-50 dark:bg-gray-900;
+}
 
 @layer utilities {
   /* すりガラス効果 */
   .glass {
     @apply bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border border-white/20 dark:border-gray-700/30;
   }
-  
+
   /* 浮き上がるようなガラス効果（ホバー時など） */
   .glass-hover {
     @apply hover:bg-white/90 dark:hover:bg-gray-800/90 transition-all duration-300;
@@ -44,8 +65,13 @@
 }
 
 @keyframes pulse-subtle {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
 }
 
 /* クラスとして使えるようにする */
