@@ -87,7 +87,7 @@ const RankingView: React.FC<RankingViewProps> = ({ onBack, currentUser }) => {
 
               <div className="flex-shrink-0 mr-4">
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName} className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm" />
+                  <img src={user.photoURL} alt={user.displayName} className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm object-cover" />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
                     <UserIcon size={24} />

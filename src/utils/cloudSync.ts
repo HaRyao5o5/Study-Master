@@ -2,13 +2,15 @@
 import { doc, getDoc, writeBatch, collection, getDocs } from "firebase/firestore";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../lib/firebase.ts";
-import { Course, Quiz, Question, UserStats } from "../types/index.ts";
+import { Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions } from "../types/index.ts";
 
 export interface UserAppData {
     userStats: UserStats;
     wrongHistory: string[];
     errorStats: any;
     courses: Course[];
+    goals?: UserGoals | null;
+    masteredQuestions?: MasteredQuestions;
 }
 
 // ■ ヘルパー: 画像をStorageに逃がしてURLに書き換える
@@ -63,10 +65,12 @@ export const loadFromCloud = async (uid: string): Promise<UserAppData | null> =>
       .map((id: string) => courseMap[id]);
 
     return {
-      userStats: userData.userStats || { totalXp: 0, level: 1, streak: 0, lastLogin: '' },
+      userStats: userData.userStats || { totalXp: 1, level: 1, streak: 0, lastLogin: '' },
       wrongHistory: userData.wrongHistory || [],
       errorStats: userData.errorStats || {},
-      courses: loadedCourses
+      courses: loadedCourses,
+      goals: userData.goals || null,
+      masteredQuestions: userData.masteredQuestions || {}
     };
   } catch (error) {
     console.error("クラウドからの読み込みエラー:", error);
@@ -92,6 +96,8 @@ export const saveToCloud = async (uid: string, allData: Partial<UserAppData>, ex
       userStats: allData.userStats || { totalXp: 0, level: 1, streak: 0, lastLogin: '' },
       wrongHistory: allData.wrongHistory || [],
       errorStats: allData.errorStats || {},
+      goals: allData.goals || null,
+      masteredQuestions: allData.masteredQuestions || {},
       courseIds: courseIds,
       updatedAt: explicitTimestamp
     }, { merge: true });

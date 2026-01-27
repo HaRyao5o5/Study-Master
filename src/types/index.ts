@@ -94,8 +94,14 @@ export interface ResultData {
 export interface Profile {
   uid: string;
   name: string;
+  username?: string; // @username
   bio?: string;
-  avatarId?: string;
+  avatarId?: string; // Predefined avatar ID
+  customAvatarUrl?: string; // Uploaded image URL
+  avatarSettings?: {
+    scale: number;
+    position: { x: number; y: number };
+  };
   title?: string;
   socialLinks?: {
     twitter?: string;

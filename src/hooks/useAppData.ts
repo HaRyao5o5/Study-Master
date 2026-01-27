@@ -173,7 +173,30 @@ export function useAppData(): AppData {
     return () => unsubscribe();
   }, [user]);
 
-  // 3. Save Function
+  // 3. Profile Listener
+  useEffect(() => {
+    if (!user?.uid) {
+        setProfile(null);
+        return;
+    }
+    
+    // Profile is stored in subcollection users/{uid}/profile/data
+    const profileRef = doc(db, 'users', user.uid, 'profile', 'data');
+    
+    const unsubscribe = onSnapshot(profileRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setProfile({ uid: user.uid, ...docSnap.data() } as Profile);
+        } else {
+            setProfile(null);
+        }
+    }, (error) => {
+        console.error("Profile sync error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // 4. Save Function
   const saveData = async (newData: Partial<AppData> = {}, _force = false) => {
     // Update local state if provided
     if (newData.courses) setCourses(newData.courses);

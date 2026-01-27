@@ -1,5 +1,6 @@
 // src/components/layout/SettingsView.tsx
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, User as UserIcon, Clock, Edit2, Check, X, ChevronRight, LucideIcon } from 'lucide-react';
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
@@ -109,6 +110,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   onLogout 
   // onEditProfile is unused in implementation
 }) => {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError, showConfirm } = useToast();
   
@@ -227,6 +229,13 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
               
+              <SettingsItem 
+                icon={UserIcon} 
+                label="プロフィール設定" 
+                description="アイコンやユーザーIDの変更"
+                onClick={() => navigate('/profile')} 
+              />
+
               <SettingsItem 
                 icon={LogOut} 
                 label="ログアウト" 

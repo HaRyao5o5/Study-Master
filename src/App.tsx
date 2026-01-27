@@ -28,8 +28,11 @@ import CoursePage from './pages/CoursePage.tsx';
 import QuizMenuPage from './pages/QuizMenuPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
+import ProfilePage from './pages/ProfilePage';
 import EditQuizPage from './pages/EditQuizPage';
 import CreateQuizPage from './pages/CreateQuizPage';
+
+
 import { Trophy, Flame } from 'lucide-react';
 import { getLevelInfo, getUnlockedTitles } from './utils/gamification.ts';
 
@@ -226,23 +229,26 @@ export default function App() {
     }
   };
 
+  // Common Props for MainLayout
+  const mainLayoutProps = {
+    user,
+    userStats,
+    levelInfo,
+    currentTitle,
+    xpPercentage,
+    isSyncing,
+    profile,
+    isProfileLoading,
+    wrongHistory,
+    onLogin: handleLogin,
+    setShowGoalDetail,
+    setShowChangelog
+  };
+
   if (isInitialLoading) return <LoadingScreen />;
 
   return (
-    <MainLayout
-      user={user}
-      userStats={userStats}
-      levelInfo={levelInfo}
-      currentTitle={currentTitle}
-      xpPercentage={xpPercentage}
-      isSyncing={isSyncing}
-      profile={profile}
-      isProfileLoading={isProfileLoading}
-      wrongHistory={wrongHistory}
-      onLogin={handleLogin}
-      setShowGoalDetail={setShowGoalDetail}
-      setShowChangelog={setShowChangelog}
-    >
+    <MainLayout {...mainLayoutProps}>
       <TutorialController />
       
       <Routes>
@@ -297,6 +303,13 @@ export default function App() {
           />
         } />
         
+        <Route path="/profile" element={
+            <ProfilePage />
+        } />
+        <Route path="/profile/:uid" element={
+            <ProfilePage />
+        } />
+        
         <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />
         <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuPage wrongHistory={wrongHistory} onStart={startQuiz} onClearHistory={clearHistory} />} />
         <Route path="/course/:courseId/quiz/:quizId/play" element={<GamePage gameSettings={gameSettings} wrongHistory={wrongHistory} onFinish={finishQuiz} />} />
@@ -306,6 +319,7 @@ export default function App() {
 
         <Route path="*" element={<div className="text-center p-10">ページが見つかりません (404)</div>} />
       </Routes>
+
 
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
       

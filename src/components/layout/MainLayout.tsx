@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon } from 'lucide-react';
-import { getAvatarById } from '../../constants/avatars';
+
 import { User } from '../../types';
 import { UserProfileData } from '../../lib/firebaseProfile';
 import { getEffectiveStreak } from '../../utils/gamification';
@@ -191,12 +191,30 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               {/* ユーザーアカウント表示 */}
               <div id="tutorial-profile-area">
                 {user ? (
-                  <div className="flex items-center space-x-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                  <div 
+                    onClick={() => navigate('/profile')}
+                    className="flex items-center space-x-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
                     {profile && !isProfileLoading ? (
                       <>
-                        <div className="text-3xl">{getAvatarById(profile.avatar || 'avatar-1').emoji}</div>
+                        {profile.customAvatarUrl ? (
+                           <div className="w-9 h-9 relative overflow-hidden rounded-full ring-2 ring-blue-100 dark:ring-blue-900">
+                              <img 
+                                src={profile.customAvatarUrl} 
+                                alt={profile.name}
+                                className="w-full h-full object-cover"
+                                style={{
+                                    transform: `scale(${profile.avatarSettings?.scale || 1}) translate(${profile.avatarSettings?.position?.x || 0}px, ${profile.avatarSettings?.position?.y || 0}px)`
+                                }}
+                              />
+                           </div>
+                        ) : (
+                           <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                             <UserIcon size={20} />
+                           </div>
+                        )}
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200 hidden sm:block max-w-[100px] truncate">
-                          {profile.displayName}
+                          {profile.name}
                         </span>
                       </>
                     ) : (
@@ -265,12 +283,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({
              </div>
 
              <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center space-x-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50">
+                <div 
+                  onClick={() => {
+                    if (user) {
+                        navigate('/profile');
+                        setIsMenuOpen(false);
+                    }
+                  }}
+                  className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 ${user ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''}`}
+                >
                   {user && profile ? (
                      <>
-                      <div className="text-2xl">{getAvatarById(profile.avatar || 'avatar-1').emoji}</div>
+                      {profile.customAvatarUrl ? (
+                           <div className="w-10 h-10 relative overflow-hidden rounded-full ring-2 ring-blue-100 dark:ring-blue-900 flex-shrink-0">
+                              <img 
+                                src={profile.customAvatarUrl} 
+                                alt={profile.name}
+                                className="w-full h-full object-cover"
+                                style={{
+                                    transform: `scale(${profile.avatarSettings?.scale || 1}) translate(${profile.avatarSettings?.position?.x || 0}px, ${profile.avatarSettings?.position?.y || 0}px)`
+                                }}
+                              />
+                           </div>
+                        ) : (
+                           <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-400">
+                             <UserIcon size={24} />
+                           </div>
+                        )}
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm truncate dark:text-white">{profile.displayName}</div>
+                        <div className="font-bold text-sm truncate dark:text-white">{profile.name}</div>
                         <div className="text-xs text-gray-500 dark:text-gray-400">Lv.{levelInfo.level}</div>
                       </div>
                      </>

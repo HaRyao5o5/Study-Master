@@ -125,6 +125,7 @@ export interface LeaderboardUser {
   id: string;
   displayName: string;
   photoURL: string | null;
+  avatarId?: string;
   totalXp: number;
   level: number;
   streak: number;
@@ -153,6 +154,7 @@ export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
           id: doc.id,
           displayName: data.displayName || 'Unknown Warrior',
           photoURL: data.photoURL || null,
+          avatarId: data.avatarId || 'avatar-1',
           totalXp: data.userStats.totalXp || 0,
           level: data.userStats.level || 1,
           streak: data.userStats.streak || 0
