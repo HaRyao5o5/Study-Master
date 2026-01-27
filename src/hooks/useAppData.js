@@ -1,7 +1,8 @@
 // src/hooks/useAppData.js
 import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../lib/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../lib/firebase";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
 import { normalizeData } from '../utils/helpers';
 import { INITIAL_DATA } from '../data/initialData';
@@ -16,7 +17,7 @@ export function useAppData() {
   const [userStats, setUserStats] = useState({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
   const [courses, setCourses] = useState(() => normalizeData(INITIAL_DATA));
   const [wrongHistory, setWrongHistory] = useState([]);
-  const [masteredQuestions, setMasteredQuestions] = useState({}); // NEW: 復習完了した問題
+  const [masteredQuestions, setMasteredQuestions] = useState({});
   const [goals, setGoals] = useState({
     dailyXpGoal: 100,
     weeklyXpGoal: 700,
@@ -26,14 +27,18 @@ export function useAppData() {
     lastWeekResetDate: new Date().toDateString(),
     achievedToday: false,
     achievedThisWeek: false
-  }); // NEW: 学習目標
+  });
   const [errorStats, setErrorStats] = useState({});
 
+  // Real-time Sync Controls
+  const lastWriteTime = useRef(0);
+  const ignoreNextSave = useRef(false);
+
   // ローカルストレージへの保存（ゲストモードのみ、認証確定後のみ）
+  // ... (Keep existing local storage effects)
   useEffect(() => {
-    if (!authChecked) return; // 認証状態が確定するまで保存しない
+    if (!authChecked) return; 
     if (!user) {
-      // ログインしていない場合のみlocalStorageに保存
       localStorage.setItem('study-master-data', JSON.stringify(courses));
     }
   }, [courses, user, authChecked]);
@@ -73,63 +78,94 @@ export function useAppData() {
     }
   }, [goals, user, authChecked]);
 
+  // データ読み込みヘルパー
+  const fetchAndSetData = async (uid) => {
+    setIsSyncing(true);
+    try {
+      const cloudData = await loadFromCloud(uid);
+      if (!cloudData) {
+        console.log('No Firebase data found, using initial data');
+        setCourses(normalizeData(INITIAL_DATA));
+        setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
+        setWrongHistory([]);
+        setMasteredQuestions({});
+        setGoals({
+          dailyXpGoal: 100,
+          weeklyXpGoal: 700,
+          dailyProgress: 0,
+          weeklyProgress: 0,
+          lastResetDate: new Date().toDateString(),
+          lastWeekResetDate: new Date().toDateString(),
+          achievedToday: false,
+          achievedThisWeek: false
+        });
+        setErrorStats({});
+      } else {
+        if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
+        if (cloudData.userStats) setUserStats(cloudData.userStats);
+        if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+        if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
+        if (cloudData.goals) setGoals(cloudData.goals);
+        if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
+        console.log('Data loaded from Firebase');
+      }
+      
+      // localStorageをクリア
+      localStorage.removeItem('study-master-data');
+      localStorage.removeItem('study-master-wrong-history');
+      localStorage.removeItem('study-master-mastered');
+      localStorage.removeItem('study-master-goals');
+      localStorage.removeItem('study-master-error-stats');
+      localStorage.removeItem('study-master-stats');
+      
+      loadProfile(uid);
+    } catch (err) {
+      console.error("Sync Error:", err);
+    } finally {
+      setIsSyncing(false);
+      setAuthChecked(true);
+    }
+  };
+
   // 認証とクラウド同期
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeSnapshot = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      
+      // Cleanup previous snapshot listener if exists
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
       if (currentUser) {
-        // ✅ ログイン時: localStorageをクリアし、Firebaseから読み込む
-        setIsSyncing(true);
-        try {
-          const cloudData = await loadFromCloud(currentUser.uid);
-          if (!cloudData) {
-            // ✅ Firebaseにデータがない場合: 初期データを使用（ゲストデータはアップロードしない）
-            console.log('No Firebase data found, using initial data');
-            setCourses(normalizeData(INITIAL_DATA));
-            setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
-            setWrongHistory([]);
-            setMasteredQuestions({});
-            setGoals({
-              dailyXpGoal: 100,
-              weeklyXpGoal: 700,
-              dailyProgress: 0,
-              weeklyProgress: 0,
-              lastResetDate: new Date().toDateString(),
-              lastWeekResetDate: new Date().toDateString(),
-              achievedToday: false,
-              achievedThisWeek: false
-            });
-            setErrorStats({});
-          } else {
-            // ✅ Firebaseからデータを読み込み
-            if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
-            if (cloudData.userStats) setUserStats(cloudData.userStats);
-            if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
-            if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
-            if (cloudData.goals) setGoals(cloudData.goals);
-            if (cloudData.errorStats) setErrorStats(cloudData.errorStats);
-            console.log('Data loaded from Firebase');
+        // Initial Load
+        await fetchAndSetData(currentUser.uid);
+
+        // Setup Real-time Listener
+        const userDocRef = doc(db, "users", currentUser.uid);
+        unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+          if (!docSnap.exists()) return;
+          
+          const data = docSnap.data();
+          const remoteTime = data.updatedAt?.toMillis ? data.updatedAt.toMillis() : 0;
+          
+          // Check if this update is from us (allow 2s buffer)
+          if (Math.abs(remoteTime - lastWriteTime.current) < 2000) {
+            return;
           }
-          
-          // ✅ ログイン後はlocalStorageをクリア（データ混在を防ぐ）
-          localStorage.removeItem('study-master-data');
-          localStorage.removeItem('study-master-wrong-history');
-          localStorage.removeItem('study-master-mastered');
-          localStorage.removeItem('study-master-goals');
-          localStorage.removeItem('study-master-error-stats');
-          localStorage.removeItem('study-master-stats');
-          console.log('localStorage cleared after login');
-          
-          // プロフィール読み込み
-          loadProfile(currentUser.uid);
-        } catch (err) {
-          console.error("Sync Error:", err);
-        } finally {
-          setIsSyncing(false);
-          setAuthChecked(true);
-        }
+
+          console.log("Remote update detected, reloading data...");
+          ignoreNextSave.current = true; // Prevent the following state update from saving back to cloud
+          fetchAndSetData(currentUser.uid); // Background reload
+        }, (error) => {
+          console.error("Snapshot listener error:", error);
+        });
+
       } else {
-        // ✅ ログアウト時/ゲストモード: localStorageから読み込む
+        // Guest Mode
         console.log('Guest mode or logged out, loading from localStorage');
         try {
           const savedCourses = localStorage.getItem('study-master-data');
@@ -157,29 +193,49 @@ export function useAppData() {
         } catch (e) {
           console.error('Failed to load from localStorage:', e);
           setCourses(normalizeData(INITIAL_DATA));
-          setUserStats({ totalXp: 0, level: 1, streak: 0, lastLogin: '' });
-          setWrongHistory([]);
-          setMasteredQuestions({});
-          setErrorStats({});
         } finally {
           setIsSyncing(false);
           setAuthChecked(true);
         }
       }
     });
-    return () => unsubscribe();
+    
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
-  // 自動保存 (Debounce)
+  // 自動保存 (Debounce with Ignore Logic)
   const saveTimeoutRef = useRef(null);
   useEffect(() => {
     if (!user) return;
+    
+    // If this update was caused by a remote fetch, ignore saving
+    if (ignoreNextSave.current) {
+      console.log('Skipping save due to remote update');
+      ignoreNextSave.current = false;
+      return;
+    }
+
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    
     saveTimeoutRef.current = setTimeout(async () => {
       setIsSyncing(true);
-      setSaveError(null); // エラーをクリア
+      setSaveError(null);
       try {
-        await saveToCloud(user.uid, { courses, userStats, wrongHistory, masteredQuestions, goals, errorStats });
+        const now = new Date();
+        lastWriteTime.current = now.getTime(); // Record local write time
+        
+        await saveToCloud(user.uid, { 
+          courses, 
+          userStats, 
+          wrongHistory, 
+          masteredQuestions, 
+          goals, 
+          errorStats 
+        }, now);
+        
         console.log('Auto-save successful');
       } catch (err) {
         console.error("Auto-save failed:", err);
@@ -225,7 +281,7 @@ export function useAppData() {
   // プロフィール更新
   const updateProfile = async (profileData) => {
     if (!user) return;
-   
+    
     try {
       const { updateProfile: updateFirebaseProfile } = await import('../lib/firebaseProfile');
       await updateFirebaseProfile(user.uid, profileData);
@@ -247,7 +303,6 @@ export function useAppData() {
     masteredQuestions, setMasteredQuestions,
     goals, setGoals,
     errorStats, setErrorStats,
-    // プロフィール関連
     profile,
     isProfileLoading,
     hasProfile,

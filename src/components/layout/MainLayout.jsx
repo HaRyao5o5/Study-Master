@@ -154,6 +154,7 @@ const MainLayout = ({
 
               {/* Mobile Menu Button */}
               <button 
+                id="tutorial-menu-btn"
                 onClick={() => setIsMenuOpen(true)}
                 className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
               >

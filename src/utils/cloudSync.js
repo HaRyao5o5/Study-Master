@@ -66,7 +66,7 @@ export const loadFromCloud = async (uid) => {
   }
 };
 
-export const saveToCloud = async (uid, allData) => {
+export const saveToCloud = async (uid, allData, explicitTimestamp = new Date()) => {
   try {
     if (!uid) return;
     const batch = writeBatch(db);
@@ -85,7 +85,7 @@ export const saveToCloud = async (uid, allData) => {
       wrongHistory: allData.wrongHistory || [],
       errorStats: allData.errorStats || {},
       courseIds: courseIds,
-      updatedAt: new Date()
+      updatedAt: explicitTimestamp
     }, { merge: true });
 
     for (const course of validCourses) {

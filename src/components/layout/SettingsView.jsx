@@ -1,6 +1,6 @@
 // src/components/layout/SettingsView.jsx
-import React, { useRef, useState } from 'react'; // useState追加
-import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock, Edit2, Check, X } from 'lucide-react'; // アイコン追加
+import React, { useRef, useState } from 'react';
+import { ArrowLeft, Sun, Moon, Monitor, Download, Upload, Database, Trash2, LogIn, LogOut, Cloud, User, Clock, Edit2, Check, X, ChevronRight } from 'lucide-react';
 import { CHANGELOG_DATA } from '../../data/changelog';
 import { exportToFile, importFromFile } from '../../utils/fileIO';
 import { updateUserProfile } from '../../lib/firebase';
@@ -8,6 +8,57 @@ import { useToast } from '../../context/ToastContext';
 import { SUCCESS, ERROR } from '../../utils/errorMessages';
 
 const APP_VERSION = `Study Master ${CHANGELOG_DATA[0].version}`;
+
+const SettingsSection = ({ title, icon: Icon, children, color = "blue" }) => {
+  const colorClasses = {
+    blue: "text-blue-500",
+    purple: "text-purple-500",
+    red: "text-red-500",
+    gray: "text-gray-500",
+    orange: "text-orange-500"
+  };
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1 flex items-center">
+        {Icon && <Icon size={16} className={`mr-2 ${colorClasses[color]}`} />}
+        {title}
+      </h3>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const SettingsItem = ({ icon: Icon, label, description, onClick, action, isDestructive, rightElement }) => (
+  <button 
+    onClick={onClick}
+    className={`w-full flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left group ${
+      isDestructive ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10' : 'text-gray-700 dark:text-gray-200'
+    }`}
+  >
+    <div className="flex items-center space-x-3.5">
+      {Icon && (
+        <div className={`p-2 rounded-lg ${
+          isDestructive 
+            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' 
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 group-hover:text-blue-600 dark:group-hover:text-blue-400'
+        } transition-colors`}>
+          <Icon size={20} />
+        </div>
+      )}
+      <div>
+        <div className="font-bold text-base">{label}</div>
+        {description && <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</div>}
+      </div>
+    </div>
+    <div className="flex items-center text-gray-400">
+      {action || rightElement}
+      {!action && !rightElement && <ChevronRight size={18} />}
+    </div>
+  </button>
+);
 
 const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onResetStats, onDebugYesterday, user, onLogin, onLogout, onEditProfile }) => {
   const fileInputRef = useRef(null);
@@ -47,164 +98,164 @@ const SettingsView = ({ theme, changeTheme, onBack, courses, onImportData, onRes
     }
   };
 
+  const handleLogoutClick = async () => {
+    const confirmed = await showConfirm('ログアウトしますか？');
+    if (confirmed) onLogout();
+  };
+
+  const handleResetClick = async () => {
+    onResetStats();
+  };
+
+  const ThemeRadio = ({ value, label, icon: Icon }) => (
+    <button
+      onClick={() => changeTheme(value)}
+      className={`flex-1 flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+        theme === value
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+          : 'border-transparent bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+      }`}
+    >
+      <Icon size={24} className="mb-1" />
+      <span className="text-xs font-bold">{label}</span>
+    </button>
+  );
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto animate-fade-in mb-20">
-      <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex items-center">
-        <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-          <ArrowLeft size={24} />
+    <div className="max-w-2xl mx-auto animate-slide-up pb-20">
+      <div className="flex items-center mb-6">
+        <button 
+          onClick={onBack} 
+          className="mr-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+          aria-label="戻る"
+        >
+          <ArrowLeft size={24} className="text-gray-700 dark:text-white" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
+        <h2 className="text-2xl font-black text-gray-800 dark:text-white">設定</h2>
       </div>
 
-      <div className="p-6 space-y-8">
+      <div className="space-y-8">
         
-        {/* クラウド同期 */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-            <Cloud size={20} className="mr-2 text-blue-500" /> クラウド同期
-          </h3>
-          
-          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
-            {user ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center flex-1 min-w-0">
-                    {user.photoURL ? (
-                      <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 mr-3" />
+        {/* アカウント設定 */}
+        <SettingsSection title="アカウント" icon={User} color="blue">
+          {user ? (
+            <>
+              <div className="p-4 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  {user.photoURL ? (
+                    <img src={user.photoURL} alt="User" className="w-12 h-12 rounded-full border-2 border-white dark:border-gray-600 shadow-sm" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-sm">
+                      <User size={20} className="text-white" />
+                    </div>
+                  )}
+                  <div>
+                    {isEditing ? (
+                      <div className="flex items-center space-x-2">
+                        <input 
+                          type="text" 
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="border rounded px-2 py-1 text-sm dark:bg-gray-700 dark:text-white"
+                          autoFocus
+                        />
+                        <button onClick={handleSaveProfile} disabled={isSaving} className="p-1 bg-green-500 text-white rounded hover:bg-green-600"><Check size={16} /></button>
+                        <button onClick={() => setIsEditing(false)} className="p-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"><X size={16} /></button>
+                      </div>
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center mr-3">
-                        <User size={20} className="text-blue-500" />
+                      <div className="flex items-center group cursor-pointer" onClick={() => setIsEditing(true)}>
+                        <h3 className="font-bold text-gray-800 dark:text-white mr-2">{user.displayName || 'No Name'}</h3>
+                        <Edit2 size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     )}
-                    
-                    {/* ユーザー情報表示 */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-800 dark:text-white truncate">
-                        {user.displayName || user.email}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between border-t border-blue-100 dark:border-blue-900/30 pt-4 mt-2">
-                   <p className="text-[10px] text-green-600 dark:text-green-400 font-bold flex items-center">
-                     <span className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse"></span>
-                     同期有効
-                   </p>
-                   <div className="flex gap-2">
-                     <button 
-                       onClick={() => {
-                         console.log('Profile button clicked, onEditProfile:', onEditProfile);
-                         if (onEditProfile) onEditProfile();
-                       }}
-                       className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-colors flex items-center"
-                     >
-                       <Edit2 size={14} className="mr-1" /> プロフィール
-                     </button>
-                     <button 
-                       onClick={onLogout}
-                       className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors flex items-center"
-                     >
-                       <LogOut size={14} className="mr-2" /> ログアウト
-                     </button>
-                   </div>
+                <div className="text-xs font-bold text-green-500 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full flex items-center">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5 animate-pulse"></span>
+                  同期中
                 </div>
               </div>
-            ) : (
-              <div className="text-center sm:text-left sm:flex items-center justify-between gap-4">
-                <div className="mb-4 sm:mb-0">
-                  <p className="text-sm font-bold text-blue-900 dark:text-blue-100 mb-1">データをクラウドに保存</p>
-                  <p className="text-xs text-blue-700 dark:text-blue-300">
-                    ログインすると、学習データを安全にバックアップし、複数端末で同期できます。
-                  </p>
-                </div>
-                <button 
-                  onClick={onLogin}
-                  className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-gray-50 text-gray-700 font-bold rounded-lg shadow-sm border border-gray-300 transition-all flex items-center justify-center"
-                >
-                  <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" className="w-5 h-5 mr-3" />
-                  Googleでログイン
-                </button>
+              
+              <SettingsItem 
+                icon={LogOut} 
+                label="ログアウト" 
+                onClick={handleLogoutClick} 
+                isDestructive
+              />
+            </>
+          ) : (
+            <div className="p-6 text-center">
+              <div className="mb-4">
+                <p className="font-bold text-gray-800 dark:text-white">学習データを保存しよう</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">ログインすると複数の端末でデータを同期できます。</p>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* テーマ */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2">テーマ</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { value: 'light', icon: Sun, label: 'ライト' },
-              { value: 'dark', icon: Moon, label: 'ダーク' },
-              { value: 'auto', icon: Monitor, label: '自動' },
-            ].map(({ value, icon: Icon, label }) => (
-              <button
-                key={value}
-                onClick={() => changeTheme(value)}
-                className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  theme === value
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300'
-                }`}
+              <button 
+                onClick={onLogin}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-md transition-all transform hover:scale-[1.02] flex items-center justify-center"
               >
-                <Icon size={24} />
-                <span className="text-sm font-bold">{label}</span>
+                <LogIn size={20} className="mr-2" />
+                Googleでログイン
               </button>
-            ))}
+            </div>
+          )}
+        </SettingsSection>
+
+        {/* 外観設定 */}
+        <SettingsSection title="外観" icon={Monitor} color="purple">
+          <div className="p-4">
+            <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+               <ThemeRadio value="light" icon={Sun} label="ライト" />
+               <ThemeRadio value="dark" icon={Moon} label="ダーク" />
+               <ThemeRadio value="auto" icon={Monitor} label="自動" />
+            </div>
           </div>
-        </div>
+        </SettingsSection>
 
         {/* データ管理 */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-            <Database size={20} className="mr-2 text-purple-500" /> データ管理
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button onClick={handleExport} className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors flex items-center justify-center gap-3 text-green-700 dark:text-green-400 font-bold">
-              <Download size={20} />
-              エクスポート
-            </button>
-            <button onClick={handleImportClick} className="p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors flex items-center justify-center gap-3 text-orange-700 dark:text-orange-400 font-bold">
-              <Upload size={20} />
-              インポート
-            </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
-          </div>
-        </div>
+        <SettingsSection title="データ管理" icon={Database} color="gray">
+          <SettingsItem 
+            icon={Download} 
+            label="バックアップを作成" 
+            description="現在の学習データをファイルに書き出します" 
+            onClick={handleExport} 
+          />
+          <SettingsItem 
+            icon={Upload} 
+            label="バックアップから復元" 
+            description="ファイルから学習データを読み込みます" 
+            onClick={handleImportClick} 
+          />
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+        </SettingsSection>
 
-        {/* リセット */}
-        <div className="space-y-4">
-          <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-            <Trash2 size={20} className="mr-2 text-red-500" /> リセット
-          </h3>
-          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-200 dark:border-red-900/30">
-            <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-              以下の操作は元に戻せません。実行前に必ずバックアップを取ってください。
-            </p>
-            <button onClick={onResetStats} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-bold transition-colors">
-              統計データをリセット
-            </button>
-          </div>
-        </div>
+        {/* 危険な操作 */}
+        <SettingsSection title="リセット操作" icon={Trash2} color="red">
+          <SettingsItem 
+            icon={Trash2} 
+            label="統計データをリセット" 
+            description="これまでの学習履歴がすべて消去されます" 
+            onClick={handleResetClick} 
+            isDestructive 
+          />
+        </SettingsSection>
 
         {/* デバッグ機能 (開発用) */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="space-y-4">
-            <h3 className="font-bold text-gray-800 dark:text-gray-100 border-b dark:border-gray-600 pb-2 flex items-center">
-              <Clock size={20} className="mr-2 text-gray-500" /> デバッグ
-            </h3>
-            <button onClick={onDebugYesterday} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-              昨日ログインしたことにする
-            </button>
-          </div>
+          <SettingsSection title="デバッグ" icon={Clock} color="orange">
+            <SettingsItem 
+              icon={Clock} 
+              label="昨日ログインしたことにする" 
+              onClick={onDebugYesterday} 
+            />
+          </SettingsSection>
         )}
 
         {/* バージョン情報 */}
-        <div className="text-center text-gray-500 dark:text-gray-400 text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
-          {APP_VERSION}
+        <div className="text-center">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{APP_VERSION}</p>
         </div>
+
       </div>
     </div>
   );
