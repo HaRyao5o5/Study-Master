@@ -63,7 +63,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> {/* gapを少し広げた */}
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"> {/* スマホでも2列表示に変更 */}
       {courses.map((course, index) => (
         <div 
           key={course.id} 
@@ -72,40 +72,40 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
           style={{ animationDelay: `${index * 100}ms` }}
         >
           {/* カード本体: ガラス効果とホバーアニメーション */}
-          <div className="h-full p-6 rounded-2xl border border-white/20 dark:border-gray-700 shadow-sm hover:shadow-xl dark:shadow-none bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800 relative overflow-hidden">
+          <div className="h-full p-4 md:p-6 rounded-2xl border border-white/20 dark:border-gray-700 shadow-sm hover:shadow-xl dark:shadow-none bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800 relative overflow-hidden">
             
             {/* 装飾: 背景の淡いグラデーション */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-20 h-20 md:w-32 md:h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-6 -mt-6 md:-mr-10 md:-mt-10 pointer-events-none"></div>
 
-            <div className="flex items-start justify-between mb-4">
+            <div className="flex items-start justify-between mb-2 md:mb-4">
               {/* アイコン部分 */}
-              <div className="p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                <Folder size={28} />
+              <div className="p-2 md:p-3 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-600 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                <Folder size={20} className="md:w-7 md:h-7" />
               </div>
               
               {/* 公開設定バッジ (右上に移動) */}
               {course.visibility && course.visibility !== 'private' && (
-                <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${
+                <span className={`text-[10px] font-bold px-2 py-1 rounded-full border transform scale-90 origin-right ${
                   course.visibility === 'public' 
                     ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
                     : 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
                 }`}>
-                  {course.visibility === 'public' ? 'Public' : 'Link'}
+                  {course.visibility === 'public' ? 'Pub' : 'Link'}
                 </span>
               )}
             </div>
 
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <h3 className="text-sm md:text-xl font-bold text-gray-800 dark:text-white mb-1 md:mb-2 line-clamp-2 md:line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
               {course.title}
             </h3>
             
-            <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 min-h-[2.5rem]">
+            <p className="hidden md:block text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 min-h-[2.5rem]">
               {course.description || 'No description provided.'}
             </p>
 
-            <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50">
-              <span className="text-xs font-semibold text-gray-400 dark:text-gray-500">
-                {course.quizzes.length} sets inside
+            <div className="flex items-center justify-between mt-auto pt-2 md:pt-4 border-t border-gray-100 dark:border-gray-700/50">
+              <span className="text-[10px] md:text-xs font-semibold text-gray-400 dark:text-gray-500">
+                {course.quizzes.length} sets
               </span>
               
               {/* アクションボタン群 (常に表示だが控えめに、ホバーで強調) */}
@@ -139,25 +139,25 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
 
       {/* 新規作成・インポートボタンエリア */}
       <div 
-        className="flex flex-col gap-4 animate-slide-up"
+        className="flex flex-col gap-3 md:gap-4 animate-slide-up"
         style={{ animationDelay: `${courses.length * 50}ms` }}
       >
         <button 
           onClick={onCreateCourse}
-          className="flex-1 min-h-[140px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
+          className="flex-1 min-h-[100px] md:min-h-[140px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
         >
-          <div className="p-4 rounded-full bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform mb-3">
-            <Plus size={24} />
+          <div className="p-3 md:p-4 rounded-full bg-white dark:bg-gray-800 shadow-sm group-hover:scale-110 transition-transform mb-2 md:mb-3">
+            <Plus size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-sm">新しい科目を作成</span>
+          <span className="font-bold text-xs md:text-sm">新しい科目</span>
         </button>
 
         <button 
           onClick={() => fileInputRef.current?.click()}
-          className="h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-sm"
+          className="h-12 md:h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
         >
-          <Upload size={18} />
-          <span>ファイルを読み込む</span>
+          <Upload size={16} className="md:w-[18px] md:h-[18px]" />
+          <span>読み込む</span>
         </button>
         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
       </div>

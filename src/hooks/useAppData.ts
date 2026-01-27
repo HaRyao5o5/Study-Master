@@ -74,6 +74,8 @@ export function useAppData(): AppData {
             if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
             if (cloudData.userStats) setUserStats(cloudData.userStats);
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+            if (cloudData.goals) setGoals(cloudData.goals);
+            if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
           } else {
             // 新規ユーザー or データなし -> ローカルの初期データを使う
             // そのまま現在のstateでOK
@@ -155,6 +157,8 @@ export function useAppData(): AppData {
                     if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
                     if (cloudData.userStats) setUserStats(cloudData.userStats);
                     if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
+                    if (cloudData.goals) setGoals(cloudData.goals);
+                    if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
                     
                     lastCloudUpdateTime.current = serverUpdatedAt;
                 }

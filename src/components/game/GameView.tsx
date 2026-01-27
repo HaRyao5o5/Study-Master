@@ -243,18 +243,21 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
       </div>
 
       {/* 問題カード */}
-      <div className="glass p-8 rounded-3xl shadow-xl mb-8 relative border-t border-white/50 min-h-[200px] flex flex-col justify-center items-center text-center">
-        <span className="absolute top-4 left-4 text-xs font-black text-blue-500 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
-          Q.{currentQuestionIndex + 1}
-        </span>
+      <div className="glass p-6 md:p-8 rounded-3xl shadow-xl mb-6 md:mb-8 border-t border-white/50 min-h-[160px] md:min-h-[200px] flex flex-col justify-center items-center text-center">
+        
+        <div className="w-full flex justify-between items-start mb-4">
+            <span className="text-xs font-black text-blue-500 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+            Q.{currentQuestionIndex + 1}
+            </span>
 
-        <button
-          onClick={handleSpeak}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition-colors"
-          title="読み上げ"
-        >
-          <Volume2 size={24} />
-        </button>
+            <button
+            onClick={handleSpeak}
+            className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition-colors -mt-2 -mr-2"
+            title="読み上げ"
+            >
+            <Volume2 size={24} />
+            </button>
+        </div>
 
         {/* 画像表示 */}
         {currentQuestion.image && (
@@ -267,7 +270,7 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
           </div>
         )}
 
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2 leading-relaxed">
+        <h2 className="text-lg md:text-3xl font-bold text-gray-800 dark:text-white mb-2 leading-relaxed">
           {currentQuestion.text}
         </h2>
         <p className="text-sm text-gray-400 font-bold mt-2">

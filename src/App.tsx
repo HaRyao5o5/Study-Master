@@ -17,7 +17,7 @@ import RankingView from './components/layout/RankingView';
 import ReviewView from './components/layout/ReviewView';
 import ProfileEditor from './components/profile/ProfileEditor';
 import InstallPrompt from './components/common/InstallPrompt';
-import GoalSettingsModal from './components/common/GoalSettingsModal';
+import GoalDetailModal from './components/common/GoalDetailModal';
 import GoalProgress from './components/common/GoalProgress';
 import TutorialController from './components/tutorial/TutorialController';
 import MainLayout from './components/layout/MainLayout';
@@ -62,7 +62,7 @@ export default function App() {
   } = useApp();
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
-  const [showGoalSettings, setShowGoalSettings] = useState(false);
+  const [showGoalDetail, setShowGoalDetail] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
 
   // Game Logic Hook
@@ -77,6 +77,8 @@ export default function App() {
     clearHistory,
     handleResetStats,
     handleDebugYesterday,
+    handleDebugBrokenStreak,
+    handleDebugResetToday,
     startQuiz
   } = useGameLogic({
     courses, setCourses,
@@ -123,21 +125,33 @@ export default function App() {
   }, [goals, setGoals]);
 
   // Init goals for guest if null
+  // Init or Upgrade goals
   useEffect(() => {
-    if (!user && !goals) {
-        setGoals({
-            dailyXpGoal: 100,
-            weeklyXpGoal: 700,
-            dailyProgress: 0,
-            weeklyProgress: 0,
-            achievedToday: false,
-            achievedThisWeek: false,
-            lastResetDate: new Date().toDateString(),
-            lastWeekResetDate: new Date().toDateString(),
-            streak: 0
+    if (!goals) {
+        saveData({
+            goals: {
+                dailyXpGoal: 300,
+                weeklyXpGoal: 1500,
+                dailyProgress: 0,
+                weeklyProgress: 0,
+                achievedToday: false,
+                achievedThisWeek: false,
+                lastResetDate: new Date().toDateString(),
+                lastWeekResetDate: new Date().toDateString(),
+                streak: 0
+            }
+        });
+    } else if (goals.dailyXpGoal === 100 && goals.weeklyXpGoal === 700) {
+        // Upgrade defaults to new higher values
+        saveData({
+            goals: {
+                ...goals,
+                dailyXpGoal: 300,
+                weeklyXpGoal: 1500
+            }
         });
     }
-  }, [user, goals, setGoals]);
+  }, [goals, saveData]);
 
   // Welcome Profile Check
   useEffect(() => {
@@ -226,7 +240,7 @@ export default function App() {
       isProfileLoading={isProfileLoading}
       wrongHistory={wrongHistory}
       onLogin={handleLogin}
-      setShowGoalSettings={setShowGoalSettings}
+      setShowGoalDetail={setShowGoalDetail}
       setShowChangelog={setShowChangelog}
     >
       <TutorialController />
@@ -234,10 +248,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={
           <>
-            {user && <StreakStatus userStats={userStats} />}
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white animate-slide-up delay-75">科目の選択</h2>
-            
-            {goals && <GoalProgress goals={goals} onClick={() => setShowGoalSettings(true)} />}
+            <div className="grid grid-cols-2 gap-3 mb-6 animate-slide-up">
+                {user && <StreakStatus userStats={userStats} />}
+                {goals && <GoalProgress goals={goals} onClick={() => setShowGoalDetail(true)} />}
+            </div>
+
+            <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800 dark:text-white animate-slide-up delay-75">科目の選択</h2>
             
             <FolderListView
               onSelectCourse={(c: Course) => navigate(`/course/${c.id}`)}
@@ -259,6 +275,8 @@ export default function App() {
             onImportData={handleImportBackup} 
             onResetStats={handleResetStats} 
             onDebugYesterday={handleDebugYesterday} 
+            onDebugBroken={handleDebugBrokenStreak}
+            onDebugResetToday={handleDebugResetToday}
             user={user} 
             onLogin={handleLogin} 
             onLogout={handleLogout} 
@@ -291,19 +309,10 @@ export default function App() {
 
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
       
-      {showGoalSettings && goals && (
-        <GoalSettingsModal
+      {showGoalDetail && goals && (
+        <GoalDetailModal
           goals={goals}
-          onSave={(newGoals) => {
-            saveData({
-              goals: {
-                ...goals,
-                dailyXpGoal: newGoals.dailyXpGoal || 0,
-                weeklyXpGoal: newGoals.weeklyXpGoal || 0
-              }
-            });
-          }}
-          onClose={() => setShowGoalSettings(false)}
+          onClose={() => setShowGoalDetail(false)}
         />
       )}
 

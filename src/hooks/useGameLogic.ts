@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
-import { generateId, checkAnswer } from '../utils/helpers';
+import { generateId, checkAnswer, toLocalISOString } from '../utils/helpers';
 import { getLevelInfo } from '../utils/gamification';
 import { User, Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions } from '../types';
 import { AppData } from './useAppData'; // Import AppData type if needed, or just define subset
@@ -205,6 +205,9 @@ export function useGameLogic({
     }
 
     // XP加算とレベルアップ処理
+    let streakUpdated = false;
+    let finalStreak = userStats.streak;
+
     if (xpGained > 0) {
       let newTotalXp = userStats.totalXp + xpGained;
       let newLevel = getLevelInfo(newTotalXp).level;
@@ -218,34 +221,53 @@ export function useGameLogic({
 
       if (user) {
           const today = new Date();
-          const todayStr = today.toISOString().split('T')[0];
-          const lastLoginStr = userStats.lastLogin ? userStats.lastLogin.split('T')[0] : '';
+          const todayStr = toLocalISOString(today);
+          // lastLogin maps to local ISO string now, but careful with legacy data
+          // If legacy data has 'T', it might be full ISO. If we change to YYYY-MM-DD, we should handle that.
+          // userStats.lastLogin might be "2024-01-01T12:00:00.000Z" OR "2024-01-01". 
+          // New logic saves full ISO? No, let's strictly save YYYY-MM-DD for lastLogin or keep full ISO but compare using helper.
+          // The current code saves `today.toISOString()` (full) in `lastLogin`.
           
+          let lastLoginDateStr = '';
+          if (userStats.lastLogin) {
+              // Try to parse as date to get local YYYY-MM-DD
+              const d = new Date(userStats.lastLogin);
+              if (!isNaN(d.getTime())) {
+                  lastLoginDateStr = toLocalISOString(d);
+              } else {
+                  // Fallback if it's already YYYY-MM-DD
+                  lastLoginDateStr = userStats.lastLogin.split('T')[0]; 
+              }
+          }
+
           newLoginHistory = userStats.loginHistory ? [...userStats.loginHistory] : [];
 
-          // Only update streak if it's a new day
-          if (todayStr !== lastLoginStr) {
-              if (lastLoginStr) {
-                  const lastActivityDate = new Date(lastLoginStr);
-                  const timeDiff = today.getTime() - lastActivityDate.getTime();
-                  const dayDiff = timeDiff / (1000 * 3600 * 24);
-                  
-                  const yesterday = new Date();
-                  yesterday.setDate(yesterday.getDate() - 1);
-                  const yesterdayStr = yesterday.toISOString().split('T')[0];
+          // Only update streak if it's a new day (in local time)
+          if (todayStr !== lastLoginDateStr) {
+              if (lastLoginDateStr) {
+                   // Check consecutive days using date objects created from YYYY-MM-DD strings (treated as local midnight)
+                   // Actually, simplest is to check if yesterday's YYYY-MM-DD matches lastLoginDateStr.
+                   const yesterday = new Date();
+                   yesterday.setDate(yesterday.getDate() - 1);
+                   const yesterdayStr = toLocalISOString(yesterday);
 
-                  if (lastLoginStr === yesterdayStr) {
+                   if (lastLoginDateStr === yesterdayStr) {
                       newStreak += 1;
-                  } else if (dayDiff >= 2) {
-                      newStreak = 1; // Reset if gap
-                  } else {
-                      if (newStreak === 0) newStreak = 1;
-                  }
+                   } else {
+                      // If it's not today and not yesterday, it's a broken streak.
+                      // Note: We already checked todayStr !== lastLoginDateStr.
+                      newStreak = 1;
+                   }
               } else {
                   newStreak = 1; // First time ever
               }
+              
+              // Update lastLogin to FULL ISO (to keep time info if needed) or just YYYY-MM-DD? 
+              // Existing types say `lastLogin: string`. 
+              // Let's keep consistency with other parts that might expect a date string.
+              // usage in MainLayout doesn't parse it deep.
+              newLastLogin = today.toISOString(); // Keep saving full time, but we compare using local YYYY-MM-DD
 
-              newLastLogin = today.toISOString();
               if (!newLoginHistory.includes(todayStr)) {
                   newLoginHistory.push(todayStr);
               }
@@ -262,6 +284,13 @@ export function useGameLogic({
         lastLogin: newLastLogin || userStats.lastLogin,
         loginHistory: newLoginHistory
       };
+      
+      // Notify streak update (Removed Toast for Full Screen Overlay)
+      if (newStreak > userStats.streak) {
+          streakUpdated = true;
+          finalStreak = newStreak;
+          // setTimeout(() => showSuccess(`🔥 ${newStreak}日連続学習達成！`), 1200); // Overlay replaces this
+      }
 
       // 学習目標の進捗更新
       if (goals) {
@@ -299,7 +328,7 @@ export function useGameLogic({
 
     // 結果画面へ遷移
     navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
-      state: { resultData: calculatedResult, isReviewMode } 
+      state: { resultData: calculatedResult, isReviewMode, streakUpdated, streak: finalStreak } 
     });
   };
 
@@ -324,12 +353,59 @@ export function useGameLogic({
   const handleDebugYesterday = async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const confirmed = await showConfirm('【デバッグ用】最終ログインを昨日に設定しますか？');
+    const confirmed = await showConfirm('【デバッグ用】最終ログインを昨日に設定しますか？（ストリーク維持テスト用）');
     if (confirmed) {
       saveData({
-          userStats: { ...userStats, streak: 1, lastLogin: yesterday.toDateString() }
+          userStats: { ...userStats, streak: 1, lastLogin: toLocalISOString(yesterday) }
       });
-      showSuccess('最終ログイン日時を更新しました。');
+      showSuccess('昨日のログイン状態に設定しました。今日クイズをするとストリークが2になります。');
+    }
+  };
+
+  const handleDebugBrokenStreak = async () => {
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+    const twoDaysAgoStr = toLocalISOString(twoDaysAgo);
+    const threeDaysAgoStr = toLocalISOString(threeDaysAgo);
+
+    const confirmed = await showConfirm('【デバッグ用】最終ログインを2日前に設定しますか？（3日前・2日前の履歴も作成）');
+    if (confirmed) {
+      saveData({
+          userStats: { 
+              ...userStats, 
+              streak: 5, 
+              lastLogin: twoDaysAgoStr,
+              loginHistory: [threeDaysAgoStr, twoDaysAgoStr]
+          }
+      });
+      showSuccess('2日前のログイン状態に設定しました。ホーム画面で履歴の空白を確認できます。');
+    }
+  };
+
+  const handleDebugResetToday = async () => {
+    const todayStr = toLocalISOString(new Date());
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = toLocalISOString(yesterday);
+
+    const confirmed = await showConfirm('【デバッグ用】今日のログイン記録を取り消しますか？（再度ストリーク達成演出を確認できます）');
+    if (confirmed) {
+        const newHistory = (userStats.loginHistory || []).filter(d => d !== todayStr);
+        // lastLoginを昨日に戻し、ストリークを1減らす（0未満にはしない）
+        const newStreak = Math.max(0, userStats.streak - 1);
+
+        saveData({
+            userStats: { 
+                ...userStats, 
+                streak: newStreak, 
+                lastLogin: yesterdayStr,
+                loginHistory: newHistory
+            }
+        });
+        showSuccess('基本のログイン記録を取り消しました。');
     }
   };
 
@@ -349,6 +425,8 @@ export function useGameLogic({
     clearHistory,
     handleResetStats,
     handleDebugYesterday,
+    handleDebugBrokenStreak,
+    handleDebugResetToday,
     startQuiz
   };
 };

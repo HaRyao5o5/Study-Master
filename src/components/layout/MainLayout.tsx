@@ -5,6 +5,7 @@ import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, L
 import { getAvatarById } from '../../constants/avatars';
 import { User } from '../../types';
 import { UserProfileData } from '../../lib/firebaseProfile';
+import { getEffectiveStreak } from '../../utils/gamification';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -27,7 +28,7 @@ interface MainLayoutProps {
   isProfileLoading: boolean;
   wrongHistory: string[];
   onLogin: () => void;
-  setShowGoalSettings: (show: boolean) => void;
+  setShowGoalDetail: (show: boolean) => void;
   setShowChangelog: (show: boolean) => void;
 }
 
@@ -43,7 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   isProfileLoading,
   wrongHistory,
   onLogin,
-  setShowGoalSettings,
+  setShowGoalDetail,
   setShowChangelog
 }) => {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 <span>Lv.{levelInfo.level}</span>
                 <span className="mx-2 text-gray-300">|</span>
                 <Flame size={14} className="text-orange-500 mr-1" />
-                <span>{userStats.streak}日連続</span>
+                <span>{getEffectiveStreak(userStats)}日連続</span>
               </div>
               <div className="w-32 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mt-1 overflow-hidden relative">
                 <div
@@ -129,7 +130,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                 
                 <button 
                   id="tutorial-goal-btn"
-                  onClick={() => setShowGoalSettings(true)} 
+                  onClick={() => setShowGoalDetail(true)} 
                   className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                   title="学習目標"
                 >
@@ -251,7 +252,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
              <div className="space-y-2 flex-1 overflow-y-auto">
                 <MobileMenuItem icon={BarChart3} label="統計データ" onClick={() => navigate('/stats')} />
-                <MobileMenuItem icon={Target} label="学習目標" onClick={() => setShowGoalSettings(true)} />
+                <MobileMenuItem icon={Target} label="学習目標" onClick={() => setShowGoalDetail(true)} />
                 <MobileMenuItem 
                   icon={RefreshCw} 
                   label="復習モード" 

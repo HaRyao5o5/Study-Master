@@ -93,6 +93,41 @@ export const TITLES: Title[] = [
   },
 ];
 
+import { toLocalISOString } from './helpers';
+
 export const getUnlockedTitles = (stats: UserStats): Title[] => {
   return TITLES.filter(t => t.condition(stats));
+};
+
+/**
+ * 表示用の有効なストリークを計算する
+ * 最終ログインが昨日または今日でない場合、表示上は0とする
+ */
+export const getEffectiveStreak = (userStats: UserStats): number => {
+    if (!userStats.lastLogin) return 0;
+    
+    // lastLogin could be full ISOString or YYYY-MM-DD
+    // Normalize to YYYY-MM-DD
+    let lastLoginDateStr = userStats.lastLogin;
+    if (userStats.lastLogin.includes('T')) {
+         const d = new Date(userStats.lastLogin);
+         if (!isNaN(d.getTime())) {
+             lastLoginDateStr = toLocalISOString(d);
+         } else {
+             lastLoginDateStr = userStats.lastLogin.split('T')[0];
+         }
+    }
+
+    const today = new Date();
+    const todayStr = toLocalISOString(today);
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = toLocalISOString(yesterday);
+
+    if (lastLoginDateStr === todayStr || lastLoginDateStr === yesterdayStr) {
+        return userStats.streak;
+    }
+
+    return 0; // Streak is broken
 };

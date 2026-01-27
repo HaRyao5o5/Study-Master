@@ -86,6 +86,8 @@ interface SettingsViewProps {
   onImportData: (data: any) => void;
   onResetStats: () => void;
   onDebugYesterday: () => void;
+  onDebugBroken: () => void;
+  onDebugResetToday: () => void;
   user: User | null;
   onLogin: () => void;
   onLogout: () => void;
@@ -99,7 +101,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
   courses, 
   onImportData, 
   onResetStats, 
-  onDebugYesterday, 
+  onDebugYesterday,
+  onDebugBroken,
+  onDebugResetToday,
   user, 
   onLogin, 
   onLogout 
@@ -293,6 +297,16 @@ const SettingsView: React.FC<SettingsViewProps> = ({
               icon={Clock} 
               label="昨日ログインしたことにする" 
               onClick={onDebugYesterday} 
+            />
+            <SettingsItem 
+              icon={Clock} 
+              label="2日前にログインしたことにする" 
+              onClick={onDebugBroken} 
+            />
+            <SettingsItem 
+              icon={Clock} 
+              label="今日のログイン記録を取り消す" 
+              onClick={onDebugResetToday} 
             />
           </SettingsSection>
         )}

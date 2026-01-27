@@ -144,3 +144,12 @@ export const checkAnswer = (question: Question, userAnswer: string | string[]): 
   // デフォルト
   return normalize(userAnswer) === normalize(correct);
 };
+
+/**
+ * ユーザーのローカルタイムゾーンに基づいた YYYY-MM-DD 文字列を返す
+ */
+export const toLocalISOString = (date: Date = new Date()): string => {
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString().split('T')[0];
+};

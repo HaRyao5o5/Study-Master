@@ -2,6 +2,7 @@
 import React from 'react';
 import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import ResultView from '../components/game/ResultView';
+import StreakCelebrationOverlay from '../components/game/StreakCelebrationOverlay';
 import { ResultData } from '../types';
 
 interface ResultPageProps {
@@ -26,6 +27,11 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
     // props または location.state からデータを取得 (location.state優先)
     const resultData: ResultData = location.state?.resultData || propResultData;
     const isReviewMode = location.state?.isReviewMode || false;
+    const streakUpdated = location.state?.streakUpdated || false;
+    const streak = location.state?.streak || 0;
+    
+    // Manage overlay visibility
+    const [showCelebration, setShowCelebration] = React.useState(streakUpdated);
 
     if (!resultData || !courseId || !quizId) {
         return <Navigate to={`/course/${courseId || ''}`} />;
@@ -40,11 +46,19 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
     };
 
     return (
-        <ResultView
-            resultData={resultData}
-            onRetry={() => onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)}
-            onBackToMenu={handleBack}
-        />
+        <>
+            {showCelebration && (
+                <StreakCelebrationOverlay 
+                    streak={streak} 
+                    onDismiss={() => setShowCelebration(false)} 
+                />
+            )}
+            <ResultView
+                resultData={resultData}
+                onRetry={() => onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)}
+                onBackToMenu={handleBack}
+            />
+        </>
     );
 };
 
