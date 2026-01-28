@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Check, X, HelpCircle } from 'lucide-react';
+import { Check, X, HelpCircle, BrainCircuit } from 'lucide-react';
+import AIEvaluationModal from './AIEvaluationModal';
 
 interface Question {
   id: string;
@@ -19,6 +20,7 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ questions, onFinish }) =>
   const [isFlipped, setIsFlipped] = useState(false);
   const [results, setResults] = useState<{ questionId: string; isKnown: boolean }[]>([]);
   const [progress, setProgress] = useState(0);
+  const [showAIModal, setShowAIModal] = useState(false);
 
   const currentQuestion = questions[currentIndex];
 
@@ -110,6 +112,14 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ questions, onFinish }) =>
                         {currentQuestion.explanation}
                     </div>
                 )}
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowAIModal(true); }}
+                  className="mt-4 flex items-center gap-2 text-xs font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800"
+                >
+                  <BrainCircuit size={14} />
+                  AIに詳しく聞く
+                </button>
             </div>
             
             <div className="mt-8 text-sm font-bold text-gray-400 uppercase tracking-widest">
@@ -143,6 +153,16 @@ const FlashcardView: React.FC<FlashcardViewProps> = ({ questions, onFinish }) =>
       <p className="mt-6 text-center text-xs text-gray-400 font-bold leading-relaxed">
         「知っている」を選ぶと学習レベルが上がり、<br/>次にこの問題が出るまでの間隔が延びます。
       </p>
+
+      {showAIModal && (
+        <AIEvaluationModal
+          isOpen={showAIModal}
+          onClose={() => setShowAIModal(false)}
+          question={currentQuestion.text}
+          correctAnswer={Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer.join(', ') : currentQuestion.correctAnswer}
+          context="フラッシュカードでの学習中です。"
+        />
+      )}
     </div>
   );
 };

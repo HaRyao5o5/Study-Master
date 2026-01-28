@@ -177,3 +177,57 @@ export const chatWithAI = async (
     throw new Error("AIとの通信に失敗しました。時間をおいて再度お試しください。");
   }
 };
+
+/**
+ * 特定の問題の誤答や疑問を深掘り解析する
+ */
+export const analyzeMistakeWithAI = async (
+  question: string,
+  correctAnswer: string,
+  userAnswer?: string,
+  context: string = "",
+  customApiKey: string | null = null
+): Promise<string> => {
+  const key = customApiKey || API_KEY;
+  if (!key) throw new Error("APIキーが必要です。");
+
+  const genAI = new GoogleGenerativeAI(key);
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const prompt = `
+    あなたは超一流の教育コンサルタント兼メンターです。
+    学習者がクイズで間違えた（または詳しく知りたい）問題について、徹底的な解剖とアドバイスを行ってください。
+
+    【問題の内容】
+    問題: ${question}
+    正解: ${correctAnswer}
+    ${userAnswer ? `学習者の回答: ${userAnswer}` : "（学習者は正解を確認した上での詳細解説を求めています）"}
+    ${context ? `補足コンテキスト: ${context}` : ""}
+
+    【回答の構成】
+    以下の4つのセクションで、親しみやすく、かつ知的なトーンで回答してください：
+
+    1. **本質の解説**: 
+       その問題が「結局何を問うているのか」を、一歩引いた視点で分かりやすく解説してください。
+    2. **なぜ間違えやすいのか（またはなぜ正しいのか）**:
+       ${userAnswer ? "学習者の誤答を踏まえ、なぜその選択肢を選んでしまいがちなのか、陥りやすい罠を分析してください。" : "多くの学習者がつまずきやすいポイントを指摘してください。"}
+    3. **黄金の記憶術**:
+       その概念を一生忘れないための、語呂合わせ、例え話、またはビジュアライゼーションの方法を1つ提案してください。
+    4. **ステップアップの一歩**:
+       関連する周辺知識や、次に覚えておくべきポイントを簡潔に紹介してください。
+
+    【出力ルール】
+    - Markdown 形式で出力してください（太字、リスト、引用など）。
+    - 専門用語は噛み砕いて説明してください。
+    - 1文字たりとも「JSON」や「プログラムコード」のような出力はしないでください。
+  `;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    return response.text();
+  } catch (error) {
+    console.error("Gemini Mistake Analysis Error:", error);
+    throw new Error("AIによる解析に失敗しました。時間をおいて再度お試しください。");
+  }
+};

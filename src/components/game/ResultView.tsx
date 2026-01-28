@@ -1,9 +1,9 @@
-// src/components/game/ResultView.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Flame, Rocket, Sparkles, ArrowRight, Zap } from 'lucide-react';
+import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Flame, Rocket, Sparkles, ArrowRight, Zap, BrainCircuit } from 'lucide-react';
 import LoadingScreen from '../common/LoadingScreen';
 import { playSound } from '../../utils/sound';
 import { ResultData } from '../../types';
+import AIEvaluationModal from './AIEvaluationModal';
 
 interface ResultViewProps {
   resultData: ResultData | null;
@@ -78,6 +78,7 @@ const ResultView: React.FC<ResultViewProps> = ({ resultData, onRetry, onBackToMe
   const [isReady, setIsReady] = useState(false);
   const [displayXp, setDisplayXp] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [selectedAnalysis, setSelectedAnalysis] = useState<any | null>(null);
   
   const celebrationType = useMemo(() => {
     const types = ['fire', 'star', 'rocket'];
@@ -221,12 +222,29 @@ const ResultView: React.FC<ResultViewProps> = ({ resultData, onRetry, onBackToMe
                       <p className="text-xs text-gray-700 dark:text-gray-300">{ans.question.explanation}</p>
                     </div>
                   )}
+                  <button
+                    onClick={() => setSelectedAnalysis(ans)}
+                    className="mt-3 flex items-center gap-2 text-[10px] font-black text-indigo-600 dark:text-indigo-400 hover:opacity-70 transition-opacity bg-indigo-50 dark:bg-indigo-900/30 px-2.5 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800"
+                  >
+                    <BrainCircuit size={12} />
+                    AIに詳しく聞く
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {selectedAnalysis && (
+        <AIEvaluationModal
+          isOpen={!!selectedAnalysis}
+          onClose={() => setSelectedAnalysis(null)}
+          question={selectedAnalysis.question.text}
+          correctAnswer={Array.isArray(selectedAnalysis.question.correctAnswer) ? selectedAnalysis.question.correctAnswer.join(', ') : selectedAnalysis.question.correctAnswer}
+          userAnswer={Array.isArray(selectedAnalysis.selectedAnswer) ? selectedAnalysis.selectedAnswer.join(', ') : selectedAnalysis.selectedAnswer}
+        />
+      )}
     </div>
   );
 };

@@ -39,6 +39,8 @@ export interface AppData {
   setErrorStats: React.Dispatch<React.SetStateAction<any>>;
   publishCourse: (courseId: string) => Promise<void>;
   importCourse: (course: PublicCourse) => Promise<void>;
+  plan?: 'free' | 'pro';
+  proUntil?: number;
 }
 
 export function useAppData(): AppData {
@@ -84,6 +86,17 @@ export function useAppData(): AppData {
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
             if (cloudData.goals) setGoals(cloudData.goals);
             if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
+            
+            // Fallback: プラン情報をプロフィールの初期値としても利用（サブコレクションがまだ読み込まれていない場合）
+            if (cloudData.plan) {
+              setProfile(prev => prev || {
+                uid: firebaseUser.uid,
+                name: firebaseUser.displayName || 'ユーザー',
+                plan: cloudData.plan,
+                proUntil: cloudData.proUntil,
+                achievements: []
+              } as Profile);
+            }
           } else {
             // 新規ユーザー or データなし -> ローカルの初期データを使う
             // そのまま現在のstateでOK
@@ -112,6 +125,7 @@ export function useAppData(): AppData {
                 setGoals(localData.goals || null);
                 setMasteredQuestions(localData.masteredQuestions || {});
                 setReviews(localData.reviews || {});
+                if (localData.profile) setProfile(localData.profile);
                 console.log("Guest data loaded from localStorage");
                 loaded = true;
             } catch (e) {
@@ -353,6 +367,8 @@ export function useAppData(): AppData {
                  wrongHistory: newData.wrongHistory || wrongHistory,
                  goals: newData.goals || goals,
                  masteredQuestions: newData.masteredQuestions || masteredQuestions,
+                 plan: profile?.plan,
+                 proUntil: profile?.proUntil,
              };
              
              const dataToSave = removeUndefined(rawDataToSave);
@@ -408,12 +424,48 @@ export function useAppData(): AppData {
   const [profile, setProfile] = useState<Profile | null>(null); // Define Profile
   const [saveError, setSaveError] = useState<any>(null);
 
-  // Helper for profile (mock or real implementation needed)
+  // 6. Profile Update Function
   const updateProfile = async (newProfile: Profile) => {
-    // Implement profile update logic
+    // 1. Update Local State
     setProfile(newProfile);
-    // Sync to cloud...
-    // Sync to cloud...
+
+    // 2. Persist
+    if (user?.uid) {
+      try {
+        const profileRef = doc(db, 'users', user.uid, 'profile', 'data');
+        
+        // Remove undefined values
+        const cleanProfile = JSON.parse(JSON.stringify(newProfile));
+        if (cleanProfile.uid) delete cleanProfile.uid; // uid is the doc id parent or key
+
+        await setDoc(profileRef, cleanProfile, { merge: true });
+
+        // Update root users doc for shared fields if any (e.g., name, username)
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          name: newProfile.name,
+          username: newProfile.username,
+          avatarUrl: newProfile.customAvatarUrl || newProfile.avatarId,
+          plan: newProfile.plan || 'free',
+          updatedAt: new Date()
+        }, { merge: true });
+
+        console.log("Profile updated in Firestore");
+      } catch (e) {
+        console.error("Failed to update profile", e);
+        throw e;
+      }
+    } else {
+      // Guest mode
+      try {
+        const localDataString = localStorage.getItem('study_master_guest_data');
+        const localData = localDataString ? JSON.parse(localDataString) : {};
+        localData.profile = newProfile;
+        localStorage.setItem('study_master_guest_data', JSON.stringify(localData));
+      } catch (e) {
+        console.error("Failed to save guest profile", e);
+      }
+    }
   };
 
   // 6. Publish/Import Functions

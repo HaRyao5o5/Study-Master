@@ -108,6 +108,8 @@ export interface Profile {
   uid: string;
   name: string;
   username?: string; // @username
+  plan?: 'free' | 'pro';
+  proUntil?: number; // Timestamp for subscription expiry
   bio?: string;
   avatarId?: string; // Predefined avatar ID
   customAvatarUrl?: string; // Uploaded image URL

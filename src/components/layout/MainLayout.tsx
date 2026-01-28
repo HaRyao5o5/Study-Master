@@ -1,9 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe, Zap } from 'lucide-react';
 
 import { useApp } from '../../context/AppContext';
 import AIAdvisor from '../ai/AIAdvisor';
+import { usePlan } from '../../hooks/usePlan';
+import { Sparkles } from 'lucide-react';
 
 import { User } from '../../types';
 import { UserProfileData } from '../../lib/firebaseProfile';
@@ -53,6 +55,7 @@ export default function MainLayout({
   const location = useLocation();
   const { courses } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isPro } = usePlan();
 
   // AIアドバイザー用のコンテキストを抽出
   const advisorContext = useMemo(() => {
@@ -208,6 +211,19 @@ export default function MainLayout({
                 >
                   <Settings size={20} />
                 </button>
+
+                {/* プラン表示 */}
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${
+                    isPro 
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-amber-900 shadow-sm' 
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {isPro && <Sparkles size={12} />}
+                  {isPro ? 'PRO MEMBER' : 'FREE PLAN'}
+                </button>
               </div>
 
               {/* Mobile Menu Button */}
@@ -306,8 +322,13 @@ export default function MainLayout({
                   onClick={() => navigate('/review')} 
                   badge={wrongHistory.length > 0 ? wrongHistory.length : null}
                 />
-                <MobileMenuItem icon={Trophy} label="ランキング" onClick={() => navigate('/ranking')} />
+                <MobileMenuItem icon={Trophy} label="成績ランキング" onClick={() => navigate('/ranking')} />
                 <MobileMenuItem icon={Bell} label="お知らせ" onClick={() => setShowChangelog(true)} />
+                <MobileMenuItem 
+                  icon={isPro ? Sparkles : Zap} 
+                  label={isPro ? "PRO 会員" : "PRO へアップグレード"} 
+                  onClick={() => navigate('/pricing')} 
+                />
                 <MobileMenuItem icon={Settings} label="設定" onClick={() => navigate('/settings')} />
              </div>
 

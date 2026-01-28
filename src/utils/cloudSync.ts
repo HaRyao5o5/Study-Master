@@ -11,6 +11,8 @@ export interface UserAppData {
     courses: Course[];
     goals?: UserGoals | null;
     masteredQuestions?: MasteredQuestions;
+    plan?: 'free' | 'pro';
+    proUntil?: number;
 }
 
 // ■ ヘルパー: 画像をStorageに逃がしてURLに書き換える
@@ -70,7 +72,9 @@ export const loadFromCloud = async (uid: string): Promise<UserAppData | null> =>
       errorStats: userData.errorStats || {},
       courses: loadedCourses,
       goals: userData.goals || null,
-      masteredQuestions: userData.masteredQuestions || {}
+      masteredQuestions: userData.masteredQuestions || {},
+      plan: userData.plan || 'free',
+      proUntil: userData.proUntil
     };
   } catch (error) {
     console.error("クラウドからの読み込みエラー:", error);
@@ -99,6 +103,8 @@ export const saveToCloud = async (uid: string, allData: Partial<UserAppData>, ex
       goals: allData.goals || null,
       masteredQuestions: allData.masteredQuestions || {},
       courseIds: courseIds,
+      plan: allData.plan,
+      proUntil: allData.proUntil,
       updatedAt: explicitTimestamp
     }, { merge: true });
 

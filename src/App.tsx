@@ -34,6 +34,8 @@ import ProfilePage from './pages/ProfilePage';
 import EditQuizPage from './pages/EditQuizPage';
 import CreateQuizPage from './pages/CreateQuizPage';
 import MarketplacePage from './pages/MarketplacePage';
+import PricingPage from './pages/PricingPage';
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 
 
 import { getLevelInfo, getUnlockedTitles } from './utils/gamification.ts';
@@ -318,6 +320,8 @@ export default function App() {
           />
         } />
         <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/checkout-success" element={<CheckoutSuccessPage />} />
         <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
         <Route path="/ranking" element={<RankingView currentUser={user} onBack={() => navigate('/')} />} />
         

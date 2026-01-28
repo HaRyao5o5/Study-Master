@@ -23,6 +23,7 @@ describe('useGameLogic', () => {
   const mockSetWrongHistory = vi.fn();
   const mockSetMasteredQuestions = vi.fn();
   const mockSetGoals = vi.fn();
+  const mockSaveData = vi.fn();
 
   const mockCourses = [
     {
@@ -51,7 +52,8 @@ describe('useGameLogic', () => {
     masteredQuestions: {},
     setMasteredQuestions: mockSetMasteredQuestions,
     goals: { dailyXpGoal: 100, dailyProgress: 0, weeklyXpGoal: 700, weeklyProgress: 0 },
-    setGoals: mockSetGoals
+    setGoals: mockSetGoals,
+    saveData: mockSaveData
   };
 
   beforeEach(() => {
@@ -86,13 +88,10 @@ describe('useGameLogic', () => {
     // Total XP: 30
     
     // Verify State Updates
-    expect(mockSetUserStats).toHaveBeenCalled();
-    const updateFn = mockSetUserStats.mock.calls[0][0];
-    const newState = updateFn({ totalXp: 0, level: 1 });
-    expect(newState.totalXp).toBe(30);
-
-    // Verify Goals Update
-    expect(mockSetGoals).toHaveBeenCalled();
+    expect(mockSaveData).toHaveBeenCalled();
+    const updates = mockSaveData.mock.calls[0][0];
+    expect(updates.userStats.totalXp).toBe(30);
+    expect(updates.goals.dailyProgress).toBe(30);
     
     // Verify Navigation
     expect(mockNavigate).toHaveBeenCalledWith(
@@ -117,7 +116,9 @@ describe('useGameLogic', () => {
       result.current.finishQuiz(userAnswers, 100, 'course-1', 'quiz-1');
     });
 
-    expect(mockSetWrongHistory).toHaveBeenCalledWith(['q2']);
+    expect(mockSaveData).toHaveBeenCalled();
+    const updates = mockSaveData.mock.calls[0][0];
+    expect(updates.wrongHistory).toContain('q2');
   });
 
   it('handleDeleteQuiz requests confirmation and deletes', async () => {
@@ -129,10 +130,10 @@ describe('useGameLogic', () => {
     });
 
     expect(mockShowConfirm).toHaveBeenCalled();
-    expect(mockSetCourses).toHaveBeenCalled();
+    expect(mockSaveData).toHaveBeenCalled();
     
-    const newCourses = mockSetCourses.mock.calls[0][0];
-    expect(newCourses[0].quizzes).toHaveLength(0);
+    const updates = mockSaveData.mock.calls[0][0];
+    expect(updates.courses[0].quizzes).toHaveLength(0);
   });
 
   it('handleDeleteQuiz does nothing if not confirmed', async () => {
@@ -144,6 +145,6 @@ describe('useGameLogic', () => {
     });
 
     expect(mockShowConfirm).toHaveBeenCalled();
-    expect(mockSetCourses).not.toHaveBeenCalled();
+    expect(mockSaveData).not.toHaveBeenCalled();
   });
 });

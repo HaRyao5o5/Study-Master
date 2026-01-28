@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, User, Sparkles, Loader2, Minimize2, Maximize2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Bot, X, Send, User, Sparkles, Loader2, Minimize2, Maximize2, Lock } from 'lucide-react';
 import { chatWithAI } from '../../utils/gemini';
+import { usePlan } from '../../hooks/usePlan';
 
 interface Message {
   role: 'user' | 'model';
@@ -24,6 +26,8 @@ const AIAdvisor: React.FC<AIAdvisorProps> = ({ context }) => {
   ]);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { canUseAI } = usePlan();
+  const navigate = useNavigate();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,7 +38,7 @@ const AIAdvisor: React.FC<AIAdvisorProps> = ({ context }) => {
   }, [messages]);
 
   const handleSend = async () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || !canUseAI) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -42,8 +46,6 @@ const AIAdvisor: React.FC<AIAdvisorProps> = ({ context }) => {
     setLoading(true);
 
     try {
-      // Geminiの仕様上、履歴は'user'ロールから始まる必要があります。
-      // また、履歴に現在のメッセージ（userMessage）を含めず、sendMessageの引数として渡します。
       const firstUserIndex = messages.findIndex(m => m.role === 'user');
       const history = (firstUserIndex === -1 ? [] : messages.slice(firstUserIndex))
         .map(m => ({
@@ -142,8 +144,28 @@ const AIAdvisor: React.FC<AIAdvisorProps> = ({ context }) => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <div className="p-4 bg-white/50 dark:bg-gray-800/50 border-t border-white/20 dark:border-gray-700">
+            {/* Input / Limit Overlay */}
+            <div className="p-4 bg-white/50 dark:bg-gray-800/50 border-t border-white/20 dark:border-gray-700 relative">
+              {!canUseAI ? (
+                <div className="absolute inset-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
+                  <div className="mb-3 p-3 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-2xl shadow-lg ring-4 ring-white dark:ring-gray-800">
+                    <Lock size={24} />
+                  </div>
+                  <h4 className="text-sm font-black text-gray-800 dark:text-white mb-1">PRO 限定機能</h4>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold mb-4 leading-relaxed">
+                    AIアドバイザーはPROプランで利用可能です。<br/>
+                    学習を最大限に加速させましょう。
+                  </p>
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-black rounded-xl hover:scale-105 transition-all shadow-lg shadow-blue-500/20"
+                  >
+                    <Sparkles size={14} />
+                    PROを詳しく見る
+                  </button>
+                </div>
+              ) : null}
+              
               <div className="relative">
                 <input
                   type="text"
@@ -152,10 +174,11 @@ const AIAdvisor: React.FC<AIAdvisorProps> = ({ context }) => {
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="質問を入力してください..."
                   className="w-full bg-white dark:bg-gray-900 border-2 border-transparent focus:border-blue-500 rounded-2xl px-4 py-3 pr-12 text-sm focus:outline-none transition-all dark:text-white shadow-inner"
+                  disabled={!canUseAI}
                 />
                 <button
                   onClick={handleSend}
-                  disabled={loading || !input.trim()}
+                  disabled={loading || !input.trim() || !canUseAI}
                   className="absolute right-2 top-2 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all disabled:opacity-50 disabled:hover:bg-blue-600"
                 >
                   <Send size={18} />

@@ -39,6 +39,27 @@ service cloud.firestore {
           allow write: if request.auth != null && request.auth.uid == userId;
         }
       }
+
+      // ========================================
+      // Stripe Extension 用のコレクション
+      // ========================================
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+      match /payments/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Stripe 拡張機能のグローバル設定用（もし使う場合）
+    match /products/{id} {
+      allow read: if true;
+      match /prices/{id} {
+        allow read: if true;
+      }
     }
     
     // ========================================

@@ -1,8 +1,8 @@
-// src/components/game/GameView.tsx
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ArrowRight, Volume2, Check } from 'lucide-react';
+import { CheckCircle, XCircle, ArrowRight, Volume2, Check, BrainCircuit } from 'lucide-react';
 import { playSound, speakText } from '../../utils/sound';
 import { Quiz, Question, UserAnswer } from '../../types';
+import AIEvaluationModal from './AIEvaluationModal';
 
 interface GameViewProps {
   quiz: Quiz;
@@ -21,6 +21,7 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
   const [inputValue, setInputValue] = useState(''); // 記述式用
   const [startTime] = useState(Date.now());
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [showAIModal, setShowAIModal] = useState(false);
 
   useEffect(() => {
     if (!quiz) return;
@@ -403,6 +404,13 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
                 {currentQuestion.explanation}
               </p>
+              <button
+                onClick={() => setShowAIModal(true)}
+                className="mt-4 flex items-center gap-2 text-xs font-black text-blue-600 dark:text-blue-400 hover:opacity-70 transition-opacity bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg"
+              >
+                <BrainCircuit size={14} />
+                AIに詳しく聞く
+              </button>
             </div>
           )}
 
@@ -415,6 +423,18 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
           </button>
         </div>
       )}
+
+      <AIEvaluationModal
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        question={currentQuestion.text}
+        correctAnswer={Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer.join(', ') : currentQuestion.correctAnswer}
+        userAnswer={
+          questionType === 'input' ? inputValue : 
+          questionType === 'multi-select' ? selectedMultiple.join(', ') : 
+          selectedOption || undefined
+        }
+      />
     </div>
   );
 };
