@@ -1,10 +1,10 @@
 // src/utils/gemini.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 
 // 安全のため、APIキーは環境変数から読み込むか、ユーザーに入力させる
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string;
 
-export const generateQuizWithAI = async (text: string, questionCount = 5, customApiKey: string | null = null): Promise<any> => {
+export const generateQuizWithAI = async (text: string, count = 5, images: string[] = [], customApiKey: string | null = null): Promise<any> => {
   const key = customApiKey || API_KEY;
   if (!key) {
     throw new Error("APIキーが設定されていません。");
@@ -18,7 +18,10 @@ export const generateQuizWithAI = async (text: string, questionCount = 5, custom
 
   const prompt = `
     あなたは学習アプリのクイズ作成アシスタントです。
-    以下のテキストの内容に基づいて、${questionCount}問の4択クイズを作成してください。
+    ユーザーから提供されたテキスト${images.length > 0 ? 'と画像' : ''}の内容に基づいて、${count}問の4択クイズを作成してください。
+    
+    【重要】
+    各問題には、なぜその答えになるのかの「解説(explanation)」を必ず含めてください。
     
     【テキスト】
     ${text}
@@ -35,14 +38,34 @@ export const generateQuizWithAI = async (text: string, questionCount = 5, custom
           "text": "問題文",
           "type": "multiple",
           "options": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
-          "correctAnswer": "正解の選択肢（文字列）"
+          "correctAnswer": "正解の選択肢（文字列）",
+          "explanation": "解説文"
         }
       ]
     }
   `;
 
   try {
-    const result = await model.generateContent(prompt);
+    const inputParts: Array<string | Part> = [prompt];
+    
+    // Process images if any
+    if (images.length > 0) {
+        images.forEach(dataUrl => {
+            // Extract base64 and mime type
+            // format: data:image/png;base64,......
+            const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+            if (matches) {
+                inputParts.push({
+                    inlineData: {
+                        mimeType: matches[1],
+                        data: matches[2]
+                    }
+                });
+            }
+        });
+    }
+
+    const result = await model.generateContent(inputParts);
     const response = await result.response;
     const text = response.text();
     

@@ -1,6 +1,6 @@
 // src/components/course/GenerateQuizModal.tsx
 import React, { useState } from 'react';
-import { X, Sparkles, Loader, AlertCircle } from 'lucide-react';
+import { X, Sparkles, Loader, AlertCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { generateQuizWithAI } from '../../utils/gemini';
 import { generateId } from '../../utils/helpers';
 import { Quiz } from '../../types';
@@ -14,10 +14,42 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
   const [text, setText] = useState('');
   const [count, setCount] = useState(5);
   const [apiKey, setApiKey] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasEnvKey = !!import.meta.env.VITE_GEMINI_API_KEY;
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages: string[] = [];
+      const files = Array.from(e.target.files);
+      
+      if (images.length + files.length > 10) {
+          setError("画像は最大10枚までです");
+          return;
+      }
+
+      let processed = 0;
+      files.forEach(file => {
+         const reader = new FileReader();
+         reader.onload = (ev) => {
+             if (ev.target?.result) {
+                 newImages.push(ev.target.result as string);
+             }
+             processed++;
+             if (processed === files.length) {
+                 setImages(prev => [...prev, ...newImages]);
+             }
+         };
+         reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+      setImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleGenerate = async () => {
     if (!text.trim()) return;
@@ -32,7 +64,7 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
     setError(null);
 
     try {
-      const generatedData: any = await generateQuizWithAI(text, count, keyToUse);
+      const generatedData: any = await generateQuizWithAI(text, count, images, keyToUse);
 
       const newQuiz: Quiz = {
         ...generatedData,
@@ -107,6 +139,40 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
           </div>
 
           <div>
+             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider flex justify-between">
+                <span>添付画像 (最大10枚)</span>
+                <span>{images.length}/10</span>
+             </label>
+             
+             <div className="flex flex-wrap gap-2 mb-2">
+                {images.map((img, idx) => (
+                    <div key={idx} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                        <img src={img} alt={`upload-${idx}`} className="w-full h-full object-cover" />
+                        <button 
+                             onClick={() => handleRemoveImage(idx)}
+                             className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                ))}
+                
+                {images.length < 10 && (
+                    <label className="w-16 h-16 flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/10 transition-colors">
+                        <ImageIcon size={20} className="text-gray-400" />
+                        <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            className="hidden" 
+                            onChange={handleImageUpload}
+                        />
+                    </label>
+                )}
+             </div>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">問題数: {count}</label>
             <input
               type="range"
@@ -135,7 +201,7 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
             </button>
             <button
               onClick={handleGenerate}
-              disabled={loading || !text.trim()}
+              disabled={loading || (!text.trim() && images.length === 0)}
               className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg shadow-purple-200 dark:shadow-none transition-all hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0 flex justify-center items-center"
             >
               {loading ? (
