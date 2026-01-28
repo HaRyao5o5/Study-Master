@@ -11,6 +11,13 @@ export function usePlan() {
   const { profile, updateProfile, user } = useApp();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
 
+  // 管理者かどうかを判定 (環境変数の UID リストに含まれるか)
+  const isAdmin = useMemo(() => {
+    if (!user?.uid) return false;
+    const adminUids = (import.meta.env.VITE_ADMIN_UIDS || '').split(',').map((u: string) => u.trim());
+    return adminUids.includes(user.uid);
+  }, [user]);
+
   // Stripe Extension が生成する 'subscriptions' コレクションを監視
   useEffect(() => {
     if (!user?.uid) {
@@ -33,16 +40,23 @@ export function usePlan() {
   }, [user]);
 
   const isPro = useMemo(() => {
-    // 1. Stripe サブスクリプションがあるかチェック (最優先)
+    // 1. 手動設定（デバッグ/管理者用）を最優先
+    // プロフィールが 'pro' かつ期限内であれば PRO と判定
+    if (profile?.plan === 'pro') {
+      if (!profile.proUntil || profile.proUntil > Date.now()) {
+        return true;
+      }
+    }
+
+    // 2. 手動で 'free' に設定されている場合、Stripe のチェックをスキップする（デバッグ用）
+    // これにより Stripe 側にサブスクが残っていても FREE 状態をテスト可能
+    if (profile?.plan === 'free') {
+        return false;
+    }
+
+    // 3. Stripe サブスクリプションがあるかチェック
     if (subscriptions.length > 0) return true;
 
-    // 2. プロフィール手動設定（レガシー/管理者用）
-    if (profile?.plan === 'pro') {
-      if (profile.proUntil && profile.proUntil < Date.now()) {
-        return false;
-      }
-      return true;
-    }
     return false;
   }, [profile, subscriptions]);
 
@@ -60,8 +74,11 @@ export function usePlan() {
     if (!user) return;
     
     // Stripe ダッシュボードで作成した商品の価格ID
-    // 注: 本番環境では環境変数などで管理するのが一般的です
-    const PRICE_ID = 'price_1SuefcGVK67zgnhDHVVZSoRn'; 
+    const PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID; 
+    
+    if (!PRICE_ID) {
+        throw new Error('Stripe の価格IDが設定されていません。環境変数をご確認ください。');
+    }
     
     try {
         await createCheckoutSession(user.uid, PRICE_ID);
@@ -86,7 +103,26 @@ export function usePlan() {
     await updateProfile({
       ...currentProfile,
       plan: 'free',
-      proUntil: undefined
+      proUntil: undefined // 期限を消去
+    });
+  };
+
+  /**
+   * 決済なしで強制的に PRO にする（デバッグ用）
+   */
+  const forceUpgradeToPro = async () => {
+    if (!user) return;
+    
+    const currentProfile = profile || {
+        uid: user.uid,
+        name: user.displayName || 'ユーザー',
+        plan: 'free'
+    } as any;
+
+    await updateProfile({
+      ...currentProfile,
+      plan: 'pro',
+      proUntil: Date.now() + (365 * 24 * 60 * 60 * 1000) // 1年分有効にする
     });
   };
 
@@ -94,7 +130,9 @@ export function usePlan() {
     isPro,
     planName,
     canUseAI,
+    isAdmin, // 管理者フラグを返す
     upgradeToPro,
-    downgradeToFree
+    downgradeToFree,
+    forceUpgradeToPro
   };
 }

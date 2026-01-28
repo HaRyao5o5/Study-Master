@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 
 const PricingPage: React.FC = () => {
-  const { isPro, upgradeToPro, downgradeToFree } = usePlan();
+  const { isPro, upgradeToPro, downgradeToFree, forceUpgradeToPro, isAdmin } = usePlan();
   const { user } = useApp();
   const { showError } = useToast();
   const [loading, setLoading] = useState(false);
@@ -129,22 +129,44 @@ const PricingPage: React.FC = () => {
               <div className="w-full py-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black border border-blue-100 dark:border-blue-800">
                 PROプラン 加入中
               </div>
-              {/* デバッグ用にダウングレードボタンを表示（本番では削除） */}
-              <button onClick={downgradeToFree} className="text-[10px] text-gray-400 hover:text-red-500 transition-colors">
-                (デバッグ用) FREEに戻る
-              </button>
+            </div>
+          )}
+
+          {/* 管理者用コントロール（isAdmin の場合のみ表示） */}
+          {isAdmin && (
+            <div className="flex flex-col items-center gap-2 mt-4 pt-4 border-t border-blue-100 dark:border-blue-900/50">
+              <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">Admin Mode</span>
+              <div className="flex gap-4">
+                <button onClick={downgradeToFree} className="text-[10px] text-gray-400 hover:text-red-500 transition-colors uppercase font-bold">
+                  FREEに戻す
+                </button>
+                <button onClick={forceUpgradeToPro} className="text-[10px] text-gray-400 hover:text-blue-500 transition-colors uppercase font-bold">
+                  強制的にPROにする
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Trust Badges / Footer */}
-      <div className="max-w-3xl mx-auto bg-gray-50 dark:bg-gray-800/50 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-700 text-center">
-        <h3 className="font-black text-gray-800 dark:text-white mb-4">なぜ PRO なのか？</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
-          Study Master PRO の売上は、Gemini API の利用料金の維持と、より高度な学習ツールの開発に充てられます。<br/>
-          皆様のサポートが、このアプリをより賢く、より使いやすく進化させます。
-        </p>
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div className="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-[2rem] border border-gray-100 dark:border-gray-700 text-center">
+            <h3 className="font-black text-gray-800 dark:text-white mb-4">なぜ PRO なのか？</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">
+            Study Master PRO の売上は、Gemini API の利用料金の維持と、より高度な学習ツールの開発に充てられます。<br/>
+            皆様のサポートが、このアプリをより賢く、より使いやすく進化させます。
+            </p>
+        </div>
+        
+        <div className="text-center">
+            <button 
+                onClick={() => window.location.href = '/legal'}
+                className="text-xs text-gray-400 hover:text-blue-500 underline underline-offset-4 transition-colors font-bold"
+            >
+                特定商取引法に基づく表記
+            </button>
+        </div>
       </div>
     </div>
   );
