@@ -64,7 +64,7 @@ const ProfilePage = () => {
             let finalAvatarUrl: string | null | undefined = profile?.customAvatarUrl;
             if (data.mode === 'image' && data.customAvatarBlob) {
                  finalAvatarUrl = await uploadAvatar(user.uid, data.customAvatarBlob);
-            } else if (data.mode === 'emoji') {
+            } else if (!data.customAvatarUrl && !data.customAvatarBlob) {
                  finalAvatarUrl = null;
             }
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { auth } from './lib/firebase.ts';
+import { updateProfile as updateFirebaseProfile, uploadAvatar } from './lib/firebaseProfile';
 import { generateId } from './utils/helpers.ts';
 
 // Components
@@ -41,7 +42,7 @@ import { useApp } from './context/AppContext.tsx';
 import { useToast } from './context/ToastContext.tsx';
 import { useTheme } from './hooks/useTheme';
 import { useGameLogic } from './hooks/useGameLogic';
-import { Course, Profile } from './types';
+import { Course } from './types';
 
 const googleProvider = new GoogleAuthProvider();
 
@@ -60,7 +61,7 @@ export default function App() {
     masteredQuestions, setMasteredQuestions,
     goals, setGoals,
     errorStats,
-    profile, hasProfile, updateProfile, isProfileLoading,
+    profile, hasProfile, isProfileInitialized, isProfileLoading,
     saveData
   } = useApp();
 
@@ -160,11 +161,11 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     const hasSeenWelcome = localStorage.getItem(`profile_welcome_${user.uid}`);
-    if (!isProfileLoading && !hasProfile && !hasSeenWelcome) {
+    if (isProfileInitialized && !hasProfile && !hasSeenWelcome) {
       setShowProfileEditor(true);
       localStorage.setItem(`profile_welcome_${user.uid}`, 'true');
     }
-  }, [user, hasProfile, isProfileLoading, setShowProfileEditor]);
+  }, [user, hasProfile, isProfileInitialized, setShowProfileEditor]);
 
   // Error Monitoring
   useEffect(() => {
@@ -334,18 +335,35 @@ export default function App() {
         <ProfileEditor
           initialProfile={profile || undefined} // Handle null vs undefined
           onSave={async (profileData) => {
-            const fullProfile: Profile = {
-                uid: user.uid,
-                name: profileData.name,
-                avatarId: profileData.avatarId,
-                updatedAt: new Date(),
-                // Use existing data or defaults
-                bio: profile?.bio,
-                title: profile?.title,
-                socialLinks: profile?.socialLinks
-            };
-            await updateProfile(fullProfile);
-            setShowProfileEditor(false);
+            try {
+                let finalAvatarUrl: string | null | undefined = profile?.customAvatarUrl;
+                
+                // Handle Avatar Upload or Removal
+                if (profileData.mode === 'image' && profileData.customAvatarBlob) {
+                     finalAvatarUrl = await uploadAvatar(user.uid, profileData.customAvatarBlob);
+                } else if (!profileData.customAvatarUrl && !profileData.customAvatarBlob) {
+                     // If no blob and no preview URL, it means it was removed
+                     finalAvatarUrl = null;
+                }
+                // If customAvatarUrl exists and no blob, it means we kept the existing one (no change needed)
+
+                const fullProfile: any = {
+                    name: profileData.name,
+                    username: profileData.username,
+                    avatarId: 'default',
+                    customAvatarUrl: finalAvatarUrl,
+                    avatarSettings: profileData.avatarSettings,
+                    bio: profileData.bio,
+                    title: profile?.title,
+                    socialLinks: profile?.socialLinks
+                };
+                
+                await updateFirebaseProfile(user.uid, fullProfile, profile?.username);
+                setShowProfileEditor(false);
+            } catch (e) {
+                console.error("Initial profile save failed", e);
+                showError("プロフィールの保存に失敗しました。");
+            }
           }}
           onClose={() => setShowProfileEditor(false)}
           isWelcome={!hasProfile}

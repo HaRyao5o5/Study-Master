@@ -91,6 +91,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
         bio: bio.trim(),
         avatarId: 'default',
         customAvatarBlob: customAvatarBlob,
+        customAvatarUrl: customAvatarPreview, // Pass current preview status
         avatarSettings: avatarSettings,
         mode: 'image'
       });

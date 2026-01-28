@@ -21,6 +21,7 @@ export interface AppData {
   hasProfile: boolean;
   updateProfile: (p: Profile) => Promise<void>;
   isProfileLoading: boolean;
+  isProfileInitialized: boolean;
   saveError: any;
   isLoading: boolean;
   isSyncing: boolean;
@@ -174,9 +175,13 @@ export function useAppData(): AppData {
   }, [user]);
 
   // 3. Profile Listener
+  const [isProfileInitialized, setIsProfileInitialized] = useState(false);
+
   useEffect(() => {
+    setIsProfileInitialized(false); // Reset on user change
     if (!user?.uid) {
         setProfile(null);
+        setIsProfileInitialized(true);
         return;
     }
     
@@ -189,8 +194,10 @@ export function useAppData(): AppData {
         } else {
             setProfile(null);
         }
+        setIsProfileInitialized(true);
     }, (error) => {
         console.error("Profile sync error:", error);
+        setIsProfileInitialized(true);
     });
 
     return () => unsubscribe();
@@ -310,7 +317,8 @@ export function useAppData(): AppData {
     profile,
     hasProfile: !!profile,
     updateProfile,
-    isProfileLoading: isLoading, // Re-use isLoading or separate
+    isProfileLoading: isLoading, 
+    isProfileInitialized,
     saveError,
     isLoading,
     isSyncing,

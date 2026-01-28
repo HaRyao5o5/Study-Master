@@ -203,9 +203,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 src={profile.customAvatarUrl} 
                                 alt={profile.name}
                                 className="w-full h-full object-cover"
-                                style={{
-                                    transform: `scale(${profile.avatarSettings?.scale || 1}) translate(${profile.avatarSettings?.position?.x || 0}px, ${profile.avatarSettings?.position?.y || 0}px)`
-                                }}
                               />
                            </div>
                         ) : (
@@ -300,9 +297,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                                 src={profile.customAvatarUrl} 
                                 alt={profile.name}
                                 className="w-full h-full object-cover"
-                                style={{
-                                    transform: `scale(${profile.avatarSettings?.scale || 1}) translate(${profile.avatarSettings?.position?.x || 0}px, ${profile.avatarSettings?.position?.y || 0}px)`
-                                }}
                               />
                            </div>
                         ) : (
