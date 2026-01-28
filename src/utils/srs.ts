@@ -26,49 +26,59 @@ export const INITIAL_INTERVAL = 0; // 0 days (immediate/next day depending on lo
  */
 export const calculateNextReview = (
   currentItem: ReviewItem | null | undefined,
-  isCorrect: boolean
-): { interval: number; easeFactor: number; nextReview: number } => {
+  isCorrect: boolean,
+  allowLevelUp: boolean = true
+): { interval: number; easeFactor: number; nextReview: number; streak: number } => {
   const now = Date.now();
   const quality = isCorrect ? 4 : 1;
+  const isEarly = currentItem && currentItem.nextReview > now;
   
   let interval = 0;
   let easeFactor = currentItem?.easeFactor || INITIAL_EASE_FACTOR;
   let streak = currentItem?.streak || 0;
 
-  if (quality >= 3) {
-    // Correct response
-    if (streak === 0) {
-      interval = 1;
-    } else if (streak === 1) {
-      interval = 6;
+  if (isCorrect) {
+    // Maintenance Mode if:
+    // 1. Item exists AND is Early (Review ahead)
+    // 2. Item exists AND Level Up is NOT allowed (Normal mode/Review mode)
+    // Note: If item is null (New), we always execute ELSE (Init 0 -> 1), satisfying "Add to list" requirement.
+    if (currentItem && (isEarly || !allowLevelUp)) {
+        // Early Review (Correct): Just reset the timer, don't increase difficulty/streak
+        // This allows users to "practice" without messing up the long-term schedule too much
+        interval = currentItem.interval;
+        streak = currentItem.streak;
+        // Keep existing Ease Factor
+        easeFactor = currentItem.easeFactor;
     } else {
-      interval = Math.round((currentItem?.interval || 1) * easeFactor);
+        // Normal Due Review (or New Item)
+        if (streak === 0) {
+          interval = 1;
+        } else if (streak === 1) {
+          interval = 6;
+        } else {
+          interval = Math.round((currentItem?.interval || 1) * easeFactor);
+        }
+        streak++;
+        
+        // Update Ease Factor only on actual spaced reviews
+        easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+        if (easeFactor < 1.3) easeFactor = 1.3;
     }
-    streak++;
   } else {
-    // Incorrect response
+    // Incorrect response: Always reset
     streak = 0;
-    interval = 1; // Reset to 1 day
-    // Keep ease factor same or slight penalty? SM-2 usually penalizes, but for simple app, keeping it is safer to avoid "hell".
-    // SM-2: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-    // q=1 => (4) * (0.08 + 4*0.02) = 4 * 0.16 = 0.64. EF - 0.54. Penalize.
+    interval = 1; 
+
+    // Penalize Ease Factor
+    easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+    if (easeFactor < 1.3) easeFactor = 1.3; 
   }
 
-  // Update Ease Factor (SM-2 standard formula)
-  // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-  // q=4 (Correct) => 0.1 - (1)*(0.1) = 0. No change.
-  // q=5 (Perfect) => 0.1 - 0 = +0.1. Increase.
-  // q=1 (Wrong)   => 0.1 - 4*(0.16) = -0.54. Decrease.
-  
-  easeFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-  if (easeFactor < 1.3) easeFactor = 1.3; // Minimum cap
-
   // Calculate Next Review Date
-  // nextReview = now + interval * 24 * 60 * 60 * 1000
   const oneDay = 24 * 60 * 60 * 1000;
   const nextReview = now + (interval * oneDay);
 
-  return { interval, easeFactor, nextReview };
+  return { interval, easeFactor, nextReview, streak };
 };
 
 /**

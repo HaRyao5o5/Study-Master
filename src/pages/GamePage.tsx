@@ -60,14 +60,16 @@ const GamePage: React.FC<GamePageProps> = ({ gameSettings, wrongHistory, onFinis
          answers.forEach(ans => {
             const qId = ans.question.id;
             const currentReview = reviews[qId];
-            const result = calculateNextReview(currentReview, ans.isCorrect);
+            // Only allow SRS level up (streak increase) if in SRS mode
+            // Other modes will initialize new items or perform maintenance reviews on existing ones
+            const isSRSMode = quizId === 'srs-mode';
+            const result = calculateNextReview(currentReview, ans.isCorrect, isSRSMode);
             
             updateReviewStatus({
                 id: qId,
                 questionId: qId,
                 courseId: courseId || 'unknown',
                 ...result,
-                streak: ans.isCorrect ? (currentReview?.streak || 0) + 1 : 0,
                 createdAt: currentReview?.createdAt || Date.now(),
                 updatedAt: Date.now()
             });

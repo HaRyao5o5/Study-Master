@@ -107,6 +107,7 @@ export function useAppData(): AppData {
                 setWrongHistory(localData.wrongHistory || []);
                 setGoals(localData.goals || null);
                 setMasteredQuestions(localData.masteredQuestions || {});
+                setReviews(localData.reviews || {});
                 console.log("Guest data loaded from localStorage");
                 loaded = true;
             } catch (e) {
@@ -121,6 +122,7 @@ export function useAppData(): AppData {
             setWrongHistory([]);
             setGoals(null);
             setMasteredQuestions({});
+            setReviews({});
         }
 
         setIsSyncing(false);
@@ -229,17 +231,31 @@ export function useAppData(): AppData {
 
   // 5. Review Update Function
   const updateReviewStatus = async (item: ReviewItem) => {
-      if (!user?.uid) return;
-      try {
-          // Save to subcollection
-          const reviewRef = doc(db, 'users', user.uid, 'reviews', item.questionId);
-          await setDoc(reviewRef, item, { merge: true });
+      // 1. Update State & Guest Storage
+      setReviews(prev => {
+          const newReviews = { ...prev, [item.questionId]: item };
           
-          // Optimistic update
-          setReviews(prev => ({ ...prev, [item.questionId]: item }));
-      } catch (e) {
-          console.error("Failed to update review status", e);
-          throw e;
+          if (!user?.uid) {
+              try {
+                  const localDataString = localStorage.getItem('study_master_guest_data');
+                  const localData = localDataString ? JSON.parse(localDataString) : {};
+                  localData.reviews = newReviews;
+                  localStorage.setItem('study_master_guest_data', JSON.stringify(localData));
+              } catch (e) {
+                  console.error("Failed to save guest review", e);
+              }
+          }
+          return newReviews;
+      });
+
+      // 2. Update Firestore if logged in
+      if (user?.uid) {
+          try {
+              const reviewRef = doc(db, 'users', user.uid, 'reviews', item.questionId);
+              await setDoc(reviewRef, item, { merge: true });
+          } catch (e) {
+              console.error("Failed to update review status", e);
+          }
       }
   };
 
@@ -306,6 +322,7 @@ export function useAppData(): AppData {
                 wrongHistory: wrongHistory,
                 goals: goals,
                 masteredQuestions: masteredQuestions,
+                reviews: reviews, // Save reviews for guest
                 // Add other fields if necessary
             };
             

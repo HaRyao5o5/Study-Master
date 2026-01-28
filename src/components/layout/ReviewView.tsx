@@ -39,13 +39,21 @@ interface QuizGroup {
 
 const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions, courses, onBack }) => {
   const navigate = useNavigate();
-  const { reviews } = useApp();
+  const { reviews, updateReviewStatus, setMasteredQuestions, saveData } = useApp();
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const [showDebug, setShowDebug] = useState(false);
+
+  // Valid Question IDs cache (to exclude deleted/orphaned questions)
+  const validQuestionIds = useMemo(() => {
+      const ids = new Set<string>();
+      courses.forEach(c => c.quizzes.forEach(q => q.questions.forEach(ques => ids.add(ques.id))));
+      return ids;
+  }, [courses]);
 
   // SRS Due Count
   const dueCount = useMemo(() => {
-    return Object.values(reviews).filter(r => isDue(r)).length;
-  }, [reviews]);
+    return Object.values(reviews).filter(r => isDue(r) && validQuestionIds.has(r.questionId)).length;
+  }, [reviews, validQuestionIds]);
 
   // 復習対象問題の抽出
   const reviewItems = useMemo<ReviewItem[]>(() => {
@@ -112,6 +120,14 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
   const totalItems = totalMastered + totalWrong;
   const progressPercent = totalItems > 0 ? Math.round((totalMastered / totalItems) * 100) : 100;
 
+  // Auto-reset session progress when list is cleared
+  React.useEffect(() => {
+      if (reviewItems.length === 0 && totalMastered > 0) {
+          setMasteredQuestions({});
+          saveData({ masteredQuestions: {} });
+      }
+  }, [reviewItems.length, totalMastered, setMasteredQuestions, saveData]);
+
   // クイズ別にグループ化
   const groupedByQuiz = useMemo<QuizGroup[]>(() => {
     const grouped: Record<string, QuizGroup> = {};
@@ -167,34 +183,6 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
     navigate(`/course/${courseId}/quiz/${quizId}/play?mode=review`);
   };
 
-  if (reviewItems.length === 0) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto animate-fade-in p-8">
-        <div className="flex items-center mb-6">
-          <button onClick={onBack} className="mr-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <ArrowLeft size={24} />
-          </button>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">復習リスト</h2>
-        </div>
-
-        <div className="text-center py-12">
-          <div className="mb-6">
-            <Award size={64} className="mx-auto text-green-500" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
-            完璧です！🎉
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            復習する問題はありません。
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500">
-            間違えた問題が出たら、ここに表示されます。
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-w-4xl mx-auto animate-fade-in mb-20">
       {/* ヘッダー */}
@@ -210,6 +198,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
         </div>
 
         {/* 進捗バー */}
+        {reviewItems.length > 0 && (
         <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-white font-bold text-sm">復習進捗 (克服率)</span>
@@ -222,6 +211,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
             />
           </div>
         </div>
+        )}
       </div>
 
       {/* SRS Dashboard */}
@@ -250,81 +240,171 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
           </div>
       </div>
 
-      {/* 科目フィルター */}
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedCourse('all')}
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
-              selectedCourse === 'all'
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            すべて ({reviewItems.length})
-          </button>
-          {availableCourses.map(course => (
+      {/* 科目フィルター (アイテムがある場合のみ表示) */}
+      {reviewItems.length > 0 && (
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex flex-wrap gap-2">
             <button
-              key={course.id}
-              onClick={() => setSelectedCourse(course.id)}
-              className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
-                selectedCourse === course.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+                onClick={() => setSelectedCourse('all')}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+                selectedCourse === 'all'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
             >
-              {course.name} ({course.count})
+                すべて ({reviewItems.length})
             </button>
-          ))}
+            {availableCourses.map(course => (
+                <button
+                key={course.id}
+                onClick={() => setSelectedCourse(course.id)}
+                className={`px-4 py-2 rounded-lg font-bold text-sm transition-colors ${
+                    selectedCourse === course.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                >
+                {course.name} ({course.count})
+                </button>
+            ))}
+            </div>
         </div>
-      </div>
+      )}
 
       {/* 復習リスト */}
       <div className="p-6">
-        <div className="space-y-4">
-          {groupedByQuiz.map((quiz) => (
-            <div
-              key={`${quiz.courseId}_${quiz.quizId}`}
-              className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-900/30 rounded-xl p-5 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded">
-                      {quiz.courseName}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
-                    {quiz.quizTitle}
-                  </h3>
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <TrendingUp size={16} className="text-orange-500" />
-                    <span className="font-bold">{quiz.questions.length}問</span>
-                    <span>復習待ち</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleStartReview(quiz.courseId, quiz.quizId)}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+        {reviewItems.length > 0 ? (
+            <>
+            <div className="space-y-4">
+            {groupedByQuiz.map((quiz) => (
+                <div
+                key={`${quiz.courseId}_${quiz.quizId}`}
+                className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-900/30 rounded-xl p-5 hover:shadow-md transition-all"
                 >
-                  <RefreshCw size={18} />
-                  復習開始
-                </button>
-              </div>
+                <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded">
+                        {quiz.courseName}
+                        </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">
+                        {quiz.quizTitle}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <TrendingUp size={16} className="text-orange-500" />
+                        <span className="font-bold">{quiz.questions.length}問</span>
+                        <span>復習待ち</span>
+                    </div>
+                    </div>
+                    <button
+                    onClick={() => handleStartReview(quiz.courseId, quiz.quizId)}
+                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                    >
+                    <RefreshCw size={18} />
+                    復習開始
+                    </button>
+                </div>
+                </div>
+            ))}
             </div>
-          ))}
-        </div>
 
-        {filteredItems.length === 0 && selectedCourse !== 'all' && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">
-              この科目には復習する問題がありません。
-            </p>
-          </div>
+            {filteredItems.length === 0 && selectedCourse !== 'all' && (
+            <div className="text-center py-12">
+                <p className="text-gray-600 dark:text-gray-400">
+                この科目には復習する問題がありません。
+                </p>
+            </div>
+            )}
+            </>
+        ) : (
+            <div className="text-center py-12">
+              <div className="mb-6">
+                <Award size={64} className="mx-auto text-green-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                完璧です！🎉
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                弱点リストは空です。<br/>
+                定期復習 (SRS) の学習を進めましょう。
+              </p>
+            </div>
         )}
+      </div>
+      
+      {/* Debug Toggle */}
+      <div className="text-center pb-8">
+          <button onClick={() => setShowDebug(!showDebug)} className="text-xs text-gray-400 underline">
+              {showDebug ? 'デバッグモードを閉じる' : '開発者用デバッグモード (SRS)'}
+          </button>
+
+          {/* Debug Panel */}
+          {showDebug && <SRSDebugPanel reviews={reviews} updateReviewStatus={updateReviewStatus} />}
       </div>
     </div>
   );
 };
 
 export default ReviewView;
+
+const SRSDebugPanel: React.FC<{ reviews: Record<string, any>, updateReviewStatus: (item: any) => void }> = ({ reviews, updateReviewStatus }) => {
+    return (
+          <div className="mt-4 bg-gray-900 text-green-400 p-6 rounded-xl overflow-x-auto font-mono text-xs text-left mx-4 mb-20 animate-fade-in">
+              <h3 className="text-lg font-bold mb-4 border-b border-gray-700 pb-2 flex justify-between">
+                  <span>SRS Debug Console</span>
+                  <span className="text-xs font-normal opacity-70">{Object.keys(reviews).length} items</span>
+              </h3>
+              <table className="w-full whitespace-nowrap">
+                  <thead>
+                      <tr>
+                          <th className="p-2">ID</th>
+                          <th className="p-2">Streak</th>
+                          <th className="p-2">Interval</th>
+                          <th className="p-2">Next Review</th>
+                          <th className="p-2">Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {Object.values(reviews).map(r => (
+                          <tr key={r.questionId} className="border-b border-gray-800 hover:bg-gray-800">
+                              <td className="p-2">{r.questionId.substring(0, 8)}...</td>
+                              <td className="p-2">{r.streak}</td>
+                              <td className="p-2">{r.interval}d</td>
+                              <td className="p-2">{new Date(r.nextReview).toLocaleString()}</td>
+                              <td className="p-2 flex gap-2">
+                                  <button 
+                                      onClick={() => {
+                                          console.log("Force due clicked", r.questionId);
+                                          updateReviewStatus({ ...r, nextReview: Date.now() - 60000 }); // 1 min ago
+                                      }}
+                                      className="bg-blue-900 text-blue-200 px-2 py-1 rounded hover:bg-blue-800"
+                                      title="維持したまま復習予定を今にする"
+                                  >
+                                      Force Due
+                                  </button>
+                                  <button 
+                                      onClick={() => {
+                                          if(!confirm('この問題の進捗をリセットしますか？')) return;
+                                          updateReviewStatus({ 
+                                              ...r, 
+                                              streak: 0, 
+                                              interval: 0, 
+                                              easeFactor: 2.5,
+                                              nextReview: Date.now() - 60000 
+                                          });
+                                      }}
+                                      className="bg-red-900 text-red-200 px-2 py-1 rounded hover:bg-red-800"
+                                      title="進捗をリセットして最初からにする"
+                                  >
+                                      Reset
+                                  </button>
+                              </td>
+                          </tr>
+                      ))}
+                  </tbody>
+              </table>
+              {Object.keys(reviews).length === 0 && <div className="p-4 text-gray-500">データがありません。クイズをプレイしてください。</div>}
+          </div>
+    );
+};
