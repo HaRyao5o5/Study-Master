@@ -1,9 +1,24 @@
 // src/components/layout/RankingView.tsx
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Trophy, Crown, Medal, User as UserIcon, Flame, Lock, Shield } from 'lucide-react';
+import { ArrowLeft, Trophy, Crown, Medal, User as UserIcon, Flame, Lock, Shield, Award, Sparkles, Zap, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
 import { getLeaderboard, LeaderboardUser } from '../../lib/firebase';
 import LoadingScreen from '../common/LoadingScreen';
 import { User } from '../../types';
+import { ACHIEVEMENTS } from '../../data/achievements';
+
+const iconMap: Record<string, LucideIcon> = {
+  Sparkles,
+  Zap,
+  Trophy,
+  Crown,
+  Flame,
+  FlameKindle: Flame,
+  Timer,
+  BookOpen,
+  Library,
+  Globe,
+  Download
+};
 
 interface RankingViewProps {
   onBack: () => void;
@@ -96,18 +111,33 @@ const RankingView: React.FC<RankingViewProps> = ({ onBack, currentUser }) => {
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className={`font-bold truncate text-gray-800 dark:text-white ${index < 3 ? 'text-lg' : ''}`}>
+                <p className={`font-bold truncate text-gray-800 dark:text-white ${index < 3 ? 'text-lg' : ''} flex items-center gap-2`}>
                   {user.displayName}
-                  {isMe && <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">YOU</span>}
+                  {user.selectedBadgeId && (() => {
+                      const achievement = ACHIEVEMENTS.find(a => a.id === user.selectedBadgeId);
+                      const Icon = achievement ? (iconMap[achievement.icon] || Trophy) : null;
+                      return Icon ? (
+                        <span title={achievement?.name} className="flex items-center">
+                          <Icon size={14} className="text-amber-500" />
+                        </span>
+                      ) : null;
+                  })()}
+                  {isMe && <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">YOU</span>}
                 </p>
                 <div className="flex items-center text-xs font-bold text-gray-500 dark:text-gray-400 mt-1">
                     <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded mr-2">
                         Lv.{user.level}
                     </span>
                     {user.streak > 0 && (
-                        <span className="flex items-center text-orange-500">
+                        <span className="flex items-center text-orange-500 mr-2">
                             <Flame size={12} className="mr-1 fill-current" />
-                            {user.streak} Days
+                            {user.streak}
+                        </span>
+                    )}
+                    {user.achievementsCount > 0 && (
+                        <span className="flex items-center text-amber-500">
+                            <Award size={12} className="mr-1 fill-current" />
+                            {user.achievementsCount}
                         </span>
                     )}
                 </div>

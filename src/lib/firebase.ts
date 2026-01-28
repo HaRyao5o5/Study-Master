@@ -129,6 +129,8 @@ export interface LeaderboardUser {
   totalXp: number;
   level: number;
   streak: number;
+  achievementsCount: number;
+  selectedBadgeId?: string;
 }
 
 export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
@@ -157,7 +159,9 @@ export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
           avatarId: data.avatarId || 'avatar-1',
           totalXp: data.userStats.totalXp || 0,
           level: data.userStats.level || 1,
-          streak: data.userStats.streak || 0
+          streak: data.userStats.streak || 0,
+          achievementsCount: data.achievementsCount || 0,
+          selectedBadgeId: data.selectedBadgeId || undefined
         });
       }
     });

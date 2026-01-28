@@ -213,6 +213,11 @@ export function useGameLogic({
       let newLevel = getLevelInfo(newTotalXp).level;
       const leveledUp = newLevel > userStats.level;
       
+      const today = new Date();
+      const todayStr = toLocalISOString(today);
+      let newXpHistory = { ...(userStats.xpHistory || {}) };
+      newXpHistory[todayStr] = (newXpHistory[todayStr] || 0) + xpGained;
+
       // --- Streak Logic Start ---
       // Check if user is logged in
       let newStreak = userStats.streak;
@@ -220,8 +225,6 @@ export function useGameLogic({
       let newLastLogin = userStats.lastLogin;
 
       if (user) {
-          const today = new Date();
-          const todayStr = toLocalISOString(today);
           // lastLogin maps to local ISO string now, but careful with legacy data
           // If legacy data has 'T', it might be full ISO. If we change to YYYY-MM-DD, we should handle that.
           // userStats.lastLogin might be "2024-01-01T12:00:00.000Z" OR "2024-01-01". 
@@ -282,7 +285,8 @@ export function useGameLogic({
         level: newLevel,
         streak: newStreak,
         lastLogin: newLastLogin || userStats.lastLogin,
-        loginHistory: newLoginHistory
+        loginHistory: newLoginHistory,
+        xpHistory: newXpHistory
       };
       
       // Notify streak update (Removed Toast for Full Screen Overlay)

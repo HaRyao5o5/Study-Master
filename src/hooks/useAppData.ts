@@ -1,13 +1,15 @@
 // src/hooks/useAppData.ts
 import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot, collection, setDoc, addDoc } from "firebase/firestore";
+import { doc, onSnapshot, collection, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.ts";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
 import { normalizeData, generateId } from '../utils/helpers';
 import { INITIAL_DATA } from '../data/initialData.ts';
-import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem, PublicCourse } from '../types';
+import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem, PublicCourse, UserAchievement } from '../types';
 import { useToast } from '../context/ToastContext.tsx';
+import { checkAchievements } from '../utils/achievementSystem';
+import { ACHIEVEMENTS } from '../data/achievements';
 
 export interface AppData {
   user: User | null;
@@ -261,7 +263,52 @@ export function useAppData(): AppData {
       }
   };
 
-  // 4. Save Function
+  // 5. Achievement Logic
+  const handleAchievementCheck = async (newStats?: UserStats, newCourses?: Course[]) => {
+    if (!user?.uid) return;
+
+    const currentStats = newStats || userStats;
+    const currentCourses = newCourses || courses;
+    const existingIds = profile?.achievements?.map(a => a.id) || [];
+
+    const newlyUnlocked = checkAchievements({
+      stats: currentStats,
+      courses: currentCourses,
+      existingAchievementIds: existingIds
+    });
+
+    if (newlyUnlocked.length > 0) {
+      console.log("Newly unlocked achievements:", newlyUnlocked);
+      
+      const updatedAchievements = [...(profile?.achievements || []), ...newlyUnlocked];
+      
+      // Update local state
+      const updatedProfile = { ...profile, achievements: updatedAchievements } as Profile;
+      setProfile(updatedProfile);
+
+      // Update Firestore
+      try {
+        const profileRef = doc(db, 'users', user.uid, 'profile', 'data');
+        await setDoc(profileRef, { achievements: updatedAchievements }, { merge: true });
+        
+        // Also sync to root users doc for leaderboard
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { achievementsCount: updatedAchievements.length }, { merge: true });
+
+        // Show toasts
+        newlyUnlocked.forEach(ua => {
+          const achievement = ACHIEVEMENTS.find(a => a.id === ua.id);
+          if (achievement) {
+            showSuccess(`🎉 実績解除: ${achievement.name}\n${achievement.description}`);
+          }
+        });
+      } catch (e) {
+        console.error("Failed to save achievements", e);
+      }
+    }
+  };
+
+  // 6. Save Function
   const saveData = async (newData: Partial<AppData> = {}, _force = false) => {
     // Update local state if provided
     if (newData.courses) setCourses(newData.courses);
@@ -316,6 +363,9 @@ export function useAppData(): AppData {
              
              lastSavedTime.current = now.getTime();
              isDirty.current = false;
+
+             // Check for achievements after a successful cloud save (might have new XP/Streak)
+             handleAchievementCheck(dataToSave.userStats, dataToSave.courses);
         } else {
             console.log("Guest mode: Saving data to localStorage...");
             const currentData = {
@@ -424,6 +474,9 @@ export function useAppData(): AppData {
         saveData({ courses: updatedCourses });
         
         showSuccess("コースを公開しました！");
+
+        // Check for achievements (Social Milestones)
+        handleAchievementCheck(undefined, updatedCourses);
     } catch (e) {
         console.error("Publish failed:", e);
         showError("公開に失敗しました");
@@ -446,6 +499,25 @@ export function useAppData(): AppData {
       setCourses(newCourses);
       saveData({ courses: newCourses });
       showSuccess("コースをダウンロードしました！");
+
+      // Special check for 'social_download' as it's hard to check from state alone
+      const existingIds = profile?.achievements?.map(a => a.id) || [];
+      if (!existingIds.includes('social_download')) {
+        const manualUnlocked: UserAchievement[] = [{
+          id: 'social_download',
+          unlockedAt: Date.now()
+        }];
+        
+        const updatedAchievements = [...(profile?.achievements || []), ...manualUnlocked];
+        setProfile(prev => ({ ...prev, achievements: updatedAchievements } as Profile));
+        
+        if (user?.uid) {
+          const profileRef = doc(db, 'users', user.uid, 'profile', 'data');
+          await setDoc(profileRef, { achievements: updatedAchievements }, { merge: true });
+        }
+        
+        showSuccess(`🎉 実績解除: 他者から学ぶ\n他のユーザーのコースをダウンロードする`);
+      }
   };
 
   return {

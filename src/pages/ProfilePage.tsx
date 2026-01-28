@@ -1,12 +1,28 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon } from 'lucide-react';
+import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon, Award, Sparkles, Zap, Trophy, Crown, Flame, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getProfile } from '../lib/firebaseProfile';
 import { Profile } from '../types';
+import { ACHIEVEMENTS } from '../data/achievements';
+
+const iconMap: Record<string, LucideIcon> = {
+  Sparkles,
+  Zap,
+  Trophy,
+  Crown,
+  Flame,
+  FlameKindle: Flame,
+  Timer,
+  BookOpen,
+  Library,
+  Globe,
+  Download
+};
 
 import ProfileEditor from '../components/profile/ProfileEditor';
 import { updateProfile, uploadAvatar } from '../lib/firebaseProfile';
+import BadgesView from '../components/profile/BadgesView';
 
 const ProfilePage = () => {
     const { uid } = useParams();
@@ -75,6 +91,7 @@ const ProfilePage = () => {
                 avatarId: data.avatarId || 'avatar-1',
                 customAvatarUrl: finalAvatarUrl || null, // Set to null to remove field in Firestore
                 avatarSettings: data.avatarSettings || null,
+                selectedBadgeId: data.selectedBadgeId || null,
                 socialLinks: data.socialLinks || null
             };
 
@@ -138,9 +155,27 @@ const ProfilePage = () => {
 
                     {/* Basic Info */}
                     <div className="flex-1 pt-2 md:pb-4 min-w-0">
-                        <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white truncate">
-                            {effectiveProfile.name}
-                        </h1>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white truncate">
+                                {effectiveProfile.name}
+                            </h1>
+                            {effectiveProfile.selectedBadgeId && (
+                                <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-full">
+                                    {(() => {
+                                        const achievement = ACHIEVEMENTS.find(a => a.id === effectiveProfile.selectedBadgeId);
+                                        const Icon = achievement ? (iconMap[achievement.icon] || Trophy) : Award;
+                                        return (
+                                            <>
+                                                <Icon size={14} className="text-amber-500" />
+                                                <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                                                    {achievement?.name || '称号'}
+                                                </span>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            )}
+                        </div>
                         <p className="text-gray-500 dark:text-gray-400 font-bold font-mono">
                             @{effectiveProfile.username || 'unknown'}
                         </p>
@@ -171,6 +206,15 @@ const ProfilePage = () => {
                             <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                                 {effectiveProfile.bio || "自己紹介はまだありません。"}
                             </p>
+                        </div>
+
+                        {/* Badges */}
+                        <div className="glass p-6 rounded-2xl">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                <Award size={20} className="text-amber-500" />
+                                獲得したバッジ
+                            </h3>
+                            <BadgesView unlockedBadges={effectiveProfile.achievements || []} />
                         </div>
 
                         {/* Recent Activity / Stats Placeholder */}

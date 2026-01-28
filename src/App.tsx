@@ -303,7 +303,17 @@ export default function App() {
           />
         } />
         
-        <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
+        <Route path="/stats" element={
+          <StatsView 
+            userStats={userStats} 
+            errorStats={errorStats} 
+            courses={courses} 
+            masteredQuestions={masteredQuestions}
+            profile={profile}
+            goals={goals}
+            onBack={() => navigate('/')} 
+          />
+        } />
         <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
         <Route path="/ranking" element={<RankingView currentUser={user} onBack={() => navigate('/')} />} />

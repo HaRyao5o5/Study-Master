@@ -131,7 +131,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
                   id="tutorial-stats-btn"
                   onClick={() => navigate('/stats')} 
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
-                  title="統計"
+                  title="プレイヤーデータ & 分析"
                 >
                   <BarChart3 size={20} />
                 </button>
@@ -275,7 +275,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
 
              <div className="space-y-2 flex-1 overflow-y-auto">
                 <MobileMenuItem icon={Globe} label="みんなのコース" onClick={() => navigate('/marketplace')} />
-                <MobileMenuItem icon={BarChart3} label="統計データ" onClick={() => navigate('/stats')} />
+                <MobileMenuItem icon={BarChart3} label="データ分析 & プレイヤー情報" onClick={() => navigate('/stats')} />
                 <MobileMenuItem icon={Target} label="学習目標" onClick={() => setShowGoalDetail(true)} />
                 <MobileMenuItem 
                   icon={RefreshCw} 

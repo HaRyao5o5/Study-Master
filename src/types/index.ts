@@ -13,6 +13,7 @@ export interface UserStats {
   streak: number;
   lastLogin: string;
   loginHistory?: string[]; // 'YYYY-MM-DD'の配列
+  xpHistory?: Record<string, number>; // 'YYYY-MM-DD' -> total xp earned that day
   // 他の統計情報
 }
 
@@ -120,8 +121,25 @@ export interface Profile {
     github?: string;
     website?: string;
   };
+  achievements?: UserAchievement[];
+  selectedBadgeId?: string;
   createdAt?: any;
   updatedAt?: any;
+}
+
+export interface UserAchievement {
+  id: string;
+  unlockedAt: number;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // Lucide icon name
+  category: 'streak' | 'xp' | 'course' | 'social';
+  requirement: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
 export interface ReviewItem {

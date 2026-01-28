@@ -104,6 +104,7 @@ export const updateProfile = async (uid: string, profileData: UserProfileData, c
     if (safeData.name !== undefined) rootUpdates.displayName = safeData.name;
     if (safeData.customAvatarUrl !== undefined) rootUpdates.photoURL = safeData.customAvatarUrl;
     if (safeData.avatarId !== undefined) rootUpdates.avatarId = safeData.avatarId;
+    if (safeData.selectedBadgeId !== undefined) rootUpdates.selectedBadgeId = safeData.selectedBadgeId;
     
     if (Object.keys(rootUpdates).length > 0) {
         // Use set with merge to create if not exists

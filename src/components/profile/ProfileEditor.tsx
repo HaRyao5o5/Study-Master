@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Check, AlertCircle, Loader2, Award, Lock, Sparkles, Zap, Trophy, Crown, Flame, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import ImageCropper from './ImageCropper';
 import { Profile } from '../../types';
 import { checkUsernameAvailability, validateUsername } from '../../lib/usernameRegistry';
+import { ACHIEVEMENTS } from '../../data/achievements';
+
+const iconMap: Record<string, LucideIcon> = {
+  Sparkles,
+  Zap,
+  Trophy,
+  Crown,
+  Flame,
+  FlameKindle: Flame,
+  Timer,
+  BookOpen,
+  Library,
+  Globe,
+  Download
+};
 
 interface ProfileEditorProps {
   initialProfile?: Profile;
@@ -25,6 +40,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
   const [customAvatarBlob, setCustomAvatarBlob] = useState<Blob | null>(null);
   const [customAvatarPreview, setCustomAvatarPreview] = useState<string | null>(initialProfile?.customAvatarUrl || null);
   const [avatarSettings, setAvatarSettings] = useState(initialProfile?.avatarSettings || { scale: 1, position: { x: 0, y: 0 } });
+  const [selectedBadgeId, setSelectedBadgeId] = useState<string | undefined>(initialProfile?.selectedBadgeId);
 
   // Validation State
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
@@ -93,6 +109,7 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
         customAvatarBlob: customAvatarBlob,
         customAvatarUrl: customAvatarPreview, // Pass current preview status
         avatarSettings: avatarSettings,
+        selectedBadgeId: selectedBadgeId,
         mode: 'image'
       });
       onClose();
@@ -209,6 +226,55 @@ const ProfileEditor: React.FC<ProfileEditorProps> = ({ initialProfile, onSave, o
                         placeholder="自己紹介を入力..."
                         maxLength={160}
                     />
+                </div>
+
+                <hr className="border-gray-100 dark:border-gray-700" />
+
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
+                        <Award size={18} className="text-amber-500" />
+                        表示する称号（バッジ）
+                    </label>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                        <button
+                            onClick={() => setSelectedBadgeId(undefined)}
+                            className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${!selectedBadgeId ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-100 dark:border-gray-700 hover:border-gray-200'}`}
+                        >
+                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400 mb-1">
+                                <X size={20} />
+                            </div>
+                            <span className="text-[10px] font-bold text-gray-500">なし</span>
+                        </button>
+
+                        {ACHIEVEMENTS.map(achievement => {
+                            const isUnlocked = initialProfile?.achievements?.some(a => a.id === achievement.id);
+                            const isSelected = selectedBadgeId === achievement.id;
+                            const Icon = iconMap[achievement.icon] || Trophy;
+
+                            return (
+                                <button
+                                    key={achievement.id}
+                                    disabled={!isUnlocked}
+                                    onClick={() => setSelectedBadgeId(achievement.id)}
+                                    className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${
+                                        isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 
+                                        isUnlocked ? 'border-gray-100 dark:border-gray-700 hover:border-gray-200' : 
+                                        'border-transparent opacity-30 grayscale cursor-not-allowed'
+                                    }`}
+                                    title={isUnlocked ? achievement.name : '未獲得'}
+                                >
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 ${
+                                        isUnlocked ? 'bg-white dark:bg-gray-800' : ''
+                                    }`}>
+                                        {isUnlocked ? <Icon size={20} className="text-amber-500" /> : <Lock size={16} />}
+                                    </div>
+                                    <span className="text-[10px] font-bold truncate w-full text-center text-gray-600 dark:text-gray-400">
+                                        {achievement.name}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>
