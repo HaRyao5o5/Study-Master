@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Check, Sparkles, Zap, Bot, BrainCircuit, PenTool, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { usePlan } from '../hooks/usePlan';
 import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
@@ -8,6 +9,7 @@ const PricingPage: React.FC = () => {
   const { isPro, upgradeToPro, downgradeToFree, forceUpgradeToPro, isAdmin } = usePlan();
   const { user } = useApp();
   const { showError } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const handleUpgradeClick = async () => {
@@ -161,7 +163,7 @@ const PricingPage: React.FC = () => {
         
         <div className="text-center">
             <button 
-                onClick={() => window.location.href = '/legal'}
+                onClick={() => navigate('/legal')}
                 className="text-xs text-gray-400 hover:text-blue-500 underline underline-offset-4 transition-colors font-bold"
             >
                 特定商取引法に基づく表記

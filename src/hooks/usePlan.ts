@@ -14,7 +14,7 @@ export function usePlan() {
   // 管理者かどうかを判定 (環境変数の UID リストに含まれるか)
   const isAdmin = useMemo(() => {
     if (!user?.uid) return false;
-    const adminUids = (import.meta.env.VITE_ADMIN_UIDS || '').split(',').map((u: string) => u.trim());
+    const adminUids = ((import.meta.env.VITE_ADMIN_UIDS as string) || '').split(',').map((u: string) => u.trim());
     return adminUids.includes(user.uid);
   }, [user]);
 

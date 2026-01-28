@@ -101,7 +101,7 @@ export default function MainLayout({
       <div className="fixed inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-blue-900/10 dark:to-indigo-900/10 pointer-events-none -z-10"></div>
 
       <header className="sticky top-0 z-50 glass shadow-sm transition-all">
-        <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div 
             id="tutorial-home-btn"
             className="flex items-center space-x-3 cursor-pointer group" 
@@ -118,7 +118,7 @@ export default function MainLayout({
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <div
               id="tutorial-level-display"
               className="hidden sm:flex flex-col items-end mr-2 cursor-pointer hover:opacity-80 transition-opacity"
@@ -144,11 +144,11 @@ export default function MainLayout({
               </div>
             </div>
 
-              <div className="hidden md:flex items-center space-x-1">
+              <div className="hidden md:flex items-center space-x-2.5">
                 <button 
                   id="tutorial-marketplace-btn"
                   onClick={() => navigate('/marketplace')} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
                   title="みんなのコース"
                 >
                   <Globe size={20} />
@@ -156,7 +156,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-stats-btn"
                   onClick={() => navigate('/stats')} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
                   title="プレイヤーデータ & 分析"
                 >
                   <BarChart3 size={20} />
@@ -165,7 +165,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-goal-btn"
                   onClick={() => setShowGoalDetail(true)} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                   title="学習目標"
                 >
                   <Target size={20} />
@@ -174,7 +174,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-review-btn"
                   onClick={() => navigate('/review')} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
+                  className="text-gray-600 dark:text-gray-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
                   title="復習"
                 >
                   <RefreshCw size={20} />
@@ -188,7 +188,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-ranking-btn"
                   onClick={() => navigate('/ranking')} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
                   title="ランキング"
                 >
                   <Trophy size={20} />
@@ -197,7 +197,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-changelog-btn"
                   onClick={() => setShowChangelog(true)} 
-                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
                   title="お知らせ"
                 >
                   <Bell size={20} />
@@ -206,7 +206,7 @@ export default function MainLayout({
                 <button 
                   id="tutorial-settings-btn"
                   onClick={() => navigate('/settings')} 
-                  className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} 
+                  className={`p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} 
                   title="設定"
                 >
                   <Settings size={20} />
@@ -215,9 +215,9 @@ export default function MainLayout({
                 {/* プラン表示 */}
                 <button
                   onClick={() => navigate('/pricing')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black tracking-widest transition-all ${
                     isPro 
-                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-amber-900 shadow-sm' 
+                      ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-amber-900 shadow-md ring-1 ring-white/20' 
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700'
                   }`}
                 >
@@ -240,7 +240,7 @@ export default function MainLayout({
                 {user ? (
                   <div 
                     onClick={() => navigate('/profile')}
-                    className="flex items-center space-x-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
                   >
                     {profile && !isProfileLoading ? (
                       <>
@@ -378,7 +378,7 @@ export default function MainLayout({
         </div>
       )}
 
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-20">
+      <main className="max-w-5xl mx-auto px-4 py-8 pb-20">
         <div className="animate-fade-in">
           {children}
         </div>
