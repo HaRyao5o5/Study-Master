@@ -1,8 +1,11 @@
 // src/components/layout/ReviewView.tsx
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, RefreshCw, Award, TrendingUp } from 'lucide-react';
+
+import { ArrowLeft, RefreshCw, Award, TrendingUp, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Course, MasteredQuestions, Quiz } from '../../types';
+import { useApp } from '../../context/AppContext';
+import { isDue } from '../../utils/srs';
 
 interface ReviewViewProps {
   wrongHistory: string[];
@@ -36,7 +39,13 @@ interface QuizGroup {
 
 const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions, courses, onBack }) => {
   const navigate = useNavigate();
+  const { reviews } = useApp();
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
+
+  // SRS Due Count
+  const dueCount = useMemo(() => {
+    return Object.values(reviews).filter(r => isDue(r)).length;
+  }, [reviews]);
 
   // 復習対象問題の抽出
   const reviewItems = useMemo<ReviewItem[]>(() => {
@@ -99,7 +108,9 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
     (sum, courseQuizzes) => sum + Object.keys(courseQuizzes).length,
     0
   );
-  const progressPercent = totalWrong > 0 ? Math.round((totalMastered / totalWrong) * 100) : 0;
+  // 分母は「解決済み + 未解決」の合計とする
+  const totalItems = totalMastered + totalWrong;
+  const progressPercent = totalItems > 0 ? Math.round((totalMastered / totalItems) * 100) : 100;
 
   // クイズ別にグループ化
   const groupedByQuiz = useMemo<QuizGroup[]>(() => {
@@ -201,8 +212,8 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
         {/* 進捗バー */}
         <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-white font-bold text-sm">復習進捗</span>
-            <span className="text-white font-bold">{totalMastered}/{totalWrong} ({progressPercent}%)</span>
+            <span className="text-white font-bold text-sm">復習進捗 (克服率)</span>
+            <span className="text-white font-bold">{totalMastered}/{totalItems} ({progressPercent}%)</span>
           </div>
           <div className="w-full bg-white/30 rounded-full h-3 overflow-hidden">
             <div 
@@ -211,6 +222,32 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
             />
           </div>
         </div>
+      </div>
+
+      {/* SRS Dashboard */}
+      <div className="p-6 pb-0">
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden mb-6">
+             <div className="absolute top-0 right-0 p-4 opacity-10">
+                 <Calendar size={120} />
+             </div>
+             <div className="relative z-10">
+                 <h3 className="text-xl font-bold mb-2 flex items-center">
+                     <Calendar className="mr-2" />
+                     本日の定期復習 (SRS)
+                 </h3>
+                 <div className="text-4xl font-black mb-1">{dueCount} <span className="text-base font-normal opacity-80">問</span></div>
+                 <p className="text-indigo-100 mb-6 text-sm">忘却曲線に基づいて計算された、今日やるべき復習です。</p>
+                 
+                 <button 
+                     onClick={() => navigate('/course/global/quiz/srs-mode/play')}
+                     disabled={dueCount === 0}
+                     className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-bold shadow-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                 >
+                     <RefreshCw size={18} className="mr-2" />
+                     学習を開始
+                 </button>
+             </div>
+          </div>
       </div>
 
       {/* 科目フィルター */}

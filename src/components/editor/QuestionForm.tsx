@@ -60,7 +60,7 @@ const QuestionForm: React.FC<QuestionFormProps> = ({ question, onSave, onCancel 
 
   // 選択肢追加
   const handleAddOption = () => {
-    if ((qData.options || []).length < 6) {
+    if ((qData.options || []).length < 50) {
       setQData({ ...qData, options: [...(qData.options || []), ''] });
     }
   };

@@ -112,4 +112,16 @@ export interface Profile {
   updatedAt?: any;
 }
 
+export interface ReviewItem {
+  id: string; // Document ID (usually questionId)
+  questionId: string;
+  courseId: string;
+  nextReview: number; // Timestamp
+  interval: number;   // Days
+  easeFactor: number; // Default 2.5
+  streak: number;     // Consecutive correct answers
+  createdAt: number;
+  updatedAt: number;
+}
+
 

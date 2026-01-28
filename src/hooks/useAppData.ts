@@ -1,12 +1,12 @@
 // src/hooks/useAppData.ts
 import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, collection, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.ts";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
 import { normalizeData } from '../utils/helpers';
 import { INITIAL_DATA } from '../data/initialData.ts';
-import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile } from '../types';
+import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem } from '../types';
 import { useToast } from '../context/ToastContext.tsx';
 
 export interface AppData {
@@ -19,6 +19,8 @@ export interface AppData {
   errorStats: any;
   profile: Profile | null;
   hasProfile: boolean;
+  reviews: Record<string, ReviewItem>;
+  updateReviewStatus: (item: ReviewItem) => Promise<void>;
   updateProfile: (p: Profile) => Promise<void>;
   isProfileLoading: boolean;
   isProfileInitialized: boolean;
@@ -44,6 +46,7 @@ export function useAppData(): AppData {
   const [courses, setCourses] = useState<Course[]>([]);
   const [userStats, setUserStats] = useState<UserStats>(INITIAL_DATA.userStats);
   const [wrongHistory, setWrongHistory] = useState<string[]>([]);
+  const [reviews, setReviews] = useState<Record<string, ReviewItem>>({});
   
   // Refs for dirty check and preventing loop
   const isDirty = useRef<boolean>(false);
@@ -203,6 +206,43 @@ export function useAppData(): AppData {
     return () => unsubscribe();
   }, [user]);
 
+  // 4. Reviews Listener (SRS)
+  useEffect(() => {
+    if (!user?.uid) {
+        setReviews({});
+        return;
+    }
+
+    const reviewsRef = collection(db, 'users', user.uid, 'reviews');
+    const unsubscribe = onSnapshot(reviewsRef, (snapshot) => {
+        const newReviews: Record<string, ReviewItem> = {};
+        snapshot.docs.forEach(doc => {
+            newReviews[doc.id] = doc.data() as ReviewItem;
+        });
+        setReviews(newReviews);
+    }, (error) => {
+        console.error("Reviews sync error:", error);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // 5. Review Update Function
+  const updateReviewStatus = async (item: ReviewItem) => {
+      if (!user?.uid) return;
+      try {
+          // Save to subcollection
+          const reviewRef = doc(db, 'users', user.uid, 'reviews', item.questionId);
+          await setDoc(reviewRef, item, { merge: true });
+          
+          // Optimistic update
+          setReviews(prev => ({ ...prev, [item.questionId]: item }));
+      } catch (e) {
+          console.error("Failed to update review status", e);
+          throw e;
+      }
+  };
+
   // 4. Save Function
   const saveData = async (newData: Partial<AppData> = {}, _force = false) => {
     // Update local state if provided
@@ -315,6 +355,8 @@ export function useAppData(): AppData {
     goals,
     errorStats,
     profile,
+    reviews,
+    updateReviewStatus,
     hasProfile: !!profile,
     updateProfile,
     isProfileLoading: isLoading, 

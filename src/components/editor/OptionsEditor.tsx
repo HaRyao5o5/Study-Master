@@ -75,9 +75,9 @@ export const OptionsEditor: React.FC<OptionsEditorProps> = ({
         ))}
       </div>
 
-      {options.length < 6 && (
+      {options.length < 50 && (
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          最大6つまで選択肢を追加できます
+          最大50個まで選択肢を追加できます
         </p>
       )}
     </div>
