@@ -1,12 +1,12 @@
 // src/hooks/useAppData.ts
 import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot, collection, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, collection, setDoc, addDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.ts";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
-import { normalizeData } from '../utils/helpers';
+import { normalizeData, generateId } from '../utils/helpers';
 import { INITIAL_DATA } from '../data/initialData.ts';
-import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem } from '../types';
+import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem, PublicCourse } from '../types';
 import { useToast } from '../context/ToastContext.tsx';
 
 export interface AppData {
@@ -35,6 +35,8 @@ export interface AppData {
   setMasteredQuestions: React.Dispatch<React.SetStateAction<MasteredQuestions>>;
   setGoals: React.Dispatch<React.SetStateAction<UserGoals | null>>;
   setErrorStats: React.Dispatch<React.SetStateAction<any>>;
+  publishCourse: (courseId: string) => Promise<void>;
+  importCourse: (course: PublicCourse) => Promise<void>;
 }
 
 export function useAppData(): AppData {
@@ -54,7 +56,7 @@ export function useAppData(): AppData {
   const lastCloudUpdateTime = useRef<number>(0);
   const isSaving = useRef<boolean>(false);
 
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   // 1. Auth Listener
   useEffect(() => {
@@ -361,6 +363,89 @@ export function useAppData(): AppData {
     // Implement profile update logic
     setProfile(newProfile);
     // Sync to cloud...
+    // Sync to cloud...
+  };
+
+  // 6. Publish/Import Functions
+  const publishCourse = async (courseId: string) => {
+    if (!user) {
+        showError("公開するにはログインが必要です");
+        return;
+    }
+    
+    if (!profile) {
+         showError("公開するにはプロフィール設定が必要です");
+         return;
+    }
+
+    const courseToPublish = courses.find(c => c.id === courseId);
+    if (!courseToPublish) return;
+
+    if (courseToPublish.quizzes.length === 0) {
+        showError("空のコースは公開できません");
+        return;
+    }
+
+    try {
+        const removeUndefined = (obj: any): any => {
+            if (Array.isArray(obj)) return obj.map(removeUndefined);
+            if (obj !== null && typeof obj === 'object') {
+                return Object.entries(obj).reduce((acc, [key, value]) => {
+                    if (value !== undefined) {
+                        acc[key] = removeUndefined(value);
+                    }
+                    return acc;
+                }, {} as any);
+            }
+            return obj;
+        };
+
+        const rawPublicData: PublicCourse = {
+            ...courseToPublish,
+            authorId: user.uid,
+            authorName: profile.name || user.displayName || '名無し',
+            authorAvatar: profile.customAvatarUrl || profile.avatarId || undefined,
+            tags: [],
+            downloads: 0,
+            likes: 0,
+            publishedAt: Date.now(),
+            updatedAt: Date.now(),
+            version: 1,
+            isPublic: true,
+            visibility: 'public'
+        };
+        
+        const publicData = removeUndefined(rawPublicData);
+        
+        await setDoc(doc(db, 'public_courses', courseId), publicData);
+        
+        const updatedCourses = courses.map(c => c.id === courseId ? { ...c, isPublic: true, visibility: 'public' as const } : c);
+        setCourses(updatedCourses);
+        saveData({ courses: updatedCourses });
+        
+        showSuccess("コースを公開しました！");
+    } catch (e) {
+        console.error("Publish failed:", e);
+        showError("公開に失敗しました");
+    }
+  };
+
+  const importCourse = async (publicCourse: PublicCourse) => {
+      const newId = generateId();
+      const newCourse: Course = {
+          ...publicCourse, 
+          id: newId,
+          title: publicCourse.title,
+          isPublic: false,
+          visibility: 'private',
+          favorite: false,
+          createdAt: Date.now()
+      };
+      
+      const newCourses = [...courses, newCourse];
+      setCourses(newCourses);
+      saveData({ courses: newCourses });
+      showSuccess("コースをダウンロードしました！");
   };
 
   return {
@@ -388,6 +473,8 @@ export function useAppData(): AppData {
     setWrongHistory,
     setMasteredQuestions,
     setGoals,
-    setErrorStats
+    setErrorStats,
+    publishCourse,
+    importCourse
   };
 }

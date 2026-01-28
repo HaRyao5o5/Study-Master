@@ -1,6 +1,6 @@
 // src/components/course/FolderListView.tsx
 import React, { useRef, memo } from 'react';
-import { Folder, Plus, X, Edit3, Share2, Upload } from 'lucide-react';
+import { Folder, Plus, X, Edit3, Share2, Upload, Globe } from 'lucide-react';
 import { importFromFile } from '../../utils/fileIO';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
@@ -14,7 +14,7 @@ interface FolderListViewProps {
 }
 
 const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
-  const { courses, saveData, user } = useApp();
+  const { courses, saveData, user, publishCourse } = useApp();
   const { showSuccess, showConfirm, showWarning, showError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +60,19 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
         console.error('Clipboard copy failed:', err);
         showError(`共有リンク：\n${shareUrl}\n\n※自動コピーに失敗しました。上記URLを手動でコピーしてください。`);
       });
+  };
+
+  const handlePublish = async (course: Course) => {
+    // ログインチェック
+    if (!user) {
+        showWarning('⚠️ 公開機能を使うにはログインが必要です。');
+        return;
+    }
+    
+    const confirmed = await showConfirm(`「${course.title}」をマーケットプレイスに公開しますか？\n\n・誰でも検索してダウンロードできるようになります。\n・名前やアイコンも公開されます。`);
+    if (confirmed) {
+       await publishCourse(course.id);
+    }
   };
 
   return (
@@ -110,6 +123,13 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
               
               {/* アクションボタン群 (常に表示だが控えめに、ホバーで強調) */}
               <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handlePublish(course); }}
+                  className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-gray-400 hover:text-purple-600 rounded-lg transition-colors"
+                  title="公開"
+                >
+                  <Globe size={16} />
+                </button>
                 <button 
                   onClick={(e) => { e.stopPropagation(); handleShare(course); }}
                   className="p-2 hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600 rounded-lg transition-colors"

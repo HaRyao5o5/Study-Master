@@ -51,6 +51,18 @@ export interface Course {
   createdAt?: any;
 }
 
+export interface PublicCourse extends Course {
+  authorId: string;
+  authorName: string;
+  authorAvatar?: string;
+  tags: string[];
+  downloads: number;
+  likes: number;
+  publishedAt: number;
+  updatedAt: number;
+  version: number;
+}
+
 export interface Settings {
   theme: 'light' | 'dark';
   soundEnabled: boolean;

@@ -78,23 +78,29 @@ service cloud.firestore {
     }
     
     // ========================================
-    // 共有コースコレクション（将来の機能拡張用）
+    // 公開コース（マーケットプレイス用）
     // ========================================
-    match /sharedCourses/{courseId} {
-      // 読み取り: 誰でも可能（共有リンクでアクセス可能にするため）
+    match /public_courses/{courseId} {
+      // 読み取り: 誰でも可能
       allow read: if true;
       
-      // 作成: ログインユーザーのみ
-      allow create: if request.auth != null
-                    && request.resource.data.createdBy == request.auth.uid;
+      // 作成: 認証済みユーザー、かつauthorIdが正しいこと
+      allow create: if request.auth != null 
+                    && request.resource.data.authorId == request.auth.uid;
       
-      // 更新: 作成者本人のみ
-      allow update: if request.auth != null 
-                    && request.auth.uid == resource.data.createdBy;
+      // 更新:
+      // 1. 作成者本人はフルアクセス
+      // 2. 他人は「ダウンロード数」「いいね数」のインクリメントのみ許可
+      allow update: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloads', 'likes', 'updatedAt'])
+        )
+      );
       
       // 削除: 作成者本人のみ
       allow delete: if request.auth != null 
-                    && request.auth.uid == resource.data.createdBy;
+                    && resource.data.authorId == request.auth.uid;
     }
   }
 }

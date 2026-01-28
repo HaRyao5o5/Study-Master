@@ -32,9 +32,9 @@ import ResultPage from './pages/ResultPage';
 import ProfilePage from './pages/ProfilePage';
 import EditQuizPage from './pages/EditQuizPage';
 import CreateQuizPage from './pages/CreateQuizPage';
+import MarketplacePage from './pages/MarketplacePage';
 
 
-import { Trophy, Flame } from 'lucide-react';
 import { getLevelInfo, getUnlockedTitles } from './utils/gamification.ts';
 
 // Context & Hooks
@@ -62,7 +62,7 @@ export default function App() {
     goals, setGoals,
     errorStats,
     profile, hasProfile, isProfileInitialized, isProfileLoading,
-    saveData
+    saveData, publishCourse
   } = useApp();
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -195,23 +195,35 @@ export default function App() {
     navigate('/edit-course');
   };
 
-  const handleCreateCourse = (title: string, desc: string, visibility: string) => {
+  const handleCreateCourse = async (title: string, desc: string, visibility: string) => {
+    const newCourseId = `course-${generateId()}`;
     const newCourse: Course = { 
-        id: `course-${generateId()}`, 
+        id: newCourseId, 
         title, 
         description: desc, 
         visibility: (visibility as 'public' | 'private') || 'private', 
+        isPublic: visibility === 'public',
         quizzes: [],
-        favorite: false // Ensure required fields
+        favorite: false 
     };
-    saveData({ courses: [...courses, newCourse] });
+    await saveData({ courses: [...courses, newCourse] });
+
+    if (visibility === 'public') {
+        // Auto publish if created as public
+        await publishCourse(newCourseId);
+    }
     navigate('/');
   };
 
-  const handleUpdateCourse = (title: string, desc: string, visibility: string) => {
+  const handleUpdateCourse = async (title: string, desc: string, visibility: string) => {
     if (!courseToEdit) return;
-    const updatedCourses = courses.map(c => c.id === courseToEdit.id ? { ...c, title, description: desc, visibility: (visibility as 'public' | 'private') || 'private' } : c);
-    saveData({ courses: updatedCourses });
+    const isPublic = visibility === 'public';
+    const updatedCourses = courses.map(c => c.id === courseToEdit.id ? { ...c, title, description: desc, visibility: (visibility as 'public' | 'private') || 'private', isPublic } : c);
+    await saveData({ courses: updatedCourses });
+    
+    if (isPublic) {
+        await publishCourse(courseToEdit.id);
+    }
     setCourseToEdit(null); navigate('/');
   };
 
@@ -292,6 +304,7 @@ export default function App() {
         } />
         
         <Route path="/stats" element={<StatsView userStats={userStats} errorStats={errorStats} courses={courses} onBack={() => navigate('/')} />} />
+        <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path="/share/:targetUid/:courseId" element={<SharedCourseView />} />
         <Route path="/ranking" element={<RankingView currentUser={user} onBack={() => navigate('/')} />} />
         

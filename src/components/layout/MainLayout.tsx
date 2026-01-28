@@ -1,7 +1,7 @@
 // src/components/layout/MainLayout.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe } from 'lucide-react';
 
 import { User } from '../../types';
 import { UserProfileData } from '../../lib/firebaseProfile';
@@ -119,6 +119,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({
             </div>
 
               <div className="hidden md:flex items-center space-x-1">
+                <button 
+                  id="tutorial-marketplace-btn"
+                  onClick={() => navigate('/marketplace')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400 transition-colors p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  title="みんなのコース"
+                >
+                  <Globe size={20} />
+                </button>
                 <button 
                   id="tutorial-stats-btn"
                   onClick={() => navigate('/stats')} 
@@ -266,6 +274,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
              </div>
 
              <div className="space-y-2 flex-1 overflow-y-auto">
+                <MobileMenuItem icon={Globe} label="みんなのコース" onClick={() => navigate('/marketplace')} />
                 <MobileMenuItem icon={BarChart3} label="統計データ" onClick={() => navigate('/stats')} />
                 <MobileMenuItem icon={Target} label="学習目標" onClick={() => setShowGoalDetail(true)} />
                 <MobileMenuItem 
