@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Trophy, Flame, Star, AlertTriangle, ArrowLeft, Medal, Lock, Zap, X, TrendingUp, Calendar, BookOpen, Target } from 'lucide-react';
 import { getLevelInfo, TITLES } from '../../utils/gamification';
-import { Course, UserStats, MasteredQuestions, Profile, UserGoals } from '../../types';
+import { Course, UserStats, MasteredQuestions, Profile, UserGoals, ReviewItem } from '../../types';
 import XPTrendChart from '../analytics/XPTrendChart';
 import StudyHeatmap from '../analytics/StudyHeatmap';
 import MasteryBarChart from '../analytics/MasteryBarChart';
+import SRSForecastChart from '../analytics/SRSForecastChart';
 
 interface StatsViewProps {
   userStats: UserStats;
@@ -13,6 +14,7 @@ interface StatsViewProps {
   masteredQuestions: MasteredQuestions;
   profile: Profile | null;
   goals: UserGoals | null;
+  reviews: Record<string, ReviewItem>;
   onBack: () => void;
 }
 
@@ -31,7 +33,7 @@ interface TitleInfo {
   isNext?: boolean;
 }
 
-const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, masteredQuestions, profile, goals, onBack }) => {
+const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, masteredQuestions, profile, goals, reviews, onBack }) => {
   const { level, currentXp, xpForNextLevel } = getLevelInfo(userStats.totalXp);
   const progressPercent = Math.min(100, Math.round((currentXp / xpForNextLevel) * 100));
   const [selectedTitle, setSelectedTitle] = useState<TitleInfo | null>(null);
@@ -165,6 +167,20 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
               <h3 className="font-bold">獲得XPの推移</h3>
             </div>
             <XPTrendChart xpHistory={userStats.xpHistory || {}} />
+          </div>
+
+          {/* SRS 予報 */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center mb-2 text-gray-700 dark:text-white">
+              <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-lg mr-3">
+                <Calendar size={20} className="text-orange-500" />
+              </div>
+              <div>
+                <h3 className="font-bold leading-none">復習予定の予報 (SRS)</h3>
+                <p className="text-[10px] text-gray-400 font-bold mt-1">今後14日間のスケジュール</p>
+              </div>
+            </div>
+            <SRSForecastChart reviews={reviews} />
           </div>
 
           {/* アクティビティ */}

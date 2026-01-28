@@ -7,6 +7,24 @@ interface MasteryBarChartProps {
   masteredQuestions: MasteredQuestions;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-xl">
+        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 mb-1">{label}</p>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: payload[0].payload.color }} />
+          <p className="text-sm font-black text-gray-800 dark:text-white">
+            {payload[0].value}<span className="text-xs font-bold text-gray-500">%</span>
+            <span className="ml-2 text-[10px] text-gray-400">マスター度</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const MasteryBarChart: React.FC<MasteryBarChartProps> = ({ courses, masteredQuestions }) => {
   const data = useMemo(() => {
     return courses.map(course => {
@@ -48,8 +66,7 @@ const MasteryBarChart: React.FC<MasteryBarChartProps> = ({ courses, masteredQues
             width={80}
           />
           <Tooltip 
-            formatter={(value) => [`${value}%`, 'マスター度']}
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+            content={<CustomTooltip />}
           />
           <Bar dataKey="percentage" radius={[0, 10, 10, 0]} barSize={20}>
             {data.map((entry, index) => (

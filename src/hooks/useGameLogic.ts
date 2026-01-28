@@ -121,11 +121,16 @@ export function useGameLogic({
     if (!currentQuiz) return;
 
     // 回答配列をマップに変換
-    const answerMap: Record<string, string> = {};
+    const answerMap: Record<string, any> = {};
+    const directResults: Record<string, boolean> = {};
+
     if (Array.isArray(userAnswers)) {
       userAnswers.forEach((ans: any) => {
         if (ans.question && ans.question.id) {
           answerMap[ans.question.id] = ans.selectedAnswer;
+          if (ans.isCorrect !== undefined) {
+            directResults[ans.question.id] = ans.isCorrect;
+          }
         }
       });
     } else {
@@ -136,7 +141,7 @@ export function useGameLogic({
     const results = currentQuiz.questions.map((q) => ({
       question: q,
       selectedAnswer: answerMap[q.id] || '',
-      isCorrect: checkAnswer(q, answerMap[q.id])
+      isCorrect: directResults[q.id] !== undefined ? directResults[q.id] : checkAnswer(q, answerMap[q.id])
     }));
 
     const score = results.filter(r => r.isCorrect).length;

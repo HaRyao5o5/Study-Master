@@ -1,6 +1,6 @@
 // src/components/course/QuizMenuView.tsx
 import React, { useState } from 'react';
-import { Settings, Shuffle, ImageIcon, Type, CheckSquare, Play, Trash2, Edit3, Lock, Zap } from 'lucide-react';
+import { Settings, Shuffle, ImageIcon, Type, CheckSquare, Play, Trash2, Edit3, Lock, Zap, CreditCard as Cards } from 'lucide-react';
 import { Quiz } from '../../types';
 
 interface QuizMenuViewProps {
@@ -9,9 +9,10 @@ interface QuizMenuViewProps {
   isReviewMode?: boolean;
   onClearHistory?: () => void;
   onEdit?: () => void;
+  onStartFlashcards?: () => void;
 }
 
-const QuizMenuView: React.FC<QuizMenuViewProps> = ({ quiz, onStart, isReviewMode = false, onClearHistory, onEdit }) => {
+const QuizMenuView: React.FC<QuizMenuViewProps> = ({ quiz, onStart, isReviewMode = false, onClearHistory, onEdit, onStartFlashcards }) => {
   const [randomize, setRandomize] = useState(false);
   const [shuffleOptions, setShuffleOptions] = useState(false);
   const [immediateFeedback, setImmediateFeedback] = useState(false);
@@ -67,6 +68,17 @@ const QuizMenuView: React.FC<QuizMenuViewProps> = ({ quiz, onStart, isReviewMode
             <Play size={24} className="mr-2 fill-current" />
             {quiz.questions.length > 0 ? "テストを開始する" : "問題がありません"}
           </button>
+          
+          {quiz.questions.length > 0 && onStartFlashcards && (
+            <button 
+              onClick={onStartFlashcards}
+              className="w-full bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 font-bold py-4 rounded-xl shadow-sm transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 flex items-center justify-center text-lg"
+            >
+              <Cards size={24} className="mr-2" />
+              フラッシュカードで暗記
+            </button>
+          )}
+
           {isReviewMode && <button onClick={onClearHistory} className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:border-red-300 dark:hover:border-red-800 font-bold py-3 rounded-xl transition-colors flex items-center justify-center text-sm"><Trash2 size={16} className="mr-2" /> 履歴をリセット（全て覚えた）</button>}
         </div>
       </div>

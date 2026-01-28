@@ -61,6 +61,10 @@ const QuizMenuPage: React.FC<QuizMenuPageProps> = ({ wrongHistory, onStart, onCl
         { title: quiz.title, id: quiz.id, type: 'quiz_menu' as const }
     ];
 
+    const handleStartFlashcards = () => {
+        navigate(`/course/${courseId}/quiz/${quizId}/flashcards`, { state: { quiz } });
+    };
+
     return (
         <>
             <Breadcrumbs
@@ -73,6 +77,7 @@ const QuizMenuPage: React.FC<QuizMenuPageProps> = ({ wrongHistory, onStart, onCl
             <QuizMenuView
                 quiz={quiz}
                 onStart={(rand: boolean, shuf: boolean, imm: boolean) => onStart(courseId, quizId, rand, shuf, imm, quiz)}
+                onStartFlashcards={handleStartFlashcards}
                 isReviewMode={quizId === 'review-mode'}
                 onClearHistory={onClearHistory ? (() => onClearHistory(quizId)) : undefined}
                 onEdit={quizId === 'review-mode' ? undefined : () => navigate(`/course/${courseId}/quiz/${quizId}/edit`)}

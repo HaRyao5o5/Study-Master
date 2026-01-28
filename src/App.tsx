@@ -28,6 +28,7 @@ import StreakStatus from './components/layout/StreakStatus';
 import CoursePage from './pages/CoursePage.tsx';
 import QuizMenuPage from './pages/QuizMenuPage';
 import GamePage from './pages/GamePage';
+import FlashcardPage from './pages/FlashcardPage';
 import ResultPage from './pages/ResultPage';
 import ProfilePage from './pages/ProfilePage';
 import EditQuizPage from './pages/EditQuizPage';
@@ -62,6 +63,7 @@ export default function App() {
     goals, setGoals,
     errorStats,
     profile, hasProfile, isProfileInitialized, isProfileLoading,
+    reviews,
     saveData, publishCourse
   } = useApp();
 
@@ -311,6 +313,7 @@ export default function App() {
             masteredQuestions={masteredQuestions}
             profile={profile}
             goals={goals}
+            reviews={reviews}
             onBack={() => navigate('/')} 
           />
         } />
@@ -337,6 +340,7 @@ export default function App() {
         <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />
         <Route path="/course/:courseId/quiz/:quizId" element={<QuizMenuPage wrongHistory={wrongHistory} onStart={startQuiz} onClearHistory={clearHistory} />} />
         <Route path="/course/:courseId/quiz/:quizId/play" element={<GamePage gameSettings={gameSettings} wrongHistory={wrongHistory} onFinish={finishQuiz} />} />
+        <Route path="/course/:courseId/quiz/:quizId/flashcards" element={<FlashcardPage onFinish={finishQuiz} />} />
         <Route path="/course/:courseId/quiz/:quizId/result" element={<ResultPage resultData={resultData} gameSettings={gameSettings} onRetry={startQuiz} />} />
         <Route path="/course/:courseId/quiz/:quizId/edit" element={<EditQuizPage onSave={handleSaveQuiz} />} />
         <Route path="/course/:courseId/create-quiz" element={<CreateQuizPage onSave={handleSaveQuiz} />} />

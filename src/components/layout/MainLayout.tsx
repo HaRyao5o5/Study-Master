@@ -1,7 +1,9 @@
-// src/components/layout/MainLayout.tsx
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
 import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe } from 'lucide-react';
+
+import { useApp } from '../../context/AppContext';
+import AIAdvisor from '../ai/AIAdvisor';
 
 import { User } from '../../types';
 import { UserProfileData } from '../../lib/firebaseProfile';
@@ -32,7 +34,7 @@ interface MainLayoutProps {
   setShowChangelog: (show: boolean) => void;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({
+export default function MainLayout({
   children,
   user,
   userStats,
@@ -46,9 +48,30 @@ const MainLayout: React.FC<MainLayoutProps> = ({
   onLogin,
   setShowGoalDetail,
   setShowChangelog
-}) => {
+}: MainLayoutProps) {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const location = useLocation();
+  const { courses } = useApp();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // AIアドバイザー用のコンテキストを抽出
+  const advisorContext = useMemo(() => {
+    const pathParts = location.pathname.split('/');
+    // /course/:courseId/quiz/:quizId/...
+    const courseId = pathParts[2] === 'course' ? pathParts[3] : (pathParts[1] === 'course' ? pathParts[2] : null);
+    
+    if (courseId) {
+      const course = courses.find(c => c.id === courseId);
+      if (course) {
+        return {
+          courseTitle: course.title,
+          description: course.description
+        };
+      }
+    }
+    return {};
+  }, [location.pathname, courses]);
+
 
   const MobileMenuItem = ({ icon: Icon, label, onClick, badge }: { icon: LucideIcon, label: string, onClick: () => void, badge?: number | null }) => (
     <button 
@@ -339,8 +362,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           {children}
         </div>
       </main>
+
+      {/* AI学習アドバイザー */}
+      <AIAdvisor context={advisorContext} />
     </div>
   );
-};
-
-export default MainLayout;
+}

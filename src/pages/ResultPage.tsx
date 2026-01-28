@@ -29,6 +29,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
     const isReviewMode = location.state?.isReviewMode || false;
     const streakUpdated = location.state?.streakUpdated || false;
     const streak = location.state?.streak || 0;
+    const isFlashcardMode = location.pathname.includes('/flashcards') || location.state?.isFlashcardMode;
     
     // Manage overlay visibility
     const [showCelebration, setShowCelebration] = React.useState(streakUpdated);
@@ -45,6 +46,14 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
         }
     };
 
+    const handleRetry = () => {
+        if (isFlashcardMode) {
+            navigate(`/course/${courseId}/quiz/${quizId}/flashcards`, { state: { quiz: location.state?.quiz } });
+        } else {
+            onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback);
+        }
+    };
+
     return (
         <>
             {showCelebration && (
@@ -55,7 +64,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
             )}
             <ResultView
                 resultData={resultData}
-                onRetry={() => onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback)}
+                onRetry={handleRetry}
                 onBackToMenu={handleBack}
             />
         </>

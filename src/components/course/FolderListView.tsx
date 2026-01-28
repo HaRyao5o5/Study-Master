@@ -1,7 +1,7 @@
-// src/components/course/FolderListView.tsx
 import React, { useRef, memo } from 'react';
-import { Folder, Plus, X, Edit3, Share2, Upload, Globe } from 'lucide-react';
+import { Folder, Plus, X, Edit3, Share2, Upload, Globe, Sparkles } from 'lucide-react';
 import { importFromFile } from '../../utils/fileIO';
+import GenerateCourseModal from './GenerateCourseModal';
 import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { SUCCESS, CONFIRM } from '../../utils/errorMessages';
@@ -17,6 +17,12 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   const { courses, saveData, user, publishCourse } = useApp();
   const { showSuccess, showConfirm, showWarning, showError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAiModal, setShowAiModal] = React.useState(false);
+
+  const handleAiCourseGenerated = (newCourse: Course) => {
+    saveData({ courses: [...courses, newCourse] });
+    showSuccess(`✨ AIが「${newCourse.title}」を生成しました！`);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files.length) return;
@@ -85,7 +91,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
           style={{ animationDelay: `${index * 100}ms` }}
         >
           {/* カード本体: ガラス効果とホバーアニメーション */}
-          <div className="h-full p-4 md:p-6 rounded-2xl border border-white/20 dark:border-gray-700 shadow-sm hover:shadow-xl dark:shadow-none bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800 relative overflow-hidden">
+          <div className="h-full flex flex-col p-4 md:p-6 rounded-2xl border border-white/20 dark:border-gray-700 shadow-sm hover:shadow-xl dark:shadow-none bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white dark:hover:bg-gray-800 relative overflow-hidden">
             
             {/* 装飾: 背景の淡いグラデーション */}
             <div className="absolute top-0 right-0 w-20 h-20 md:w-32 md:h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl -mr-6 -mt-6 md:-mr-10 md:-mt-10 pointer-events-none"></div>
@@ -108,12 +114,12 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
               )}
             </div>
 
-            <h3 className="text-sm md:text-xl font-bold text-gray-800 dark:text-white mb-1 md:mb-2 line-clamp-2 md:line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+            <h3 className="text-sm md:text-xl font-bold text-gray-800 dark:text-white mb-1 md:mb-2 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight min-h-[1.25rem] md:min-h-[1.75rem]">
               {course.title}
             </h3>
             
-            <p className="hidden md:block text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 min-h-[2.5rem]">
-              {course.description || 'No description provided.'}
+            <p className="text-[10px] md:text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 min-h-[1.5rem] md:min-h-[2.5rem]">
+              {course.description || '説明はありません'}
             </p>
 
             <div className="flex items-center justify-between mt-auto pt-2 md:pt-4 border-t border-gray-100 dark:border-gray-700/50">
@@ -172,16 +178,32 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
           <span className="font-bold text-xs md:text-sm">新しい科目</span>
         </button>
 
-        <button 
-          onClick={() => fileInputRef.current?.click()}
-          className="h-12 md:h-16 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
-        >
-          <Upload size={16} className="md:w-[18px] md:h-[18px]" />
-          <span>読み込む</span>
-        </button>
+        <div className="flex gap-2 h-12 md:h-16">
+          <button 
+            onClick={() => setShowAiModal(true)}
+            className="flex-1 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
+          >
+            <Sparkles size={16} className="md:w-[18px] md:h-[18px]" />
+            <span>AIで作成</span>
+          </button>
+
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
+          >
+            <Upload size={16} className="md:w-[18px] md:h-[18px]" />
+            <span>読み込む</span>
+          </button>
+        </div>
         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleFileSelect} />
       </div>
       
+      {showAiModal && (
+        <GenerateCourseModal 
+          onClose={() => setShowAiModal(false)} 
+          onSave={handleAiCourseGenerated} 
+        />
+      )}
 
     </div>
   );

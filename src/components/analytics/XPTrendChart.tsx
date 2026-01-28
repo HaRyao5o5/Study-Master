@@ -6,6 +6,23 @@ interface XPTrendChartProps {
   days?: number;
 }
 
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-xl">
+        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 mb-1">{label}</p>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-blue-500" />
+          <p className="text-sm font-black text-gray-800 dark:text-white">
+            {payload[0].value} <span className="text-xs font-bold text-gray-500">XP</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const XPTrendChart: React.FC<XPTrendChartProps> = ({ xpHistory, days = 14 }) => {
   const data = useMemo(() => {
     const result = [];
@@ -51,7 +68,7 @@ const XPTrendChart: React.FC<XPTrendChartProps> = ({ xpHistory, days = 14 }) => 
             tick={{ fontSize: 10, fill: '#9ca3af' }}
           />
           <Tooltip 
-            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+            content={<CustomTooltip />}
             cursor={{ stroke: '#3b82f6', strokeWidth: 2 }}
           />
           <Area 

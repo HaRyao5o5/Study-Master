@@ -1,6 +1,6 @@
 // src/components/course/GenerateQuizModal.tsx
 import React, { useState } from 'react';
-import { X, Sparkles, Loader, AlertCircle, Image as ImageIcon, Trash2 } from 'lucide-react';
+import { X, Sparkles, Loader, AlertCircle, Image as ImageIcon, Trash2, FileText, Upload } from 'lucide-react';
 import { generateQuizWithAI } from '../../utils/gemini';
 import { generateId } from '../../utils/helpers';
 import { Quiz } from '../../types';
@@ -17,6 +17,7 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const hasEnvKey = !!import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -45,6 +46,24 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
          reader.readAsDataURL(file);
       });
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("ファイルサイズは2MB以内にして下さい");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      setText(content);
+      setFileName(file.name);
+    };
+    reader.readAsText(file);
   };
 
   const handleRemoveImage = (index: number) => {
@@ -129,13 +148,30 @@ const GenerateQuizModal: React.FC<GenerateQuizModalProps> = ({ onClose, onSave }
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">元になるテキスト / トピック</label>
+            <div className="flex justify-between items-end mb-1">
+              <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">元になるテキスト / トピック</label>
+              <label className="flex items-center gap-1 text-[10px] font-black text-purple-600 dark:text-purple-400 cursor-pointer hover:underline">
+                <Upload size={10} />
+                ファイル読込 (.txt, .md)
+                <input type="file" accept=".txt,.md" className="hidden" onChange={handleFileUpload} />
+              </label>
+            </div>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                if (fileName) setFileName(null);
+              }}
               className="w-full px-4 py-3 rounded-xl border-2 border-transparent bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm focus:bg-white dark:focus:bg-gray-800 focus:border-purple-500 focus:outline-none transition-all dark:text-white h-32 resize-none shadow-sm placeholder-gray-400"
               placeholder="ここに教科書の文章や、覚えたい単語リスト、または「日本の歴史について」のようなトピックを入力してください..."
             />
+            {fileName && (
+              <div className="mt-1 flex items-center text-[10px] font-bold text-gray-400">
+                <FileText size={10} className="mr-1" />
+                読み込み中: {fileName}
+                <button onClick={() => { setText(''); setFileName(null); }} className="ml-2 text-red-400 hover:text-red-500 underline">クリア</button>
+              </div>
+            )}
           </div>
 
           <div>
