@@ -11,11 +11,30 @@ export function usePlan() {
   const { profile, updateProfile, user } = useApp();
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
 
-  // 管理者かどうかを判定 (環境変数の UID リストに含まれるか)
-  const isAdmin = useMemo(() => {
-    if (!user?.uid) return false;
-    const adminUids = ((import.meta.env.VITE_ADMIN_UIDS as string) || '').split(',').map((u: string) => u.trim());
-    return adminUids.includes(user.uid);
+  // 管理者かどうかを判定 (環境変数の UID リストに含まれ、かつ IP 制限をパスするか)
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const verifyAdmin = async () => {
+      if (!user?.uid) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      const adminUids = ((import.meta.env.VITE_ADMIN_UIDS as string) || '').split(',').map((u: string) => u.trim());
+      const hasCorrectUid = adminUids.includes(user.uid);
+      
+      if (hasCorrectUid) {
+        // IPチェックを実行
+        const { checkAdminIp } = await import('../utils/security');
+        const isIpAllowed = await checkAdminIp();
+        setIsAdmin(isIpAllowed);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    verifyAdmin();
   }, [user]);
 
   // Stripe Extension が生成する 'subscriptions' コレクションを監視
