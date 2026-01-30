@@ -147,6 +147,9 @@ export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
 
     const querySnapshot = await getDocs(q);
     const leaderboard: LeaderboardUser[] = [];
+    
+    // 動的インポートで循環参照を回避しつつ getEffectiveStreak を使用
+    const { getEffectiveStreak } = await import('../utils/gamification');
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
@@ -159,7 +162,7 @@ export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
           avatarId: data.avatarId || 'avatar-1',
           totalXp: data.userStats.totalXp || 0,
           level: data.userStats.level || 1,
-          streak: data.userStats.streak || 0,
+          streak: getEffectiveStreak(data.userStats),
           achievementsCount: data.achievementsCount || 0,
           selectedBadgeId: data.selectedBadgeId || undefined
         });
