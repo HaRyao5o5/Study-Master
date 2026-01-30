@@ -82,6 +82,25 @@ export function useAppData(): AppData {
           const cloudData = await loadFromCloud(firebaseUser.uid);
           
           if (cloudData) {
+            // --- Streak Reset Logic ---
+            const { getEffectiveStreak } = await import('../utils/gamification');
+            if (cloudData.userStats && cloudData.userStats.streak > 0) {
+              const effectiveStreak = getEffectiveStreak(cloudData.userStats);
+              if (effectiveStreak === 0) {
+                console.log("Streak broken detected during load. Resetting to 0...");
+                cloudData.userStats.streak = 0;
+                // Firestore にも反映（非同期でOK）
+                import('firebase/firestore').then(({ doc, updateDoc }) => {
+                  import('../lib/firebase').then(({ db }) => {
+                    updateDoc(doc(db, "users", firebaseUser.uid), {
+                      "userStats.streak": 0
+                    }).catch(e => console.error("Failed to sync streak reset:", e));
+                  });
+                });
+              }
+            }
+            // --------------------------
+
             if (cloudData.courses) setCourses(normalizeData(cloudData.courses));
             if (cloudData.userStats) setUserStats(cloudData.userStats);
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);

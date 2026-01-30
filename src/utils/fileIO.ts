@@ -16,7 +16,7 @@ export const exportToFile = (data: any, type: string, fileNamePrefix: string): v
   const exportObject: ExportObject = {
     meta: {
       type: type, // 'backup' | 'course' | 'quiz'
-      version: '2.7.0',
+      version: '2.19.0',
       createdAt: new Date().toISOString()
     },
     data: data

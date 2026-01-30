@@ -1,6 +1,6 @@
-// src/components/layout/RankingView.tsx
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Trophy, Crown, Medal, User as UserIcon, Flame, Lock, Shield, Award, Sparkles, Zap, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { getLeaderboard, LeaderboardUser } from '../../lib/firebase';
 import LoadingScreen from '../common/LoadingScreen';
 import { User } from '../../types';
@@ -26,6 +26,7 @@ interface RankingViewProps {
 }
 
 const RankingView: React.FC<RankingViewProps> = ({ onBack, currentUser }) => {
+  const navigate = useNavigate();
   const [leaders, setLeaders] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +95,8 @@ const RankingView: React.FC<RankingViewProps> = ({ onBack, currentUser }) => {
           return (
             <div 
               key={user.id}
-              className={`relative flex items-center p-4 rounded-2xl border transition-all ${style.bg} ${isMe ? 'ring-2 ring-blue-500 shadow-lg scale-[1.02] z-10' : ''}`}
+              onClick={() => navigate(`/profile/${user.id}`)}
+              className={`relative flex items-center p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md active:scale-[0.98] ${style.bg} ${isMe ? 'ring-2 ring-blue-500 shadow-lg scale-[1.02] z-10' : ''}`}
             >
               <div className="flex-shrink-0 w-12 flex justify-center">
                 {style.icon}

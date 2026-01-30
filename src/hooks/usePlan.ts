@@ -146,6 +146,26 @@ export function usePlan() {
     });
   };
 
+  /**
+   * Stripe との接続をリセットする（No such customer エラー対策）
+   */
+  const resetStripeConnection = async () => {
+    if (!user) return;
+    
+    try {
+        const { doc, updateDoc, deleteField } = await import('firebase/firestore');
+        const userRef = doc(db, 'users', user.uid);
+        // stripeId フィールドを削除（拡張機能が再度作成するように促す）
+        await updateDoc(userRef, {
+            stripeId: deleteField()
+        });
+        return true;
+    } catch (err) {
+        console.error('Reset error:', err);
+        throw err;
+    }
+  };
+
   return {
     isPro,
     planName,
@@ -153,6 +173,7 @@ export function usePlan() {
     isAdmin, // 管理者フラグを返す
     upgradeToPro,
     downgradeToFree,
-    forceUpgradeToPro
+    forceUpgradeToPro,
+    resetStripeConnection
   };
 }

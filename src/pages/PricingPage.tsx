@@ -6,11 +6,12 @@ import { useApp } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 
 const PricingPage: React.FC = () => {
-  const { isPro, upgradeToPro, downgradeToFree, forceUpgradeToPro, isAdmin } = usePlan();
+  const { isPro, upgradeToPro, downgradeToFree, forceUpgradeToPro, resetStripeConnection, isAdmin } = usePlan();
   const { user } = useApp();
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showReset, setShowReset] = useState(false);
 
   const handleUpgradeClick = async () => {
     if (!user) {
@@ -19,13 +20,38 @@ const PricingPage: React.FC = () => {
     }
     
     setLoading(true);
+    setShowReset(false);
     try {
       // 実際のリダイレクト処理
       await upgradeToPro();
     } catch (err: any) {
       console.error(err);
-      showError(err.message || '決済の準備中にエラーが発生しました。');
+      const msg = err.message || '';
+      
+      if (msg.includes('No such price')) {
+        showError('設定されている価格IDが無効です。Stripeダッシュボードで作成した商品の価格IDを .env の VITE_STRIPE_PRICE_ID に設定してください。');
+      } else {
+        showError(msg || '決済の準備中にエラーが発生しました。');
+      }
+      
+      // 特定のエラー（顧客ID不整合など）の場合にリセットボタンを表示
+      if (msg.includes('No such customer') || msg.includes('customer')) {
+          setShowReset(true);
+      }
       setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+        await resetStripeConnection();
+        showSuccess('Stripe 接続をリセットしました。もう一度お試しください。');
+        setShowReset(false);
+    } catch (err) {
+        showError('リセットに失敗しました。');
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -115,17 +141,34 @@ const PricingPage: React.FC = () => {
           </div>
 
           {!isPro ? (
-            <button 
-              onClick={handleUpgradeClick}
-              disabled={loading}
-              className={`w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 group ${loading ? 'opacity-70 cursor-wait' : ''}`}
-            >
-              {loading ? (
-                <>決済準備中...</>
-              ) : (
-                <>PROにアップグレード <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></>
+            <div className="space-y-4">
+              <button 
+                onClick={handleUpgradeClick}
+                disabled={loading}
+                className={`w-full py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black shadow-xl shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-2 group ${loading ? 'opacity-70 cursor-wait' : ''}`}
+              >
+                {loading ? (
+                  <>決済準備中...</>
+                ) : (
+                  <>PROにアップグレード <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" /></>
+                )}
+              </button>
+
+              {showReset && (
+                <div className="text-center animate-in fade-in slide-in-from-top-2">
+                  <p className="text-[10px] text-red-500 font-bold mb-2">
+                    Stripe 接続エラーが発生しました。接続情報をリセットして再試行してください。
+                  </p>
+                  <button 
+                    onClick={handleReset}
+                    disabled={loading}
+                    className="text-xs font-black text-gray-500 hover:text-blue-500 underline decoration-dotted transition-colors"
+                  >
+                    Stripe 接続をリセットする
+                  </button>
+                </div>
               )}
-            </button>
+            </div>
           ) : (
             <div className="text-center space-y-4">
               <div className="w-full py-4 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-black border border-blue-100 dark:border-blue-800">

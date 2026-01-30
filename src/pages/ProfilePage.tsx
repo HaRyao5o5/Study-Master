@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon, Award, Sparkles, Zap, Trophy, Crown, Flame, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getProfile } from '../lib/firebaseProfile';
+import { getEffectiveStreak } from '../utils/gamification';
 import { Profile } from '../types';
 import { ACHIEVEMENTS } from '../data/achievements';
 
@@ -33,6 +34,7 @@ const ProfilePage = () => {
     
     // State
     const [profile, setProfile] = useState<Profile | null>(null);
+    const [targetStats, setTargetStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showEditor, setShowEditor] = useState(false);
 
@@ -44,6 +46,7 @@ const ProfilePage = () => {
                 if (!isProfileLoading) {
                     if (myProfile) {
                         setProfile(myProfile);
+                        setTargetStats(userStats);
                     } else if (user) {
                         // User exists but no profile doc yet -> use default
                         setProfile({
@@ -51,6 +54,7 @@ const ProfilePage = () => {
                             name: user.displayName || 'No Name',
                             avatarId: 'avatar-1'
                         } as Profile);
+                        setTargetStats(userStats);
                         // Optional: auto-open editor
                         // setShowEditor(true); 
                     }
@@ -58,8 +62,15 @@ const ProfilePage = () => {
                 }
             } else if (uid) {
                 try {
-                    const data = await getProfile(uid);
-                    setProfile(data);
+                    const { getUserData } = await import('../lib/firebase');
+                    const [profileData, userData] = await Promise.all([
+                        getProfile(uid),
+                        getUserData(uid)
+                    ]);
+                    setProfile(profileData);
+                    if (userData && userData.userStats) {
+                        setTargetStats(userData.userStats);
+                    }
                 } catch (e) {
                     console.error(e);
                 } finally {
@@ -70,7 +81,7 @@ const ProfilePage = () => {
             }
         };
         load();
-    }, [uid, isOwnProfile, myProfile, isProfileLoading, user]);
+    }, [uid, isOwnProfile, myProfile, isProfileLoading, user, userStats]);
 
     const handleSaveProfile = async (data: any) => {
         if (!user) return;
@@ -242,13 +253,13 @@ const ProfilePage = () => {
                              <div className="grid grid-cols-2 gap-4">
                                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl text-center">
                                      <div className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                                         {userStats?.level || 1}
+                                         {targetStats?.level || 1}
                                      </div>
                                      <div className="text-xs font-bold text-gray-500">レベル</div>
                                  </div>
                                  <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl text-center">
                                      <div className="text-2xl font-black text-orange-600 dark:text-orange-400">
-                                         {userStats?.streak || 0}日
+                                         {targetStats ? getEffectiveStreak(targetStats) : 0}日
                                      </div>
                                      <div className="text-xs font-bold text-gray-500">連続日数</div>
                                  </div>
