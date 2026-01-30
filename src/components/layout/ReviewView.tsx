@@ -5,6 +5,7 @@ import { ArrowLeft, RefreshCw, Award, TrendingUp, Calendar } from 'lucide-react'
 import { useNavigate } from 'react-router-dom';
 import { Course, MasteredQuestions, Quiz } from '../../types';
 import { useApp } from '../../context/AppContext';
+import { usePlan } from '../../hooks/usePlan';
 import { isDue } from '../../utils/srs';
 
 interface ReviewViewProps {
@@ -40,6 +41,7 @@ interface QuizGroup {
 const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions, courses, onBack }) => {
   const navigate = useNavigate();
   const { reviews, updateReviewStatus, setMasteredQuestions, saveData } = useApp();
+  const { isAdmin } = usePlan();
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [showDebug, setShowDebug] = useState(false);
 
@@ -333,15 +335,17 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
         )}
       </div>
       
-      {/* Debug Toggle */}
-      <div className="text-center pb-8">
-          <button onClick={() => setShowDebug(!showDebug)} className="text-xs text-gray-400 underline">
-              {showDebug ? 'デバッグモードを閉じる' : '開発者用デバッグモード (SRS)'}
-          </button>
+      {/* Debug Toggle (管理者のみ表示) */}
+      {isAdmin && (
+        <div className="text-center pb-8">
+            <button onClick={() => setShowDebug(!showDebug)} className="text-xs text-gray-400 underline">
+                {showDebug ? 'デバッグモードを閉じる' : '開発者用デバッグモード (SRS)'}
+            </button>
 
-          {/* Debug Panel */}
-          {showDebug && <SRSDebugPanel reviews={reviews} updateReviewStatus={updateReviewStatus} />}
-      </div>
+            {/* Debug Panel */}
+            {showDebug && <SRSDebugPanel reviews={reviews} updateReviewStatus={updateReviewStatus} />}
+        </div>
+      )}
     </div>
   );
 };
