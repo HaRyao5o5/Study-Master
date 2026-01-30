@@ -12,8 +12,9 @@ export async function createCheckoutSession(uid: string, priceId: string) {
   const stripe = await stripePromise;
   if (!stripe) throw new Error('Stripe の初期化に失敗しました。');
 
-  // 1. users/{uid}/checkout_sessions にドキュメントを追加
-  const sessionsCollectionRef = collection(db, 'users', uid, 'checkout_sessions');
+  // 1. [環境変数から取得したコレクション]/[{uid}]/checkout_sessions にドキュメントを追加
+  const customersCollection = import.meta.env.VITE_STRIPE_CUSTOMERS_COLLECTION || 'customers';
+  const sessionsCollectionRef = collection(db, customersCollection, uid, 'checkout_sessions');
   const sessionDocRef = await addDoc(sessionsCollectionRef, {
     price: priceId, // Stripe ダッシュボードで作成した商品の価格ID
     success_url: window.location.origin + '/checkout-success',
@@ -24,7 +25,8 @@ export async function createCheckoutSession(uid: string, priceId: string) {
 
   // 2. 拡張機能が生成した URL が書き込まれるのを待機
   return new Promise<void>((resolve, reject) => {
-    const unsubscribe = onSnapshot(doc(db, 'users', uid, 'checkout_sessions', sessionDocRef.id), (snap) => {
+    const customersCollection = import.meta.env.VITE_STRIPE_CUSTOMERS_COLLECTION || 'customers';
+    const unsubscribe = onSnapshot(doc(db, customersCollection, uid, 'checkout_sessions', sessionDocRef.id), (snap) => {
       const data = snap.data();
       if (data) {
         const { error, url } = data;
