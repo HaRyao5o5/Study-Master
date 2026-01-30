@@ -6,6 +6,9 @@ import { useApp } from '../../context/AppContext';
 import { useToast } from '../../context/ToastContext';
 import { SUCCESS, CONFIRM } from '../../utils/errorMessages';
 import { Course } from '../../types';
+import { useTutorial } from '../../hooks/useTutorial';
+import { homePageSteps } from '../tutorial/tutorialSteps';
+import TutorialHelpButton from '../tutorial/TutorialHelpButton';
 
 interface FolderListViewProps {
   onSelectCourse: (course: Course) => void;
@@ -18,6 +21,9 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   const { showSuccess, showConfirm, showWarning, showError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAiModal, setShowAiModal] = React.useState(false);
+  
+  // ホーム画面のチュートリアル
+  const { startTutorial } = useTutorial('home', homePageSteps);
 
   const handleAiCourseGenerated = (newCourse: Course) => {
     saveData({ courses: [...courses, newCourse] });
@@ -82,7 +88,11 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"> {/* スマホでも2列表示に変更 */}
+    <div id="tutorial-course-list" className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6"> {/* スマホでも2列表示に変更 */}
+      {/* チュートリアルヘルプボタン */}
+      <div className="col-span-full flex justify-end mb-2">
+        <TutorialHelpButton onClick={startTutorial} />
+      </div>
       {courses.map((course, index) => (
         <div 
           key={course.id} 
@@ -169,6 +179,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
         style={{ animationDelay: `${courses.length * 50}ms` }}
       >
         <button 
+          id="tutorial-create-course-btn"
           onClick={onCreateCourse}
           className="flex-1 min-h-[100px] md:min-h-[140px] rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 flex flex-col items-center justify-center text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 group"
         >
@@ -180,6 +191,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
 
         <div className="flex gap-2 h-12 md:h-16">
           <button 
+            id="tutorial-ai-create-btn"
             onClick={() => setShowAiModal(true)}
             className="flex-1 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
           >
@@ -188,6 +200,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
           </button>
 
           <button 
+            id="tutorial-import-btn"
             onClick={() => fileInputRef.current?.click()}
             className="flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-green-600 hover:border-green-500 hover:shadow-md transition-all duration-300 gap-2 font-bold text-xs md:text-sm"
           >

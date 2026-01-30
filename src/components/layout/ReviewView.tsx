@@ -7,6 +7,9 @@ import { Course, MasteredQuestions, Quiz } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { usePlan } from '../../hooks/usePlan';
 import { isDue } from '../../utils/srs';
+import { useTutorial } from '../../hooks/useTutorial';
+import { reviewPageSteps } from '../tutorial/tutorialSteps';
+import TutorialHelpButton from '../tutorial/TutorialHelpButton';
 
 interface ReviewViewProps {
   wrongHistory: string[];
@@ -44,6 +47,9 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
   const { isAdmin } = usePlan();
   const [selectedCourse, setSelectedCourse] = useState<string>('all');
   const [showDebug, setShowDebug] = useState(false);
+  
+  // 復習リストページのチュートリアル
+  const { startTutorial } = useTutorial('review', reviewPageSteps);
 
   // Valid Question IDs cache (to exclude deleted/orphaned questions)
   const validQuestionIds = useMemo(() => {
@@ -190,13 +196,14 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
       {/* ヘッダー */}
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 border-b border-gray-200 dark:border-gray-600">
         <div className="flex items-center mb-4">
-          <button onClick={onBack} className="mr-4 text-white hover:text-blue-100">
+                  <button onClick={onBack} className="mr-4 text-white hover:text-blue-100">
             <ArrowLeft size={24} />
           </button>
-          <h2 className="text-2xl font-bold text-white flex items-center">
+          <h2 className="text-2xl font-bold text-white flex items-center flex-1">
             <RefreshCw size={28} className="mr-2" />
             復習リスト
           </h2>
+          <TutorialHelpButton onClick={startTutorial} className="bg-white/20 text-white hover:bg-white/30" />
         </div>
 
         {/* 進捗バー */}
@@ -217,7 +224,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
       </div>
 
       {/* SRS Dashboard */}
-      <div className="p-6 pb-0">
+      <div id="tutorial-srs-section" className="p-6 pb-0">
           <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden mb-6">
              <div className="absolute top-0 right-0 p-4 opacity-10">
                  <Calendar size={120} />
@@ -274,7 +281,7 @@ const ReviewView: React.FC<ReviewViewProps> = ({ wrongHistory, masteredQuestions
       )}
 
       {/* 復習リスト */}
-      <div className="p-6">
+      <div id="tutorial-weakness-section" className="p-6">
         {reviewItems.length > 0 ? (
             <>
             <div className="space-y-4">

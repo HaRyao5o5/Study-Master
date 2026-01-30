@@ -59,6 +59,7 @@ export function useAppData(): AppData {
   const lastSavedTime = useRef<number>(0);
   const lastCloudUpdateTime = useRef<number>(0);
   const isSaving = useRef<boolean>(false);
+  const pendingUpdates = useRef<Partial<AppData> | null>(null); // 保存中に来た更新を保持
 
   const { showError, showSuccess } = useToast();
 
@@ -333,14 +334,20 @@ export function useAppData(): AppData {
 
     isDirty.current = true;
 
-    // Wait for debounce or force save
-    // For simplicity in this migration, we just call save logic directly if forced or rely on effect?
-    // Actually, the original code might have had a debounce or just direct save.
-    // Let's implement direct save here for simplicity as per previous `saveToCloud` usage.
+    // If already saving, queue the update for later
+    if (isSaving.current) {
+      console.log("Save in progress, queuing update...", Object.keys(newData));
+      // Merge with existing pending updates
+      pendingUpdates.current = {
+        ...pendingUpdates.current,
+        ...newData,
+        // For nested objects like userStats, do a proper merge
+        userStats: newData.userStats || pendingUpdates.current?.userStats,
+        goals: newData.goals || pendingUpdates.current?.goals,
+      };
+      return;
+    }
     
-
-    // Use a local isSaving flag for this closure if needed, but the ref is better
-    if (isSaving.current) return;
     isSaving.current = true;
 
     try {
@@ -412,6 +419,15 @@ export function useAppData(): AppData {
         setSaveError(error);
     } finally {
         isSaving.current = false;
+        
+        // Process any pending updates that came in while we were saving
+        if (pendingUpdates.current) {
+            console.log("Processing pending updates...");
+            const pending = pendingUpdates.current;
+            pendingUpdates.current = null;
+            // Recursively call saveData with the pending updates
+            saveData(pending);
+        }
     }
   };
   

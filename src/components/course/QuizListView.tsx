@@ -7,6 +7,9 @@ import GenerateQuizModal from './GenerateQuizModal';
 import { useToast } from '../../context/ToastContext';
 import { SUCCESS } from '../../utils/errorMessages';
 import { Course, Quiz } from '../../types';
+import { useTutorial } from '../../hooks/useTutorial';
+import { coursePageSteps } from '../tutorial/tutorialSteps';
+import TutorialHelpButton from '../tutorial/TutorialHelpButton';
 
 interface QuizListViewProps {
   course: Course;
@@ -25,6 +28,9 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { showSuccess } = useToast();
+  
+  // 科目詳細ページのチュートリアル
+  const { startTutorial } = useTutorial('course', coursePageSteps);
 
   const allQuestions = useMemo(() => {
     return course.quizzes.flatMap(q => q.questions);
@@ -100,6 +106,10 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
 
   return (
     <div className="space-y-6">
+      {/* チュートリアルヘルプボタン */}
+      <div className="flex justify-end">
+        <TutorialHelpButton onClick={startTutorial} />
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* 実力診断テスト */}
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group animate-pop-in hover:shadow-2xl transition-all duration-300">
@@ -151,7 +161,7 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
         </div>
 
         {/* 弱点克服 */}
-        <div className="bg-gradient-to-br from-orange-400 to-red-500 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group animate-pop-in delay-100 hover:shadow-2xl transition-all duration-300">
+        <div id="tutorial-review-btn" className="bg-gradient-to-br from-orange-400 to-red-500 rounded-xl p-6 text-white shadow-lg relative overflow-hidden group animate-pop-in delay-100 hover:shadow-2xl transition-all duration-300">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
             <Brain size={100} />
           </div>
@@ -168,7 +178,7 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
       </div>
 
       {/* 問題セット一覧 */}
-      <div>
+      <div id="tutorial-quiz-list">
         <div className="flex justify-between items-center mb-4 animate-fade-in delay-200">
           <h3 className="font-bold text-gray-700 dark:text-gray-300 flex items-center">
             <Layers size={20} className="mr-2" /> 問題セット一覧
@@ -191,6 +201,7 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
             </button>
 
             <button 
+              id="tutorial-create-quiz-btn"
               onClick={onCreateQuiz}
               className="glass glass-hover text-sm text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg font-bold flex items-center active:scale-95"
             >

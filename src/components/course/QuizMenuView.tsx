@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { Settings, Shuffle, ImageIcon, Type, CheckSquare, Play, Trash2, Edit3, Lock, Zap, CreditCard as Cards } from 'lucide-react';
 import { Quiz } from '../../types';
+import { useTutorial } from '../../hooks/useTutorial';
+import { quizMenuPageSteps } from '../tutorial/tutorialSteps';
+import TutorialHelpButton from '../tutorial/TutorialHelpButton';
 
 interface QuizMenuViewProps {
   quiz: Quiz;
@@ -17,16 +20,22 @@ const QuizMenuView: React.FC<QuizMenuViewProps> = ({ quiz, onStart, isReviewMode
   const [shuffleOptions, setShuffleOptions] = useState(false);
   const [immediateFeedback, setImmediateFeedback] = useState(false);
   const isMock = (quiz as any).isMock; // Assuming isMock might be added dynamically or missing from base interface
+  
+  // クイズメニューページのチュートリアル
+  const { startTutorial } = useTutorial('quiz-menu', quizMenuPageSteps);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="bg-gray-50 dark:bg-gray-700 p-6 border-b border-gray-200 dark:border-gray-600 flex justify-between items-start">
         <div><h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">{quiz.title}</h2><p className="text-gray-600 dark:text-gray-300">{quiz.description}</p></div>
-        {!isMock && !isReviewMode && onEdit && (<button onClick={onEdit} className="p-2 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-200 rounded border hover:bg-gray-50 shadow-sm"><Edit3 size={20} /></button>)}
+        <div className="flex items-center gap-2">
+          <TutorialHelpButton onClick={startTutorial} />
+          {!isMock && !isReviewMode && onEdit && (<button id="tutorial-edit-btn" onClick={onEdit} className="p-2 bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-200 rounded border hover:bg-gray-50 shadow-sm"><Edit3 size={20} /></button>)}
+        </div>
       </div>
       <div className="p-6">
         {!isMock && (
-          <div className="mb-8">
+          <div id="tutorial-quiz-options" className="mb-8">
             <h3 className="font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center"><Settings size={18} className="mr-2" /> 設定</h3>
             <div className="space-y-2">
               <label className="flex items-center space-x-3 cursor-pointer p-3 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -64,13 +73,14 @@ const QuizMenuView: React.FC<QuizMenuViewProps> = ({ quiz, onStart, isReviewMode
           </div>
         )}
         <div className="flex flex-col gap-3">
-          <button onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions, isMock ? false : immediateFeedback)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={quiz.questions.length === 0}>
+          <button id="tutorial-start-btn" onClick={() => onStart(isMock ? false : randomize, isMock ? true : shuffleOptions, isMock ? false : immediateFeedback)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md transition-transform transform active:scale-95 flex items-center justify-center text-lg disabled:opacity-50 disabled:cursor-not-allowed" disabled={quiz.questions.length === 0}>
             <Play size={24} className="mr-2 fill-current" />
             {quiz.questions.length > 0 ? "テストを開始する" : "問題がありません"}
           </button>
           
           {quiz.questions.length > 0 && onStartFlashcards && (
             <button 
+              id="tutorial-flashcard-btn"
               onClick={onStartFlashcards}
               className="w-full bg-white dark:bg-gray-800 border-2 border-blue-100 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 font-bold py-4 rounded-xl shadow-sm transition-all hover:bg-blue-50 dark:hover:bg-blue-900/20 active:scale-95 flex items-center justify-center text-lg"
             >

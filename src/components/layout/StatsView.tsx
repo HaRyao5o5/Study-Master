@@ -6,6 +6,9 @@ import XPTrendChart from '../analytics/XPTrendChart';
 import StudyHeatmap from '../analytics/StudyHeatmap';
 import MasteryBarChart from '../analytics/MasteryBarChart';
 import SRSForecastChart from '../analytics/SRSForecastChart';
+import { useTutorial } from '../../hooks/useTutorial';
+import { statsPageSteps } from '../tutorial/tutorialSteps';
+import TutorialHelpButton from '../tutorial/TutorialHelpButton';
 
 interface StatsViewProps {
   userStats: UserStats;
@@ -37,6 +40,9 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
   const { level, currentXp, xpForNextLevel } = getLevelInfo(userStats.totalXp);
   const progressPercent = Math.min(100, Math.round((currentXp / xpForNextLevel) * 100));
   const [selectedTitle, setSelectedTitle] = useState<TitleInfo | null>(null);
+  
+  // 統計画面のチュートリアル
+  const { startTutorial } = useTutorial('stats', statsPageSteps);
 
   // Goal calculation
   const dailyProgress = goals?.dailyProgress || 0;
@@ -85,7 +91,8 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
         <button onClick={onBack} className="mr-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
           <ArrowLeft size={24} className="text-gray-600 dark:text-gray-300" />
         </button>
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">学習分析 & プレイヤーデータ</h2>
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex-1">学習分析 & プレイヤーデータ</h2>
+        <TutorialHelpButton onClick={startTutorial} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -113,7 +120,7 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
         {/* 左カラム: レベルとグラフ */}
         <div className="md:col-span-2 space-y-6">
           {/* ① メインステータスカード */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+          <div id="tutorial-level-card" className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
             {/* ... Existing Level card content (adapted) ... */}
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity duration-500">
               <Trophy size={140} className="text-yellow-500 transform rotate-12" />
@@ -193,7 +200,7 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
           </div>
 
           {/* ③ 称号コレクション (Full Width inside left col or bottom) */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
+          <div id="tutorial-title-collection" className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700">
             <div className="flex items-center mb-6">
               <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg mr-3">
                 <Medal size={20} className="text-purple-500" />
@@ -241,7 +248,7 @@ const StatsView: React.FC<StatsViewProps> = ({ userStats, errorStats, courses, m
         {/* 右カラム: 弱点分析とマスター度 */}
         <div className="space-y-6">
           {/* ② 弱点分析カード */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 flex flex-col">
+          <div id="tutorial-weakness-card" className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-6 border border-gray-100 dark:border-gray-700 flex flex-col">
             <div className="flex items-center mb-4">
               <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg mr-3">
                 <AlertTriangle size={20} className="text-red-500" />
