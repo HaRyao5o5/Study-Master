@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { generateId, checkAnswer, toLocalISOString } from '../utils/helpers';
 import { getLevelInfo } from '../utils/gamification';
+import { logActivity } from '../lib/social';
 import { User, Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions } from '../types';
 import { AppData } from './useAppData'; // Import AppData type if needed, or just define subset
 
@@ -327,6 +328,15 @@ export function useGameLogic({
 
       if (leveledUp) {
         showSuccess(`🎉 レベル${newLevel}にアップ！`);
+        // Log level up activity for timeline
+        if (user) {
+          logActivity(user.uid, 'levelUp', { newLevel }).catch(e => console.error('Failed to log levelUp activity:', e));
+        }
+      }
+      
+      // Log streak activity for timeline (only when streak increases)
+      if (streakUpdated && user) {
+        logActivity(user.uid, 'streak', { streak: finalStreak }).catch(e => console.error('Failed to log streak activity:', e));
       }
     }
 

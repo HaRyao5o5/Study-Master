@@ -82,8 +82,33 @@ export interface UserGoals {
   streak?: number;
 }
 
+// ========================================
+// ソーシャル機能
+// ========================================
+export interface FollowRelation {
+  uid: string;
+  followedAt: number; // Timestamp
+}
 
+export type ActivityType = 'streak' | 'levelUp' | 'badge';
 
+export interface Activity {
+  id: string;
+  uid: string; // 誰のアクティビティか
+  type: ActivityType;
+  detail: {
+    streak?: number;
+    newLevel?: number;
+    badgeId?: string;
+    badgeName?: string;
+  };
+  createdAt: number; // Timestamp
+}
+
+export interface SocialStats {
+  followingCount: number;
+  followerCount: number;
+}
 export type MasteredQuestions = Record<string, Record<string, boolean>>; // courseId -> questionId -> true
 
 export interface UserAnswer {

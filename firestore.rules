@@ -52,6 +52,25 @@ service cloud.firestore {
       match /payments/{id} {
         allow read: if request.auth != null && request.auth.uid == userId;
       }
+
+      // ========================================
+      // ソーシャル機能（フォロー関係）
+      // ========================================
+      // フォロー中のユーザー
+      match /following/{targetUid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+      // フォロワー
+      match /followers/{followerUid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == followerUid;
+      }
+      // アクティビティ（タイムライン用）
+      match /activities/{activityId} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Stripe 拡張機能: グローバル設定（サブスクリプション商品など）

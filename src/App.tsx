@@ -37,6 +37,7 @@ import MarketplacePage from './pages/MarketplacePage';
 import PricingPage from './pages/PricingPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import LegalNoticePage from './pages/LegalNoticePage';
+import TimelinePage from './pages/TimelinePage';
 
 
 import { getLevelInfo, getUnlockedTitles } from './utils/gamification.ts';
@@ -341,6 +342,9 @@ export default function App() {
         } />
         <Route path="/profile/:uid" element={
             <ProfilePage />
+        } />
+        <Route path="/timeline" element={
+            <TimelinePage />
         } />
         
         <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />

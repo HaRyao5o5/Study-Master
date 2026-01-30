@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon, Award, Sparkles, Zap, Trophy, Crown, Flame, Timer, BookOpen, Library, Globe, Download, LucideIcon } from 'lucide-react';
+import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon, Award, Sparkles, Zap, Trophy, Crown, Flame, Timer, BookOpen, Library, Globe, Download, LucideIcon, UserPlus, UserCheck } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getProfile } from '../lib/firebaseProfile';
 import { getEffectiveStreak } from '../utils/gamification';
-import { Profile } from '../types';
+import { followUser, unfollowUser, isFollowing, getSocialStats } from '../lib/social';
+import { Profile, SocialStats } from '../types';
 import { ACHIEVEMENTS } from '../data/achievements';
 
 const iconMap: Record<string, LucideIcon> = {
@@ -37,6 +38,11 @@ const ProfilePage = () => {
     const [targetStats, setTargetStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [showEditor, setShowEditor] = useState(false);
+    
+    // Social State
+    const [isFollowingUser, setIsFollowingUser] = useState(false);
+    const [socialStats, setSocialStats] = useState<SocialStats>({ followingCount: 0, followerCount: 0 });
+    const [followLoading, setFollowLoading] = useState(false);
 
     // Load profile logic
     useEffect(() => {
@@ -82,6 +88,49 @@ const ProfilePage = () => {
         };
         load();
     }, [uid, isOwnProfile, myProfile, isProfileLoading, user, userStats]);
+
+    // Load social stats and follow status
+    useEffect(() => {
+        const loadSocial = async () => {
+            const targetUid = uid || user?.uid;
+            if (!targetUid) return;
+            
+            try {
+                const stats = await getSocialStats(targetUid);
+                setSocialStats(stats);
+                
+                // Check if current user is following this profile
+                if (user && !isOwnProfile && uid) {
+                    const following = await isFollowing(user.uid, uid);
+                    setIsFollowingUser(following);
+                }
+            } catch (e) {
+                console.error('Failed to load social stats:', e);
+            }
+        };
+        loadSocial();
+    }, [uid, user, isOwnProfile]);
+
+    const handleFollowToggle = async () => {
+        if (!user || !uid || followLoading) return;
+        
+        setFollowLoading(true);
+        try {
+            if (isFollowingUser) {
+                await unfollowUser(user.uid, uid);
+                setIsFollowingUser(false);
+                setSocialStats(prev => ({ ...prev, followerCount: Math.max(0, prev.followerCount - 1) }));
+            } else {
+                await followUser(user.uid, uid);
+                setIsFollowingUser(true);
+                setSocialStats(prev => ({ ...prev, followerCount: prev.followerCount + 1 }));
+            }
+        } catch (e) {
+            console.error('Failed to toggle follow:', e);
+        } finally {
+            setFollowLoading(false);
+        }
+    };
 
     const handleSaveProfile = async (data: any) => {
         if (!user) return;
@@ -193,13 +242,31 @@ const ProfilePage = () => {
                     </div>
 
                     {/* Actions */}
-                    {isOwnProfile && (
+                    {isOwnProfile ? (
                         <div className="md:pb-4 self-end md:self-auto w-full md:w-auto mt-4 md:mt-0">
                             <button
                                 onClick={() => setShowEditor(true)}
                                 className="w-full md:w-auto px-6 py-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-bold rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
                             >
                                 <Edit3 size={18} /> プロフィールを編集
+                            </button>
+                        </div>
+                    ) : user && (
+                        <div className="md:pb-4 self-end md:self-auto w-full md:w-auto mt-4 md:mt-0">
+                            <button
+                                onClick={handleFollowToggle}
+                                disabled={followLoading}
+                                className={`w-full md:w-auto px-6 py-2 font-bold rounded-full flex items-center justify-center gap-2 transition-all ${
+                                    isFollowingUser
+                                        ? 'bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-red-50 hover:border-red-300 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:border-red-700'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                                } ${followLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isFollowingUser ? (
+                                    <><UserCheck size={18} /> フォロー中</>
+                                ) : (
+                                    <><UserPlus size={18} /> フォローする</>
+                                )}
                             </button>
                         </div>
                     )}
@@ -243,6 +310,25 @@ const ProfilePage = () => {
 
                     {/* Sidebar: Stats/Links */}
                     <div className="space-y-6 animate-slide-up delay-100">
+                        {/* Social Stats */}
+                        <div className="glass p-6 rounded-2xl">
+                            <div className="flex items-center justify-around text-center">
+                                <div>
+                                    <div className="text-2xl font-black text-gray-800 dark:text-white">
+                                        {socialStats.followingCount}
+                                    </div>
+                                    <div className="text-xs font-bold text-gray-500">フォロー中</div>
+                                </div>
+                                <div className="w-px h-10 bg-gray-200 dark:bg-gray-700"></div>
+                                <div>
+                                    <div className="text-2xl font-black text-gray-800 dark:text-white">
+                                        {socialStats.followerCount}
+                                    </div>
+                                    <div className="text-xs font-bold text-gray-500">フォロワー</div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div className="glass p-6 rounded-2xl">
                              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-4">
                                 <Calendar size={18} />

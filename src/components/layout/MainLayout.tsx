@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe, Zap } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe, Zap, Users } from 'lucide-react';
 
 import { useApp } from '../../context/AppContext';
 import AIAdvisor from '../ai/AIAdvisor';
@@ -195,6 +195,15 @@ export default function MainLayout({
                 </button>
                 
                 <button 
+                  id="tutorial-timeline-btn"
+                  onClick={() => navigate('/timeline')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-purple-500 dark:hover:text-purple-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
+                  title="タイムライン"
+                >
+                  <Users size={20} />
+                </button>
+                
+                <button 
                   id="tutorial-changelog-btn"
                   onClick={() => setShowChangelog(true)} 
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700" 
@@ -323,6 +332,7 @@ export default function MainLayout({
                   badge={wrongHistory.length > 0 ? wrongHistory.length : null}
                 />
                 <MobileMenuItem icon={Trophy} label="成績ランキング" onClick={() => navigate('/ranking')} />
+                <MobileMenuItem icon={Users} label="タイムライン" onClick={() => navigate('/timeline')} />
                 <MobileMenuItem icon={Bell} label="お知らせ" onClick={() => setShowChangelog(true)} />
                 <MobileMenuItem 
                   icon={isPro ? Sparkles : Zap} 
