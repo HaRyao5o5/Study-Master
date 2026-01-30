@@ -44,7 +44,8 @@ export function usePlan() {
         return;
     }
 
-    const subsRef = collection(db, 'users', user.uid, 'subscriptions');
+    const customersCollection = import.meta.env.VITE_STRIPE_CUSTOMERS_COLLECTION || 'customers';
+    const subsRef = collection(db, customersCollection, user.uid, 'subscriptions');
     // アクティブまたはトライアル中のサブスクリプションを検索
     const q = query(
         subsRef, 

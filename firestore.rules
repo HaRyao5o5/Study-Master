@@ -54,11 +54,37 @@ service cloud.firestore {
       }
     }
 
-    // Stripe 拡張機能のグローバル設定用（もし使う場合）
+    // Stripe 拡張機能: グローバル設定（サブスクリプション商品など）
     match /products/{id} {
       allow read: if true;
       match /prices/{id} {
         allow read: if true;
+      }
+    }
+
+    // Stripe 拡張機能: 顧客データ（環境変数に合わせて追加）
+    match /customers/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+      match /payments/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    match /customers_test/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /checkout_sessions/{id} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /subscriptions/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
+      match /payments/{id} {
+        allow read: if request.auth != null && request.auth.uid == userId;
       }
     }
     
