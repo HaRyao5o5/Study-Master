@@ -17,6 +17,7 @@
     "driver.js": "^1.4.0",
     "firebase": "^12.8.0",
     "lucide-react": "^0.562.0",
+    "next-sitemap": "^4.2.3",
     "react": "^19.2.0",
     "react-confetti": "^6.4.0",
     "react-dom": "^19.2.0",
@@ -45,5 +46,6 @@
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.17"
-  }
+  },
+  "postbuild": "next-sitemap"
 }
