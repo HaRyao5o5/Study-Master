@@ -1,0 +1,22 @@
+# Study Master - robots.txt
+# https://study-master-stms.vercel.app/
+
+User-agent: *
+Allow: /
+Allow: /marketplace
+Allow: /pricing
+Allow: /legal
+
+# ユーザー固有のページはクロール不要
+Disallow: /profile
+Disallow: /quiz/
+Disallow: /flashcard/
+Disallow: /game/
+Disallow: /result/
+Disallow: /create
+Disallow: /edit/
+Disallow: /checkout-success
+Disallow: /timeline
+
+# サイトマップの場所
+Sitemap: https://study-master-stms.vercel.app/sitemap.xml
