@@ -10,6 +10,9 @@ import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewI
 import { useToast } from '../context/ToastContext.tsx';
 import { checkAchievements } from '../utils/achievementSystem';
 import { ACHIEVEMENTS } from '../data/achievements';
+import { withRetry, isRetryableFirestoreError } from '../utils/retry';
+import { getOnlineStatus } from './useOnlineStatus';
+import { ERROR, getFirestoreErrorMessage } from '../utils/errorMessages';
 
 export interface AppData {
   user: User | null;
@@ -373,6 +376,25 @@ export function useAppData(): AppData {
         if (user && user.uid) {
              console.log("Saving data to cloud...", Object.keys(newData)); // Debug log
              
+             // オフラインチェック
+             if (!getOnlineStatus()) {
+               console.log("Offline detected, saving to localStorage as backup...");
+               const backupData = {
+                 courses: newData.courses || courses,
+                 userStats: newData.userStats || userStats,
+                 wrongHistory: newData.wrongHistory || wrongHistory,
+                 goals: newData.goals || goals,
+                 masteredQuestions: newData.masteredQuestions || masteredQuestions,
+               };
+               localStorage.setItem('study_master_pending_sync', JSON.stringify({
+                 data: backupData,
+                 timestamp: Date.now(),
+                 uid: user.uid
+               }));
+               showError(ERROR.OFFLINE_MODE);
+               return;
+             }
+             
              // Helper to recursively remove undefined values which Firebase doesn't support
              const removeUndefined = (obj: any): any => {
                 if (Array.isArray(obj)) return obj.map(removeUndefined);
@@ -400,7 +422,21 @@ export function useAppData(): AppData {
              const dataToSave = removeUndefined(rawDataToSave);
 
              const now = new Date();
-             await saveToCloud(user.uid, dataToSave, now);
+             
+             // 再試行ロジック付きで保存
+             await withRetry(
+               () => saveToCloud(user.uid, dataToSave, now),
+               {
+                 maxRetries: 3,
+                 delayMs: 1000,
+                 backoff: true,
+                 shouldRetry: isRetryableFirestoreError,
+                 onRetry: (attempt, error) => {
+                   console.log(`Save retry attempt ${attempt}:`, error.message);
+                 }
+               }
+             );
+             
              console.log("Save successful!");
              
              lastSavedTime.current = now.getTime();
@@ -433,9 +469,15 @@ export function useAppData(): AppData {
                 console.error("Failed to save to localStorage", e);
             }
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Save Error:", error);
         setSaveError(error);
+        
+        // ユーザーフレンドリーなエラーメッセージを表示
+        const friendlyMessage = error?.code 
+          ? getFirestoreErrorMessage(error)
+          : ERROR.SAVE_RETRY_FAILED;
+        showError(friendlyMessage);
     } finally {
         isSaving.current = false;
         

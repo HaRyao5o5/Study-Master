@@ -178,6 +178,9 @@ export const ERROR = {
   IMAGE_TOO_LARGE: '画像サイズが大きすぎます。読み込みが遅くなる可能性があります。',
   MIN_OPTIONS_REQUIRED: '選択肢は最低2つ必要です',
   SAVE_FAILED: 'データの保存に失敗しました',
+  SAVE_RETRY_FAILED: '保存に失敗しました。インターネット接続を確認してください。',
+  OFFLINE_MODE: 'オフラインです。オンライン復帰時に自動保存されます。',
+  SAVE_RETRYING: (attempt: number) => `保存を再試行中... (${attempt}回目)`,
 };
 
 /**
