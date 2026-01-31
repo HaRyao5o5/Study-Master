@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Target, TrendingUp, CheckCircle, Trophy, Flame } from 'lucide-react';
+import { X, Target, CheckCircle, Trophy, Flame } from 'lucide-react';
 import { UserGoals } from '../../types';
 
 interface GoalDetailModalProps {

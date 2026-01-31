@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 
 import { ArrowLeft, RefreshCw, Award, TrendingUp, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Course, MasteredQuestions, Quiz } from '../../types';
+import { Course, MasteredQuestions } from '../../types';
 import { useApp } from '../../context/AppContext';
 import { usePlan } from '../../hooks/usePlan';
 import { isDue } from '../../utils/srs';

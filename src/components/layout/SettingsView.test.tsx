@@ -38,6 +38,8 @@ describe('SettingsView', () => {
     onImportData: vi.fn(),
     onResetStats: vi.fn(),
     onDebugYesterday: vi.fn(),
+    onDebugBroken: vi.fn(),
+    onDebugResetToday: vi.fn(),
     user: { displayName: 'Test User', email: 'test@example.com', uid: '123' } as any,
     onLogin: vi.fn(),
     onLogout: vi.fn(),
