@@ -22,6 +22,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onEdit, o
             className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-all"
           >
             <div className="flex justify-between items-start gap-4">
+              {/* 問題部分 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-bold text-blue-600 dark:text-blue-400">Q{idx + 1}.</span>
@@ -35,6 +36,22 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onEdit, o
                 </div>
                 <p className="text-gray-700 dark:text-gray-300 line-clamp-2">{q.text}</p>
               </div>
+              
+              {/* 答え部分 */}
+              <div className="flex-1 min-w-0 border-l border-gray-200 dark:border-gray-600 pl-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-bold text-green-600 dark:text-green-400">A.</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                    正解
+                  </span>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 line-clamp-2">
+                  {Array.isArray(q.correctAnswer) 
+                    ? q.correctAnswer.join(', ') 
+                    : q.correctAnswer}
+                </p>
+              </div>
+
               <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => onEdit(q)}

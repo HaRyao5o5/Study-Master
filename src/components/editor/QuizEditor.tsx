@@ -1,6 +1,6 @@
 // src/components/editor/QuizEditor.tsx
-import React, { useState } from 'react';
-import { Save, X, Plus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Save, X, Plus, ChevronDown } from 'lucide-react';
 import { generateId } from '../../utils/helpers';
 import { useToast } from '../../context/ToastContext';
 import { CONFIRM } from '../../utils/errorMessages';
@@ -23,8 +23,40 @@ const QuizEditor: React.FC<QuizEditorProps> = ({ quiz, onSave, onCancel }) => {
   const [description, setDescription] = useState(quiz.description || '');
   const [questions, setQuestions] = useState<Question[]>(quiz.questions || []);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
   
   const { showError, showConfirm } = useToast();
+
+  // スクロール位置を監視してボタンの表示/非表示を切り替え
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // 一番下から200px以内の場合は非表示
+      const isNearBottom = scrollTop + windowHeight >= documentHeight - 200;
+      // スクロールが必要なほどコンテンツがある場合のみ表示
+      const hasEnoughContent = documentHeight > windowHeight + 300;
+      
+      setShowScrollButton(hasEnoughContent && !isNearBottom);
+    };
+
+    handleScroll(); // 初期チェック
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
+
+  // 一番下にスクロール
+  const scrollToBottom = () => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // クイズ保存
   const handleSave = () => {
@@ -141,6 +173,20 @@ const QuizEditor: React.FC<QuizEditorProps> = ({ quiz, onSave, onCancel }) => {
         <Plus size={20} />
         問題を追加
       </button>
+
+      {/* 一番下にスクロールボタン（画面下部中央に固定、スクロール位置に応じて表示） */}
+      {showScrollButton && questions.length >= 5 && (
+        <button
+          onClick={scrollToBottom}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-white/20 dark:bg-gray-800/40 backdrop-blur-md border border-white/30 dark:border-gray-600/30 text-gray-700 dark:text-gray-200 rounded-full shadow-lg hover:shadow-xl hover:bg-white/30 dark:hover:bg-gray-700/50 transition-all flex items-center gap-2 z-50"
+          title="問題追加ボタンへスクロール"
+        >
+          <ChevronDown size={20} />
+          <span className="text-sm font-medium">下へスクロール</span>
+        </button>
+      )}
+      {/* スクロール用の参照要素 */}
+      <div ref={bottomRef} />
     </div>
   );
 };

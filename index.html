@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="dark">
   <head>
     <meta charset="UTF-8" />
 
@@ -39,12 +39,14 @@
     <meta name="twitter:image" content="https://study-master-stms.vercel.app/og-image.png" />
     
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#3B82F6" />
+    <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="application-name" content="Study Master" />
     
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Study Master" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     
@@ -75,8 +77,26 @@
     }
     </script>
   </head>
-  <body>
+  <body class="bg-gray-50 dark:bg-gray-900">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- テーマの初期化（フラッシュ防止） -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = theme === 'dark' || (!theme && prefersDark);
+        
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.documentElement.style.colorScheme = 'dark';
+          document.body.style.backgroundColor = '#111827';
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = 'light';
+          document.body.style.backgroundColor = '#F9FAFB';
+        }
+      })();
+    </script>
   </body>
 </html>
