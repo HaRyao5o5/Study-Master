@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { CheckCircle, XCircle, ArrowRight, Volume2, Check, BrainCircuit } from 'lucide-react';
 import { playSound, speakText } from '../../utils/sound';
 import { Quiz, Question, UserAnswer } from '../../types';
@@ -19,24 +19,135 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedMultiple, setSelectedMultiple] = useState<string[]>([]); // 複数選択用
   const [inputValue, setInputValue] = useState(''); // 記述式用
-  const [startTime] = useState(Date.now());
   const [questions, setQuestions] = useState<Question[]>([]);
   const [showAIModal, setShowAIModal] = useState(false);
+  
+  // useRefでstartTimeを保持（再レンダリング時にリセットされない）
+  const startTimeRef = useRef<number>(Date.now());
+  // セッションキーをrefで保持
+  const sessionKeyRef = useRef<string>(`quiz_session_${quiz?.id || 'unknown'}_${Date.now()}`);
+  // 初期化フラグ
+  const isInitializedRef = useRef(false);
 
+  // セッションデータをsessionStorageに保存する関数
+  const saveSessionData = useCallback((answers: UserAnswer[], questionIndex: number) => {
+    try {
+      const sessionData = {
+        userAnswers: answers,
+        currentQuestionIndex: questionIndex,
+        startTime: startTimeRef.current,
+        quizId: quiz?.id,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem(sessionKeyRef.current, JSON.stringify(sessionData));
+    } catch (e) {
+      console.warn('Failed to save quiz session data:', e);
+    }
+  }, [quiz?.id]);
+
+  // セッションデータを復元する関数
+  const restoreSessionData = useCallback(() => {
+    try {
+      // 既存のセッションを探す
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith(`quiz_session_${quiz?.id}_`)) {
+          const storedData = sessionStorage.getItem(key);
+          if (storedData) {
+            const sessionData = JSON.parse(storedData);
+            // 10分以内のセッションのみ復元
+            if (Date.now() - sessionData.timestamp < 10 * 60 * 1000 && sessionData.quizId === quiz?.id) {
+              return {
+                userAnswers: sessionData.userAnswers || [],
+                currentQuestionIndex: sessionData.currentQuestionIndex || 0,
+                startTime: sessionData.startTime || Date.now(),
+                sessionKey: key
+              };
+            } else {
+              // 古いセッションは削除
+              sessionStorage.removeItem(key);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to restore quiz session data:', e);
+    }
+    return null;
+  }, [quiz?.id]);
+
+  // セッションをクリアする関数
+  const clearSessionData = useCallback(() => {
+    try {
+      sessionStorage.removeItem(sessionKeyRef.current);
+      // 同じクイズの古いセッションも削除
+      for (let i = sessionStorage.length - 1; i >= 0; i--) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith(`quiz_session_${quiz?.id}_`)) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to clear quiz session data:', e);
+    }
+  }, [quiz?.id]);
+
+  // 初期化とセッション復元
   useEffect(() => {
-    if (!quiz) return;
+    if (!quiz || isInitializedRef.current) return;
+    
     let q = [...quiz.questions];
     if (isRandom) {
       q = q.sort(() => Math.random() - 0.5);
     }
-    // Deep copy to not mutate original if we needed to shuffle options, 
-    // but shuffleOptions logic is usually visual or temporary. 
-    // However, if we want to shuffle options, we should do it per question on render or here.
-    // The original code didn't seem to implement shuffleOptions logic inside useEffect, 
-    // maybe it was missed or handled in render. 
-    // Ah, I see getOptions() function in original code.
     setQuestions(q);
-  }, [quiz, isRandom]);
+
+    // 既存セッションの復元を試みる
+    const restoredSession = restoreSessionData();
+    if (restoredSession && restoredSession.userAnswers.length > 0) {
+      setUserAnswers(restoredSession.userAnswers);
+      setCurrentQuestionIndex(restoredSession.currentQuestionIndex);
+      startTimeRef.current = restoredSession.startTime;
+      sessionKeyRef.current = restoredSession.sessionKey;
+      console.log('Quiz session restored:', restoredSession.userAnswers.length, 'answers');
+    } else {
+      // 新しいセッション
+      startTimeRef.current = Date.now();
+      sessionKeyRef.current = `quiz_session_${quiz?.id || 'unknown'}_${Date.now()}`;
+    }
+    
+    isInitializedRef.current = true;
+  }, [quiz, isRandom, restoreSessionData]);
+
+  // visibilitychangeイベントでタブ切り替え時にセッションを保存
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // タブが非アクティブになったらセッションを保存
+        saveSessionData(userAnswers, currentQuestionIndex);
+      }
+    };
+
+    // beforeunloadイベントでページを離れる前にセッションを保存
+    const handleBeforeUnload = () => {
+      saveSessionData(userAnswers, currentQuestionIndex);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [userAnswers, currentQuestionIndex, saveSessionData]);
+
+  // 回答が追加されたらセッションを保存
+  useEffect(() => {
+    if (userAnswers.length > 0) {
+      saveSessionData(userAnswers, currentQuestionIndex);
+    }
+  }, [userAnswers, currentQuestionIndex, saveSessionData]);
 
   // 問題が変わったらリセット
   useEffect(() => {
@@ -215,7 +326,9 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
       const endTime = Date.now();
-      const totalTime = (endTime - startTime) / 1000;
+      const totalTime = (endTime - startTimeRef.current) / 1000;
+      // クイズ完了時にセッションデータをクリア
+      clearSessionData();
       onFinish(answers, totalTime);
     }
   };
