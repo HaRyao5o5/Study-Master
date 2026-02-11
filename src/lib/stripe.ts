@@ -1,15 +1,25 @@
 // src/lib/stripe.ts
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, type Stripe } from '@stripe/stripe-js';
 import { collection, addDoc, onSnapshot, doc } from 'firebase/firestore';
 import { db } from './firebase';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+// 遅延読み込み: Stripe.js は実際に必要になった時のみ読み込む
+// モジュールレベルで loadStripe を呼ぶと、全ページで Stripe ビーコン (r.stripe.com/b) が
+// 発火し、ad blocker 等で FetchError が発生する問題を回避
+let stripePromise: Promise<Stripe | null> | null = null;
+
+function getStripe() {
+  if (!stripePromise) {
+    stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+  }
+  return stripePromise;
+}
 
 /**
  * Stripe Checkout セッションを作成し、決済ページへリダイレクトする
  */
 export async function createCheckoutSession(uid: string, priceId: string) {
-  const stripe = await stripePromise;
+  const stripe = await getStripe();
   if (!stripe) throw new Error('Stripe の初期化に失敗しました。');
 
   // 1. [環境変数から取得したコレクション]/[{uid}]/checkout_sessions にドキュメントを追加

@@ -165,6 +165,10 @@ export const SUCCESS = {
   COURSE_SAVED: 'コースを保存しました',
   QUIZ_SAVED: 'クイズを保存しました',
   STATS_RESET: 'ステータスをリセットしました。',
+  TRASH_MOVED: (name: string) => `「${name}」をゴミ箱に移動しました`,
+  TRASH_RESTORED: (name: string) => `「${name}」を復元しました`,
+  TRASH_DELETED: '完全に削除しました',
+  TRASH_EMPTIED: 'ゴミ箱を空にしました',
 };
 
 /**
@@ -181,13 +185,15 @@ export const ERROR = {
   SAVE_RETRY_FAILED: '保存に失敗しました。インターネット接続を確認してください。',
   OFFLINE_MODE: 'オフラインです。オンライン復帰時に自動保存されます。',
   SAVE_RETRYING: (attempt: number) => `保存を再試行中... (${attempt}回目)`,
+  TRASH_RESTORE_NO_COURSE: '元の科目フォルダが見つかりません。「復元されたアイテム」フォルダに復元します。',
 };
 
 /**
  * 確認メッセージ（confirm用）
  */
 export const CONFIRM = {
-  DELETE_FOLDER: 'このフォルダを削除しますか？中の問題もすべて消えます。',
+  DELETE_FOLDER: 'このフォルダをゴミ箱に移動しますか？\n（30日間はゴミ箱から復元できます）',
+  DELETE_QUIZ: 'この問題セットをゴミ箱に移動しますか？\n（30日間はゴミ箱から復元できます）',
   DELETE_QUESTION: 'この問題を削除しますか？',
   LOGOUT: 'ログアウトしますか？',
   DEBUG_YESTERDAY: '【デバッグ用】最終ログイン日を「昨日」に設定しますか？\n(streakも1に戻ります)',
@@ -197,4 +203,7 @@ export const CONFIRM = {
   LOAD_OLD_QUIZ: '古い形式のクイズファイルです。読み込みますか？',
   RESET_STATS: 'ステータスをリセットしますか？',
   CLEAR_HISTORY: '復習リストをリセットしますか？',
+  TRASH_PERMANENT_DELETE: 'このアイテムを完全に削除しますか？\nこの操作は取り消せません。',
+  TRASH_EMPTY: 'ゴミ箱を空にしますか？\nすべてのアイテムが完全に削除されます。この操作は取り消せません。',
 };
+

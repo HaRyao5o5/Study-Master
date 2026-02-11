@@ -5,8 +5,9 @@ import { useToast } from '../context/ToastContext';
 import { generateId, checkAnswer, toLocalISOString } from '../utils/helpers';
 import { getLevelInfo } from '../utils/gamification';
 import { logActivity } from '../lib/social';
-import { User, Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions } from '../types';
-import { AppData } from './useAppData'; // Import AppData type if needed, or just define subset
+import { User, Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions, TrashItem } from '../types';
+import { AppData } from './useAppData';
+import { CONFIRM, SUCCESS } from '../utils/errorMessages';
 
 // Define props to match what is passed from App.tsx + saveData
 export interface GameLogicProps {
@@ -22,6 +23,7 @@ export interface GameLogicProps {
     goals: UserGoals | null;
     setGoals: React.Dispatch<React.SetStateAction<UserGoals | null>>;
     saveData: (newData: Partial<AppData>) => Promise<void>; // Added saveData
+    moveToTrash: (type: TrashItem['type'], data: Course | Quiz, originPath: TrashItem['originPath']) => Promise<TrashItem[]>;
 }
 
 export function useGameLogic({
@@ -33,7 +35,8 @@ export function useGameLogic({
     masteredQuestions,
     goals,
     saveData,
-    user
+    user,
+    moveToTrash
 }: GameLogicProps) {
   const navigate = useNavigate();
   const { showSuccess, showConfirm } = useToast();
@@ -67,16 +70,31 @@ export function useGameLogic({
   };
 
   const handleDeleteQuiz = async (quizId: string, courseId: string) => {
-    const confirmed = await showConfirm('この問題セットを削除しますか？', { type: 'danger' });
+    const confirmed = await showConfirm(CONFIRM.DELETE_QUIZ, { type: 'danger' });
     if (!confirmed) return;
     
     const courseIndex = courses.findIndex(c => c.id === courseId);
     if (courseIndex === -1) return;
 
+    // ゴミ箱に移動するクイズを取得
+    const quizToDelete = courses[courseIndex].quizzes.find(q => q.id === quizId);
+    if (!quizToDelete) return;
+
+    // ゴミ箱に移動
+    const newTrash = await moveToTrash('quiz', quizToDelete, {
+      courseId: courseId,
+      courseTitle: courses[courseIndex].title,
+    });
+
+    // courses からクイズを削除
     const newCourses = [...courses];
-    newCourses[courseIndex].quizzes = newCourses[courseIndex].quizzes.filter(q => q.id !== quizId);
+    newCourses[courseIndex] = {
+      ...newCourses[courseIndex],
+      quizzes: newCourses[courseIndex].quizzes.filter(q => q.id !== quizId)
+    };
     
-    saveData({ courses: newCourses });
+    await saveData({ courses: newCourses, trash: newTrash } as Partial<AppData>);
+    showSuccess(SUCCESS.TRASH_MOVED(quizToDelete.title));
   };
 
   const handleImportQuiz = (newQuizData: any, courseId: string) => {

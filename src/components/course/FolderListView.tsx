@@ -17,7 +17,7 @@ interface FolderListViewProps {
 }
 
 const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreateCourse, onEditCourse }) => {
-  const { courses, saveData, user, publishCourse } = useApp();
+  const { courses, saveData, user, publishCourse, moveToTrash } = useApp();
   const { showSuccess, showConfirm, showWarning, showError } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAiModal, setShowAiModal] = React.useState(false);
@@ -42,7 +42,16 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   const handleDelete = async (courseId: string) => {
     const confirmed = await showConfirm(CONFIRM.DELETE_FOLDER);
     if (confirmed) {
-      saveData({ courses: courses.filter(c => c.id !== courseId) });
+      const course = courses.find(c => c.id === courseId);
+      if (!course) return;
+
+      // ゴミ箱に移動
+      const newTrash = await moveToTrash('course', course, {});
+
+      // courses から削除
+      const newCourses = courses.filter(c => c.id !== courseId);
+      saveData({ courses: newCourses, trash: newTrash } as any);
+      showSuccess(SUCCESS.TRASH_MOVED(course.title));
     }
   };
 

@@ -38,6 +38,7 @@ import PricingPage from './pages/PricingPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import LegalNoticePage from './pages/LegalNoticePage';
 import TimelinePage from './pages/TimelinePage';
+import TrashPage from './pages/TrashPage';
 
 
 import { getLevelInfo, getUnlockedTitles } from './utils/gamification.ts';
@@ -68,7 +69,8 @@ export default function App() {
     errorStats,
     profile, hasProfile, isProfileInitialized, isProfileLoading,
     reviews,
-    saveData, publishCourse
+    saveData, publishCourse,
+    trash, moveToTrash, restoreFromTrash, deleteFromTrash, emptyTrash
   } = useApp();
 
   const [showProfileEditor, setShowProfileEditor] = useState(false);
@@ -97,7 +99,8 @@ export default function App() {
     masteredQuestions, setMasteredQuestions,
     goals, setGoals,
     saveData,
-    user
+    user,
+    moveToTrash
   });
 
   // --- Derived State ---
@@ -345,6 +348,14 @@ export default function App() {
         } />
         <Route path="/timeline" element={
             <TimelinePage />
+        } />
+        <Route path="/trash" element={
+            <TrashPage
+              trash={trash}
+              onRestore={restoreFromTrash}
+              onDelete={deleteFromTrash}
+              onEmptyTrash={emptyTrash}
+            />
         } />
         
         <Route path="/course/:courseId" element={<CoursePage wrongHistory={wrongHistory} onCreateQuiz={handleCreateQuiz} onDeleteQuiz={handleDeleteQuiz} onImportQuiz={handleImportQuiz} />} />

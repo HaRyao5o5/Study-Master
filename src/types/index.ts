@@ -182,3 +182,19 @@ export interface ReviewItem {
 }
 
 
+// ========================================
+// ゴミ箱機能
+// ========================================
+export type TrashItemType = 'course' | 'quiz';
+
+export interface TrashItem {
+  id: string;                // ゴミ箱内のユニークID
+  type: TrashItemType;       // アイテムの種類
+  data: Course | Quiz;       // 元のデータ（完全なコピー）
+  originPath: {              // 元の所在地情報
+    courseId?: string;        // quiz の場合、所属コースID
+    courseTitle?: string;     // quiz の場合、所属コース名（表示用）
+  };
+  deletedAt: number;         // 削除日時（Timestamp）
+  expiresAt: number;         // 自動削除予定日（deletedAt + 30日）
+}

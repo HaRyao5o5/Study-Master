@@ -6,13 +6,13 @@ import { auth, db } from "../lib/firebase.ts";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
 import { normalizeData, generateId } from '../utils/helpers';
 import { INITIAL_DATA } from '../data/initialData.ts';
-import { User, UserStats, Course, UserGoals, MasteredQuestions, Profile, ReviewItem, PublicCourse, UserAchievement } from '../types';
+import { User, UserStats, Course, Quiz, UserGoals, MasteredQuestions, Profile, ReviewItem, PublicCourse, UserAchievement, TrashItem } from '../types';
 import { useToast } from '../context/ToastContext.tsx';
 import { checkAchievements } from '../utils/achievementSystem';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { withRetry, isRetryableFirestoreError } from '../utils/retry';
 import { getOnlineStatus } from './useOnlineStatus';
-import { ERROR, getFirestoreErrorMessage } from '../utils/errorMessages';
+import { ERROR, SUCCESS, getFirestoreErrorMessage } from '../utils/errorMessages';
 
 export interface AppData {
   user: User | null;
@@ -42,6 +42,11 @@ export interface AppData {
   setErrorStats: React.Dispatch<React.SetStateAction<any>>;
   publishCourse: (courseId: string) => Promise<void>;
   importCourse: (course: PublicCourse) => Promise<void>;
+  trash: TrashItem[];
+  moveToTrash: (type: TrashItem['type'], data: Course | Quiz, originPath: TrashItem['originPath']) => Promise<TrashItem[]>;
+  restoreFromTrash: (trashId: string) => Promise<void>;
+  deleteFromTrash: (trashId: string) => Promise<void>;
+  emptyTrash: () => Promise<void>;
   plan?: 'free' | 'pro';
   proUntil?: number;
 }
@@ -56,6 +61,7 @@ export function useAppData(): AppData {
   const [userStats, setUserStats] = useState<UserStats>(INITIAL_DATA.userStats);
   const [wrongHistory, setWrongHistory] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Record<string, ReviewItem>>({});
+  const [trash, setTrash] = useState<TrashItem[]>([]);
   
   // Refs for dirty check and preventing loop
   const isDirty = useRef<boolean>(false);
@@ -64,7 +70,7 @@ export function useAppData(): AppData {
   const isSaving = useRef<boolean>(false);
   const pendingUpdates = useRef<Partial<AppData> | null>(null); // 保存中に来た更新を保持
 
-  const { showError, showSuccess } = useToast();
+  const { showError, showSuccess, showWarning } = useToast();
 
   // 1. Auth Listener
   useEffect(() => {
@@ -109,6 +115,7 @@ export function useAppData(): AppData {
             if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
             if (cloudData.goals) setGoals(cloudData.goals);
             if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
+            if (cloudData.trash) setTrash(cloudData.trash);
             
             // Fallback: プラン情報をプロフィールの初期値としても利用（サブコレクションがまだ読み込まれていない場合）
             if (cloudData.plan) {
@@ -148,6 +155,7 @@ export function useAppData(): AppData {
                 setGoals(localData.goals || null);
                 setMasteredQuestions(localData.masteredQuestions || {});
                 setReviews(localData.reviews || {});
+                setTrash(localData.trash || []);
                 if (localData.profile) setProfile(localData.profile);
                 console.log("Guest data loaded from localStorage");
                 loaded = true;
@@ -206,6 +214,7 @@ export function useAppData(): AppData {
                     if (cloudData.wrongHistory) setWrongHistory(cloudData.wrongHistory);
                     if (cloudData.goals) setGoals(cloudData.goals);
                     if (cloudData.masteredQuestions) setMasteredQuestions(cloudData.masteredQuestions);
+                    if (cloudData.trash) setTrash(cloudData.trash);
                     
                     lastCloudUpdateTime.current = serverUpdatedAt;
                 }
@@ -353,6 +362,7 @@ export function useAppData(): AppData {
     if (newData.wrongHistory) setWrongHistory(newData.wrongHistory);
     if (newData.goals) setGoals(newData.goals);
     if (newData.masteredQuestions) setMasteredQuestions(newData.masteredQuestions);
+    if (newData.trash) setTrash(newData.trash as TrashItem[]);
 
     isDirty.current = true;
 
@@ -360,12 +370,11 @@ export function useAppData(): AppData {
     if (isSaving.current) {
       console.log("Save in progress, queuing update...", Object.keys(newData));
       // Merge with existing pending updates
+      // 重要: pendingUpdatesが再処理される際にnewDataの値が確実に使われるように、
+      // 明示的に渡されたフィールドのみをマージする
       pendingUpdates.current = {
         ...pendingUpdates.current,
         ...newData,
-        // For nested objects like userStats, do a proper merge
-        userStats: newData.userStats || pendingUpdates.current?.userStats,
-        goals: newData.goals || pendingUpdates.current?.goals,
       };
       return;
     }
@@ -379,13 +388,14 @@ export function useAppData(): AppData {
              // オフラインチェック
              if (!getOnlineStatus()) {
                console.log("Offline detected, saving to localStorage as backup...");
-               const backupData = {
-                 courses: newData.courses || courses,
-                 userStats: newData.userStats || userStats,
-                 wrongHistory: newData.wrongHistory || wrongHistory,
-                 goals: newData.goals || goals,
-                 masteredQuestions: newData.masteredQuestions || masteredQuestions,
-               };
+                const backupData = {
+                  courses: newData.courses || courses,
+                  userStats: newData.userStats || userStats,
+                  wrongHistory: newData.wrongHistory || wrongHistory,
+                  goals: newData.goals || goals,
+                  masteredQuestions: newData.masteredQuestions || masteredQuestions,
+                  trash: (newData.trash as TrashItem[]) || trash,
+                };
                localStorage.setItem('study_master_pending_sync', JSON.stringify({
                  data: backupData,
                  timestamp: Date.now(),
@@ -417,6 +427,7 @@ export function useAppData(): AppData {
                  masteredQuestions: newData.masteredQuestions || masteredQuestions,
                  plan: profile?.plan,
                  proUntil: profile?.proUntil,
+                 trash: (newData.trash as TrashItem[]) || trash,
              };
              
              const dataToSave = removeUndefined(rawDataToSave);
@@ -452,8 +463,8 @@ export function useAppData(): AppData {
                 wrongHistory: wrongHistory,
                 goals: goals,
                 masteredQuestions: masteredQuestions,
-                reviews: reviews, // Save reviews for guest
-                // Add other fields if necessary
+                reviews: reviews,
+                trash: trash,
             };
             
             // Merge with newData
@@ -483,10 +494,12 @@ export function useAppData(): AppData {
         
         // Process any pending updates that came in while we were saving
         if (pendingUpdates.current) {
-            console.log("Processing pending updates...");
+            console.log("Processing pending updates...", Object.keys(pendingUpdates.current));
             const pending = pendingUpdates.current;
             pendingUpdates.current = null;
             // Recursively call saveData with the pending updates
+            // pendingUpdates には明示的に渡されたフィールドのみが入っているので、
+            // saveData 内のフォールバック (newData.X || stateX) で最新のstateが使われる
             saveData(pending);
         }
     }
@@ -649,6 +662,93 @@ export function useAppData(): AppData {
       }
   };
 
+  // ========================================
+  // ゴミ箱操作関数
+  // ========================================
+  const TRASH_RETENTION_DAYS = 30;
+
+  const moveToTrash = async (type: TrashItem['type'], data: Course | Quiz, originPath: TrashItem['originPath']) => {
+    const now = Date.now();
+    const trashItem: TrashItem = {
+      id: generateId(),
+      type,
+      data: JSON.parse(JSON.stringify(data)), // ディープコピー
+      originPath,
+      deletedAt: now,
+      expiresAt: now + TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    };
+    const newTrash = [...trash, trashItem];
+    setTrash(newTrash);
+    return newTrash;
+  };
+
+  const restoreFromTrash = async (trashId: string) => {
+    const item = trash.find(t => t.id === trashId);
+    if (!item) return;
+
+    let newCourses = [...courses];
+
+    if (item.type === 'course') {
+      // 科目フォルダの復元: courses 配列に追加
+      newCourses = [...newCourses, item.data as Course];
+    } else if (item.type === 'quiz') {
+      // 問題セットの復元: 元のコースに追加
+      const quiz = item.data as Quiz;
+      const courseId = item.originPath.courseId;
+      const courseIndex = newCourses.findIndex(c => c.id === courseId);
+
+      if (courseIndex !== -1) {
+        newCourses = [...newCourses];
+        newCourses[courseIndex] = {
+          ...newCourses[courseIndex],
+          quizzes: [...newCourses[courseIndex].quizzes, quiz]
+        };
+      } else {
+        // 元のコースが存在しない場合、「復元されたアイテム」コースを作成
+        showWarning(ERROR.TRASH_RESTORE_NO_COURSE);
+        const restoredCourse: Course = {
+          id: generateId(),
+          title: '復元されたアイテム',
+          description: '元の科目フォルダが見つからなかったため、ここに復元されました。',
+          quizzes: [quiz],
+          color: '#9CA3AF',
+        };
+        newCourses = [...newCourses, restoredCourse];
+      }
+    }
+
+    const newTrash = trash.filter(t => t.id !== trashId);
+    setTrash(newTrash);
+    setCourses(newCourses);
+    await saveData({ courses: newCourses, trash: newTrash } as Partial<AppData>);
+    const title = 'title' in item.data ? item.data.title : 'アイテム';
+    showSuccess(SUCCESS.TRASH_RESTORED(title));
+  };
+
+  const deleteFromTrash = async (trashId: string) => {
+    const newTrash = trash.filter(t => t.id !== trashId);
+    setTrash(newTrash);
+    await saveData({ trash: newTrash } as Partial<AppData>);
+  };
+
+  const emptyTrash = async () => {
+    setTrash([]);
+    await saveData({ trash: [] } as Partial<AppData>);
+  };
+
+  // 30日経過アイテムの自動削除
+  useEffect(() => {
+    if (trash.length === 0) return;
+    const now = Date.now();
+    const validItems = trash.filter(item => item.expiresAt > now);
+    if (validItems.length < trash.length) {
+      console.log(`Auto-deleting ${trash.length - validItems.length} expired trash items`);
+      setTrash(validItems);
+      // 次回のsaveDataで永続化される
+      isDirty.current = true;
+    }
+  }, [trash]);
+
   return {
     user,
     courses,
@@ -676,6 +776,11 @@ export function useAppData(): AppData {
     setGoals,
     setErrorStats,
     publishCourse,
-    importCourse
+    importCourse,
+    trash,
+    moveToTrash,
+    restoreFromTrash,
+    deleteFromTrash,
+    emptyTrash,
   };
 }

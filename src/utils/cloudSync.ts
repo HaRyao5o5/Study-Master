@@ -2,7 +2,7 @@
 import { doc, getDoc, writeBatch, collection, getDocs } from "firebase/firestore";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../lib/firebase.ts";
-import { Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions } from "../types/index.ts";
+import { Course, Quiz, Question, UserStats, UserGoals, MasteredQuestions, TrashItem } from "../types/index.ts";
 
 export interface UserAppData {
     userStats: UserStats;
@@ -13,6 +13,7 @@ export interface UserAppData {
     masteredQuestions?: MasteredQuestions;
     plan?: 'free' | 'pro';
     proUntil?: number;
+    trash?: TrashItem[];
 }
 
 // ■ ヘルパー: 画像をStorageに逃がしてURLに書き換える
@@ -51,14 +52,19 @@ export const loadFromCloud = async (uid: string): Promise<UserAppData | null> =>
     const courseMap: Record<string, any> = {};
     
     coursesSnap.forEach(doc => {
-      courseMap[doc.id] = { ...doc.data(), quizzes: [] };
+      const data = doc.data();
+      courseMap[doc.id] = { ...data, quizzes: [], _quizIds: data.quizIds || null };
     });
 
     await Promise.all(Object.keys(courseMap).map(async (courseId) => {
       const quizzesRef = collection(db, "users", uid, "courses", courseId, "quizzes");
       const quizzesSnap = await getDocs(quizzesRef);
       quizzesSnap.forEach(qDoc => {
-        courseMap[courseId].quizzes.push(qDoc.data());
+        // quizIdsが保存されている場合、そのリストに含まれるクイズのみ読み込む（削除済みクイズを無視）
+        const quizIds = courseMap[courseId]._quizIds;
+        if (!quizIds || quizIds.includes(qDoc.id)) {
+          courseMap[courseId].quizzes.push(qDoc.data());
+        }
       });
     }));
 
@@ -74,7 +80,8 @@ export const loadFromCloud = async (uid: string): Promise<UserAppData | null> =>
       goals: userData.goals || null,
       masteredQuestions: userData.masteredQuestions || {},
       plan: userData.plan || 'free',
-      proUntil: userData.proUntil
+      proUntil: userData.proUntil,
+      trash: userData.trash || []
     };
   } catch (error) {
     console.error("クラウドからの読み込みエラー:", error);
@@ -105,6 +112,7 @@ export const saveToCloud = async (uid: string, allData: Partial<UserAppData>, ex
       courseIds: courseIds,
       plan: allData.plan,
       proUntil: allData.proUntil,
+      trash: allData.trash || [],
       updatedAt: explicitTimestamp
     }, { merge: true });
 
@@ -115,7 +123,9 @@ export const saveToCloud = async (uid: string, allData: Partial<UserAppData>, ex
       const { quizzes, ...courseMeta } = course;
       
       const courseRef = doc(db, "users", uid, "courses", courseId);
-      batch.set(courseRef, { ...courseMeta, id: courseId });
+      // quizIdsをコースドキュメントに保存（読み込み時のフィルタリング用）
+      const quizIds = (quizzes || []).map((q: Quiz) => q.id || `quiz-${Math.random().toString(36).substr(2, 9)}`);
+      batch.set(courseRef, { ...courseMeta, id: courseId, quizIds });
 
       if (quizzes && Array.isArray(quizzes)) {
         for (const quiz of quizzes) {

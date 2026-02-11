@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import React, { useMemo, useState } from 'react';
-import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe, Zap, Users } from 'lucide-react';
+import { BookOpen, Settings, Bell, Trophy, Flame, BarChart3, User as UserIcon, LogIn, RefreshCw, Target, Menu, X, LucideIcon, Globe, Zap, Users, Trash2 } from 'lucide-react';
 
 import { useApp } from '../../context/AppContext';
 import AIAdvisor from '../ai/AIAdvisor';
@@ -53,7 +53,7 @@ export default function MainLayout({
 }: MainLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { courses } = useApp();
+  const { courses, trash } = useApp();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isPro } = usePlan();
 
@@ -213,6 +213,19 @@ export default function MainLayout({
                 </button>
                 
                 <button 
+                  onClick={() => navigate('/trash')} 
+                  className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 transition-colors p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative" 
+                  title="ゴミ箱"
+                >
+                  <Trash2 size={20} />
+                  {trash.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {trash.length}
+                    </span>
+                  )}
+                </button>
+                
+                <button 
                   id="tutorial-settings-btn"
                   onClick={() => navigate('/settings')} 
                   className={`p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${user ? 'text-blue-500 dark:text-blue-400' : 'text-gray-600 dark:text-gray-300'}`} 
@@ -334,6 +347,12 @@ export default function MainLayout({
                 <MobileMenuItem icon={Trophy} label="成績ランキング" onClick={() => navigate('/ranking')} />
                 <MobileMenuItem icon={Users} label="タイムライン" onClick={() => navigate('/timeline')} />
                 <MobileMenuItem icon={Bell} label="お知らせ" onClick={() => setShowChangelog(true)} />
+                <MobileMenuItem 
+                  icon={Trash2} 
+                  label="ゴミ箱" 
+                  onClick={() => navigate('/trash')} 
+                  badge={trash.length > 0 ? trash.length : null}
+                />
                 <MobileMenuItem 
                   icon={isPro ? Sparkles : Zap} 
                   label={isPro ? "PRO 会員" : "PRO へアップグレード"} 
