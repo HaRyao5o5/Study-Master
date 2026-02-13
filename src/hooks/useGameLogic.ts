@@ -363,6 +363,20 @@ export function useGameLogic({
         saveData(updates);
     }
 
+    // 結果データをsessionStorageに保存（リロード対策）
+    try {
+      sessionStorage.setItem('study_master_last_result', JSON.stringify({
+        resultData: calculatedResult,
+        isReviewMode,
+        streakUpdated,
+        streak: finalStreak,
+        courseId,
+        quizId
+      }));
+    } catch {
+      // sessionStorage書き込み失敗は無視
+    }
+
     // 結果画面へ遷移
     navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
       state: { resultData: calculatedResult, isReviewMode, streakUpdated, streak: finalStreak } 
@@ -381,8 +395,8 @@ export function useGameLogic({
     const confirmed = await showConfirm("【デバッグ用】ステータスを初期化しますか？");
     if (confirmed) {
       saveData({ 
-          userStats: { totalXp: 0, level: 1, streak: 0, lastLogin: '' } 
-      });
+        userStats: { totalXp: 0, level: 1, streak: 0, lastLogin: '', loginHistory: [], xpHistory: {} } 
+    });
       showSuccess("ステータスをリセットしました。");
     }
   };

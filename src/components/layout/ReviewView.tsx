@@ -386,7 +386,6 @@ const SRSDebugPanel: React.FC<{ reviews: Record<string, any>, updateReviewStatus
                               <td className="p-2 flex gap-2">
                                   <button 
                                       onClick={() => {
-                                          console.log("Force due clicked", r.questionId);
                                           updateReviewStatus({ ...r, nextReview: Date.now() - 60000 }); // 1 min ago
                                       }}
                                       className="bg-blue-900 text-blue-200 px-2 py-1 rounded hover:bg-blue-800"

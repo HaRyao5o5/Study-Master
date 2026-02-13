@@ -1,7 +1,7 @@
 // src/hooks/useAppData.ts
 import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { doc, onSnapshot, collection, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, collection, setDoc, deleteDoc, updateDoc, increment } from "firebase/firestore";
 import { auth, db } from "../lib/firebase.ts";
 import { loadFromCloud, saveToCloud } from "../utils/cloudSync";
 import { normalizeData, generateId } from '../utils/helpers';
@@ -41,6 +41,7 @@ export interface AppData {
   setGoals: React.Dispatch<React.SetStateAction<UserGoals | null>>;
   setErrorStats: React.Dispatch<React.SetStateAction<any>>;
   publishCourse: (courseId: string) => Promise<void>;
+  unpublishCourse: (courseId: string) => Promise<void>;
   importCourse: (course: PublicCourse) => Promise<void>;
   trash: TrashItem[];
   moveToTrash: (type: TrashItem['type'], data: Course | Quiz, originPath: TrashItem['originPath']) => Promise<TrashItem[]>;
@@ -96,7 +97,6 @@ export function useAppData(): AppData {
             if (cloudData.userStats && cloudData.userStats.streak > 0) {
               const effectiveStreak = getEffectiveStreak(cloudData.userStats);
               if (effectiveStreak === 0) {
-                console.log("Streak broken detected during load. Resetting to 0...");
                 cloudData.userStats.streak = 0;
                 // Firestore にも反映（非同期でOK）
                 import('firebase/firestore').then(({ doc, updateDoc }) => {
@@ -157,7 +157,7 @@ export function useAppData(): AppData {
                 setReviews(localData.reviews || {});
                 setTrash(localData.trash || []);
                 if (localData.profile) setProfile(localData.profile);
-                console.log("Guest data loaded from localStorage");
+
                 loaded = true;
             } catch (e) {
                 console.error("Failed to parse localStorage data", e);
@@ -203,7 +203,6 @@ export function useAppData(): AppData {
         const isSelfUpdate = timeDiff < 2000; // 2秒以内の差なら自分の保存とみなす
 
         if (!isSelfUpdate && serverUpdatedAt > lastCloudUpdateTime.current) {
-             console.log("Cloud update detected! Reloading...");
              setIsSyncing(true);
              try {
                 // Reload full data
@@ -324,7 +323,6 @@ export function useAppData(): AppData {
     });
 
     if (newlyUnlocked.length > 0) {
-      console.log("Newly unlocked achievements:", newlyUnlocked);
       
       const updatedAchievements = [...(profile?.achievements || []), ...newlyUnlocked];
       
@@ -368,7 +366,6 @@ export function useAppData(): AppData {
 
     // If already saving, queue the update for later
     if (isSaving.current) {
-      console.log("Save in progress, queuing update...", Object.keys(newData));
       // Merge with existing pending updates
       // 重要: pendingUpdatesが再処理される際にnewDataの値が確実に使われるように、
       // 明示的に渡されたフィールドのみをマージする
@@ -383,11 +380,9 @@ export function useAppData(): AppData {
 
     try {
         if (user && user.uid) {
-             console.log("Saving data to cloud...", Object.keys(newData)); // Debug log
              
              // オフラインチェック
              if (!getOnlineStatus()) {
-               console.log("Offline detected, saving to localStorage as backup...");
                 const backupData = {
                   courses: newData.courses || courses,
                   userStats: newData.userStats || userStats,
@@ -442,13 +437,13 @@ export function useAppData(): AppData {
                  delayMs: 1000,
                  backoff: true,
                  shouldRetry: isRetryableFirestoreError,
-                 onRetry: (attempt, error) => {
-                   console.log(`Save retry attempt ${attempt}:`, error.message);
-                 }
+                  onRetry: (_attempt, _error) => {
+                    // リトライ中（サイレント）
+                  }
                }
              );
              
-             console.log("Save successful!");
+
              
              lastSavedTime.current = now.getTime();
              isDirty.current = false;
@@ -456,7 +451,7 @@ export function useAppData(): AppData {
              // Check for achievements after a successful cloud save (might have new XP/Streak)
              handleAchievementCheck(dataToSave.userStats, dataToSave.courses);
         } else {
-            console.log("Guest mode: Saving data to localStorage...");
+
             const currentData = {
                 courses: courses,
                 userStats: userStats,
@@ -475,7 +470,7 @@ export function useAppData(): AppData {
 
             try {
                 localStorage.setItem('study_master_guest_data', JSON.stringify(dataToSave));
-                console.log("Guest data saved to localStorage");
+
             } catch (e) {
                 console.error("Failed to save to localStorage", e);
             }
@@ -494,7 +489,7 @@ export function useAppData(): AppData {
         
         // Process any pending updates that came in while we were saving
         if (pendingUpdates.current) {
-            console.log("Processing pending updates...", Object.keys(pendingUpdates.current));
+
             const pending = pendingUpdates.current;
             pendingUpdates.current = null;
             // Recursively call saveData with the pending updates
@@ -540,7 +535,7 @@ export function useAppData(): AppData {
           updatedAt: new Date()
         }, { merge: true });
 
-        console.log("Profile updated in Firestore");
+
       } catch (e) {
         console.error("Failed to update profile", e);
         throw e;
@@ -572,6 +567,12 @@ export function useAppData(): AppData {
 
     const courseToPublish = courses.find(c => c.id === courseId);
     if (!courseToPublish) return;
+
+    // ダウンロードしたコースの再公開を防止
+    if (courseToPublish.originalAuthorId) {
+        showError(ERROR.PUBLISH_DOWNLOADED_COURSE);
+        return;
+    }
 
     if (courseToPublish.quizzes.length === 0) {
         showError("空のコースは公開できません");
@@ -625,6 +626,22 @@ export function useAppData(): AppData {
     }
   };
 
+  const unpublishCourse = async (courseId: string) => {
+    if (!user) return;
+    try {
+      await deleteDoc(doc(db, 'public_courses', courseId));
+      
+      const updatedCourses = courses.map(c => c.id === courseId ? { ...c, isPublic: false, visibility: 'private' as const } : c);
+      setCourses(updatedCourses);
+      saveData({ courses: updatedCourses });
+      
+      showSuccess("コースを非公開にしました");
+    } catch (e) {
+      console.error("Unpublish failed:", e);
+      showError("非公開への変更に失敗しました");
+    }
+  };
+
   const importCourse = async (publicCourse: PublicCourse) => {
       const newId = generateId();
       const newCourse: Course = {
@@ -634,6 +651,7 @@ export function useAppData(): AppData {
           isPublic: false,
           visibility: 'private',
           favorite: false,
+          originalAuthorId: publicCourse.authorId, // 元の著者IDを保持（再公開防止用）
           createdAt: Date.now()
       };
       
@@ -641,6 +659,15 @@ export function useAppData(): AppData {
       setCourses(newCourses);
       saveData({ courses: newCourses });
       showSuccess("コースをダウンロードしました！");
+
+      // ダウンロード数を更新
+      try {
+        await updateDoc(doc(db, 'public_courses', publicCourse.id), {
+          downloads: increment(1)
+        });
+      } catch (e) {
+        console.error('ダウンロード数の更新に失敗:', e);
+      }
 
       // Special check for 'social_download' as it's hard to check from state alone
       const existingIds = profile?.achievements?.map(a => a.id) || [];
@@ -677,6 +704,20 @@ export function useAppData(): AppData {
       deletedAt: now,
       expiresAt: now + TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000,
     };
+
+    // 公開済みコースの場合、マーケットプレイスからも削除
+    if (type === 'course' && user?.uid) {
+      const courseData = data as Course;
+      if (courseData.isPublic || courseData.visibility === 'public') {
+        try {
+          await deleteDoc(doc(db, 'public_courses', courseData.id));
+
+        } catch (e) {
+          console.error('マーケットプレイスからの削除に失敗:', e);
+        }
+      }
+    }
+
     const newTrash = [...trash, trashItem];
     setTrash(newTrash);
     return newTrash;
@@ -726,28 +767,82 @@ export function useAppData(): AppData {
   };
 
   const deleteFromTrash = async (trashId: string) => {
+    // 完全削除時に公開コースが残っていた場合のフォールバック削除
+    const item = trash.find(t => t.id === trashId);
+    if (item && item.type === 'course' && user?.uid) {
+      const courseData = item.data as Course;
+      if (courseData.isPublic || courseData.visibility === 'public') {
+        try {
+          await deleteDoc(doc(db, 'public_courses', courseData.id));
+        } catch (e) {
+          console.error('マーケットプレイスからの削除に失敗:', e);
+        }
+      }
+    }
     const newTrash = trash.filter(t => t.id !== trashId);
     setTrash(newTrash);
     await saveData({ trash: newTrash } as Partial<AppData>);
   };
 
   const emptyTrash = async () => {
+    // ゴミ箱内の公開コースをすべてマーケットプレイスから削除
+    if (user?.uid) {
+      const publicCourses = trash.filter(
+        t => t.type === 'course' && ((t.data as Course).isPublic || (t.data as Course).visibility === 'public')
+      );
+      for (const item of publicCourses) {
+        try {
+          await deleteDoc(doc(db, 'public_courses', (item.data as Course).id));
+        } catch (e) {
+          console.error('マーケットプレイスからの削除に失敗:', e);
+        }
+      }
+    }
     setTrash([]);
     await saveData({ trash: [] } as Partial<AppData>);
   };
 
   // 30日経過アイテムの自動削除
+  const lastTrashCleanup = useRef<number>(0);
   useEffect(() => {
-    if (trash.length === 0) return;
-    const now = Date.now();
-    const validItems = trash.filter(item => item.expiresAt > now);
-    if (validItems.length < trash.length) {
-      console.log(`Auto-deleting ${trash.length - validItems.length} expired trash items`);
+    const cleanupExpiredTrash = () => {
+      if (trash.length === 0) return;
+      // 短時間での重複実行を防止（最低10秒間隔）
+      const now = Date.now();
+      if (now - lastTrashCleanup.current < 10000) return;
+
+      const expiredItems = trash.filter(item => item.expiresAt <= now);
+      if (expiredItems.length === 0) return;
+
+      lastTrashCleanup.current = now;
+
+      // 期限切れの公開コースをマーケットプレイスから削除
+      if (user?.uid) {
+        expiredItems.forEach(item => {
+          if (item.type === 'course') {
+            const courseData = item.data as Course;
+            if (courseData.isPublic || courseData.visibility === 'public') {
+              deleteDoc(doc(db, 'public_courses', courseData.id)).catch(e =>
+                console.error('マーケットプレイスからの自動削除に失敗:', e)
+              );
+            }
+          }
+        });
+      }
+
+      const validItems = trash.filter(item => item.expiresAt > now);
       setTrash(validItems);
-      // 次回のsaveDataで永続化される
-      isDirty.current = true;
-    }
-  }, [trash]);
+      saveData({ trash: validItems } as Partial<AppData>);
+    };
+
+    // マウント時に一度チェック
+    cleanupExpiredTrash();
+
+    // 60秒ごとに定期チェック
+    const interval = setInterval(cleanupExpiredTrash, 60000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     user,
@@ -776,6 +871,7 @@ export function useAppData(): AppData {
     setGoals,
     setErrorStats,
     publishCourse,
+    unpublishCourse,
     importCourse,
     trash,
     moveToTrash,

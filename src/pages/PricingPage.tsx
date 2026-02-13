@@ -110,7 +110,7 @@ const PricingPage: React.FC = () => {
             disabled 
             className="w-full py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold cursor-not-allowed"
           >
-            {isPro ? '現在のプラン' : '加入済み'}
+            {isPro ? 'Freeプラン' : '現在のプラン'}
           </button>
         </div>
 

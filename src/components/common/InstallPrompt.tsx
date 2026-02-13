@@ -48,9 +48,9 @@ const InstallPrompt: React.FC = () => {
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
+      // インストール承諾
     } else {
-      console.log('User dismissed the install prompt');
+      // インストール拒否
     }
 
     // Clear the deferredPrompt so it can be garbage collected

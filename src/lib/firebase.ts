@@ -8,7 +8,9 @@ import {
   updateProfile
 } from "firebase/auth";
 import {
-  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc,
   setDoc,
   updateDoc,
@@ -17,8 +19,7 @@ import {
   query,
   orderBy,
   limit,
-  getDocs,
-  enableIndexedDbPersistence
+  getDocs
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { UserStats } from "../types";
@@ -37,25 +38,12 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Firestoreの設定
-const firestoreDb = getFirestore(app);
-
-// オフライン永続化を有効にする（エラーは無視）
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(firestoreDb).catch((err: any) => {
-    if (err.code === 'failed-precondition') {
-      // 複数のタブが開いている場合
-      console.warn('Firestore: 複数のタブが開いているため、永続化は最初のタブでのみ有効です');
-    } else if (err.code === 'unimplemented') {
-      // ブラウザが対応していない場合
-      console.warn('Firestore: このブラウザは永続化をサポートしていません');
-    } else {
-      console.warn('Firestore persistence error:', err);
-    }
-  });
-}
-
-export const db = firestoreDb;
+// Firestoreの設定（オフライン永続化 + 複数タブ対応）
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});
 export const storage = getStorage(app);
 
 // --- 既存の関数 ---

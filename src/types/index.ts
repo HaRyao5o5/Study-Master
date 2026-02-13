@@ -49,6 +49,7 @@ export interface Course {
   isPublic?: boolean;
   visibility?: 'public' | 'private';
   favorite?: boolean;
+  originalAuthorId?: string; // ダウンロードしたコースの元著者ID（再公開防止用）
   createdAt?: any;
 }
 

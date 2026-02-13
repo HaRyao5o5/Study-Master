@@ -38,25 +38,32 @@ const TimelinePage = () => {
 
                 setFollowingCount(following.length);
 
-                // Enrich activities with user data
-                const enrichedActivities = await Promise.all(
-                    feed.map(async (activity) => {
+                // ユニークなUIDを抽出し、一括でユーザーデータを取得（N+1問題の解消）
+                const uniqueUids = [...new Set(feed.map(a => a.uid))];
+                const userDataMap = new Map<string, { displayName: string; photoURL: string | null }>();
+                await Promise.all(
+                    uniqueUids.map(async (uid) => {
                         try {
-                            const userData = await getUserData(activity.uid);
-                            return {
-                                ...activity,
-                                userName: userData?.displayName || 'Unknown',
-                                userAvatar: userData?.photoURL || null
-                            };
+                            const userData = await getUserData(uid);
+                            userDataMap.set(uid, {
+                                displayName: userData?.displayName || 'Unknown',
+                                photoURL: userData?.photoURL || null
+                            });
                         } catch {
-                            return {
-                                ...activity,
-                                userName: 'Unknown',
-                                userAvatar: null
-                            };
+                            userDataMap.set(uid, { displayName: 'Unknown', photoURL: null });
                         }
                     })
                 );
+
+                // キャッシュされたデータでアクティビティを拡張
+                const enrichedActivities = feed.map(activity => {
+                    const userData = userDataMap.get(activity.uid);
+                    return {
+                        ...activity,
+                        userName: userData?.displayName || 'Unknown',
+                        userAvatar: userData?.photoURL || undefined
+                    };
+                });
 
                 setActivities(enrichedActivities);
             } catch (e) {

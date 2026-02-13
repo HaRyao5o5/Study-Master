@@ -109,7 +109,6 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
       setCurrentQuestionIndex(restoredSession.currentQuestionIndex);
       startTimeRef.current = restoredSession.startTime;
       sessionKeyRef.current = restoredSession.sessionKey;
-      console.log('Quiz session restored:', restoredSession.userAnswers.length, 'answers');
     } else {
       // 新しいセッション
       startTimeRef.current = Date.now();
@@ -157,36 +156,28 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
     setShowFeedback(false);
   }, [currentQuestionIndex]);
 
+  // 選択肢のシャッフル（問題が変わった時だけ再計算）
+  // ※ Hooks は早期 return の前に配置しなければならない
+  const shuffledOptions = React.useMemo(() => {
+    const q = questions[currentQuestionIndex];
+    if (!q || !q.options) return [];
+    const options = [...q.options];
+    if (!shuffleOptions) return options;
+    // Fisher-Yatesシャッフル
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return options;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentQuestionIndex, shuffleOptions, questions]);
+
   if (questions.length === 0) return <div>読み込み中...</div>;
 
   const currentQuestion = questions[currentQuestionIndex];
 
   const getOptions = () => {
-    if (!currentQuestion) return [];
-    let options = currentQuestion.options || [];
-    // If shuffleOptions is true, we should probably shuffle them. 
-    // In React strictly, we should memoize this shuffling or do it in state to avoid reshuffling on re-renders unrelated to question change.
-    // For now, to keep behavior consistent with what I see or what is expected:
-    if (shuffleOptions) {
-        // Simple shuffle for display. 
-        // Note: In a real app properly handling this requires stable shuffled order per question instance.
-        // Assuming the parent component passed a flag. 
-        // For accurate React Strict Mode behavior, store shuffled options in state/memo key'd by question ID.
-        // But for this migration, I'll allow potential re-shuffle on re-render if that was behavior or just implement simple approach.
-        // Original code: `getOptions` just returned `currentQuestion.options`. It didn't seem to use `shuffleOptions` prop in `getOptions`.
-        // Let's check original `GameView.jsx` `getOptions`:
-        // `return currentQuestion.options || [];` 
-        // It seems `shuffleOptions` prop wasn't implemented in the original logic shown?
-        // Wait, let's re-read original `GameView.jsx`.
-        // Line 6: `shuffleOptions` is destructured.
-        // Line 37: `getOptions` defined.
-        // It ignores `shuffleOptions`. 
-        // I will keep it as is (ignoring it) or implement it if I feel generous. 
-        // Since I want to preserve logic, I'll ignore it unless I see it used elsewhere.
-        // It's not used elsewhere in the file. So it was a dummy prop.
-        // I'll keep it as dummy prop.
-    }
-    return options;
+    return shuffledOptions;
   };
 
   // 単一選択の処理

@@ -186,6 +186,7 @@ export const ERROR = {
   OFFLINE_MODE: 'オフラインです。オンライン復帰時に自動保存されます。',
   SAVE_RETRYING: (attempt: number) => `保存を再試行中... (${attempt}回目)`,
   TRASH_RESTORE_NO_COURSE: '元の科目フォルダが見つかりません。「復元されたアイテム」フォルダに復元します。',
+  PUBLISH_DOWNLOADED_COURSE: 'ダウンロードしたコースは公開できません。\n自分で作成したコースのみ公開できます。',
 };
 
 /**

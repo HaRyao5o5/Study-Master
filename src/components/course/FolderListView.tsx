@@ -56,8 +56,6 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
   };
 
   const handleShare = (course: Course) => {
-    console.log('Share button clicked');
-    
     // ログインチェック
     if (!user) {
       showWarning('⚠️ 共有機能を使うにはログインが必要です。\n\n右上のメニューからログインしてください。');
@@ -147,7 +145,7 @@ const FolderListView: React.FC<FolderListViewProps> = ({ onSelectCourse, onCreat
               </span>
               
               {/* アクションボタン群 (常に表示だが控えめに、ホバーで強調) */}
-              <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform translate-y-2 group-hover:translate-y-0">
+              <div className="flex space-x-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 md:translate-y-2 md:group-hover:translate-y-0">
                 <button 
                   onClick={(e) => { e.stopPropagation(); handlePublish(course); }}
                   className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-gray-400 hover:text-purple-600 rounded-lg transition-colors"

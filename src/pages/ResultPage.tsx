@@ -24,11 +24,43 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
     const navigate = useNavigate();
     const location = useLocation();
 
-    // props または location.state からデータを取得 (location.state優先)
-    const resultData: ResultData = location.state?.resultData || propResultData;
-    const isReviewMode = location.state?.isReviewMode || false;
-    const streakUpdated = location.state?.streakUpdated || false;
-    const streak = location.state?.streak || 0;
+    // props → location.state → sessionStorage の優先順でデータを取得
+    const getResultData = (): { resultData: ResultData | null; isReviewMode: boolean; streakUpdated: boolean; streak: number } => {
+        // location.state が最優先
+        if (location.state?.resultData) {
+            return {
+                resultData: location.state.resultData,
+                isReviewMode: location.state.isReviewMode || false,
+                streakUpdated: location.state.streakUpdated || false,
+                streak: location.state.streak || 0
+            };
+        }
+        // propsからのデータ
+        if (propResultData) {
+            return { resultData: propResultData, isReviewMode: false, streakUpdated: false, streak: 0 };
+        }
+        // sessionStorageからのフォールバック（リロード対策）
+        try {
+            const saved = sessionStorage.getItem('study_master_last_result');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // URL上のcourseId/quizIdと一致する場合のみ復元
+                if (parsed.courseId === courseId && parsed.quizId === quizId) {
+                    return {
+                        resultData: parsed.resultData,
+                        isReviewMode: parsed.isReviewMode || false,
+                        streakUpdated: false, // リロード後はストリーク演出を再表示しない
+                        streak: parsed.streak || 0
+                    };
+                }
+            }
+        } catch {
+            // パース失敗は無視
+        }
+        return { resultData: null, isReviewMode: false, streakUpdated: false, streak: 0 };
+    };
+
+    const { resultData, isReviewMode, streakUpdated, streak } = getResultData();
     const isFlashcardMode = location.pathname.includes('/flashcards') || location.state?.isFlashcardMode;
     
     // Manage overlay visibility

@@ -7,8 +7,10 @@ import {
   setDoc, 
   deleteDoc, 
   collection, 
+  collectionGroup,
   getDocs, 
   query, 
+  where,
   orderBy, 
   limit,
   getDoc
@@ -146,6 +148,7 @@ export const getUserActivities = async (uid: string, maxCount: number = 20): Pro
 
 /**
  * タイムライン（フォロー中ユーザーのアクティビティ）を取得する
+ * Firestore の `in` クエリ（最大30件）でバッチ取得し、N+1 問題を解消
  */
 export const getTimelineFeed = async (myUid: string, maxCount: number = 50): Promise<Activity[]> => {
   // まずフォロー中のユーザーを取得
@@ -155,14 +158,58 @@ export const getTimelineFeed = async (myUid: string, maxCount: number = 50): Pro
     return [];
   }
   
-  // 各ユーザーの最新アクティビティを取得
-  const activitiesPromises = following.map(f => getUserActivities(f.uid, 10));
-  const activitiesArrays = await Promise.all(activitiesPromises);
+  const followingUids = following.map(f => f.uid);
   
-  // フラット化してソート
-  const allActivities = activitiesArrays.flat();
+  // Firestore の `in` クエリは最大30件なのでチャンクに分割
+  const chunks: string[][] = [];
+  for (let i = 0; i < followingUids.length; i += 30) {
+    chunks.push(followingUids.slice(i, i + 30));
+  }
+  
+  // 各チャンクでバッチクエリを実行
+  const allActivities: Activity[] = [];
+  try {
+    await Promise.all(
+      chunks.map(async (chunk) => {
+        const activitiesRef = collectionGroup(db, 'activities');
+        const q = query(
+          activitiesRef,
+          where('uid', 'in', chunk),
+          orderBy('createdAt', 'desc'),
+          limit(maxCount)
+        );
+        const snapshot = await getDocs(q);
+        snapshot.docs.forEach(d => {
+          const data = d.data();
+          allActivities.push({ id: d.id, uid: data.uid, type: data.type, detail: data.detail, createdAt: data.createdAt } as Activity);
+        });
+      })
+    );
+  } catch (error: any) {
+    // Firestoreインデックス未作成の場合のフォールバック
+    if (error?.code === 'failed-precondition' || error?.message?.includes('index')) {
+      console.warn(
+        'Firestore collectionGroup インデックスが必要です。' +
+        'エラーメッセージ内のURLからインデックスを作成してください:',
+        error.message
+      );
+      // フォールバック: 個別ユーザーのactivitiesコレクションから取得
+      await Promise.all(
+        followingUids.map(async (uid) => {
+          try {
+            const userActivities = await getUserActivities(uid, Math.ceil(maxCount / followingUids.length));
+            allActivities.push(...userActivities);
+          } catch {
+            // 個別ユーザーの取得失敗は無視
+          }
+        })
+      );
+    } else {
+      throw error;
+    }
+  }
+  
+  // ソートして上位N件を返す
   allActivities.sort((a, b) => b.createdAt - a.createdAt);
-  
-  // 上位N件を返す
   return allActivities.slice(0, maxCount);
 };

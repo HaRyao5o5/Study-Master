@@ -142,7 +142,6 @@ export const saveToCloud = async (uid: string, allData: Partial<UserAppData>, ex
     }
 
     await batch.commit();
-    console.log("クラウドへの保存（画像分離・ID補完）に成功しました！");
     return true;
   } catch (error) {
     console.error("クラウドへの保存エラー:", error);

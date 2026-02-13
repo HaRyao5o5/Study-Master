@@ -4,8 +4,8 @@ import { Edit3, ArrowLeft, Calendar, MessageCircle, User as UserIcon, Award, Spa
 import { useApp } from '../context/AppContext';
 import { getProfile } from '../lib/firebaseProfile';
 import { getEffectiveStreak } from '../utils/gamification';
-import { followUser, unfollowUser, isFollowing, getSocialStats } from '../lib/social';
-import { Profile, SocialStats } from '../types';
+import { followUser, unfollowUser, isFollowing, getSocialStats, getUserActivities } from '../lib/social';
+import { Profile, SocialStats, Activity } from '../types';
 import { ACHIEVEMENTS } from '../data/achievements';
 
 const iconMap: Record<string, LucideIcon> = {
@@ -36,6 +36,7 @@ const ProfilePage = () => {
     // State
     const [profile, setProfile] = useState<Profile | null>(null);
     const [targetStats, setTargetStats] = useState<any>(null);
+    const [createdAt, setCreatedAt] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [showEditor, setShowEditor] = useState(false);
     
@@ -43,6 +44,7 @@ const ProfilePage = () => {
     const [isFollowingUser, setIsFollowingUser] = useState(false);
     const [socialStats, setSocialStats] = useState<SocialStats>({ followingCount: 0, followerCount: 0 });
     const [followLoading, setFollowLoading] = useState(false);
+    const [activities, setActivities] = useState<Activity[]>([]);
 
     // Load profile logic
     useEffect(() => {
@@ -61,8 +63,16 @@ const ProfilePage = () => {
                             avatarId: 'avatar-1'
                         } as Profile);
                         setTargetStats(userStats);
-                        // Optional: auto-open editor
-                        // setShowEditor(true); 
+                    }
+                    // 利用開始日を取得
+                    if (user) {
+                        import('../lib/firebase').then(({ getUserData }) => {
+                            getUserData(user.uid).then(data => {
+                                if (data?.createdAt) setCreatedAt(data.createdAt);
+                            });
+                        });
+                        // アクティビティを取得
+                        getUserActivities(user.uid, 10).then(setActivities).catch(console.error);
                     }
                     setLoading(false);
                 }
@@ -74,9 +84,12 @@ const ProfilePage = () => {
                         getUserData(uid)
                     ]);
                     setProfile(profileData);
-                    if (userData && userData.userStats) {
-                        setTargetStats(userData.userStats);
+                    if (userData) {
+                        if (userData.userStats) setTargetStats(userData.userStats);
+                        if (userData.createdAt) setCreatedAt(userData.createdAt);
                     }
+                    // アクティビティを取得
+                    getUserActivities(uid, 10).then(setActivities).catch(console.error);
                 } catch (e) {
                     console.error(e);
                 } finally {
@@ -295,16 +308,49 @@ const ProfilePage = () => {
                             <BadgesView unlockedBadges={effectiveProfile.achievements || []} />
                         </div>
 
-                        {/* Recent Activity / Stats Placeholder */}
+                        {/* Recent Activity */}
                         <div className="glass p-6 rounded-2xl">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                                 <Calendar size={20} className="text-purple-500" />
                                 最近の活動
                             </h3>
-                            <div className="text-gray-500 text-sm">
-                                {/* Activity Log Placeholder */}
-                                <p>まだアクティビティはありません。</p>
-                            </div>
+                            {activities.length === 0 ? (
+                                <div className="text-gray-500 text-sm">
+                                    <p>まだアクティビティはありません。</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {activities.map(activity => (
+                                        <div key={activity.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                                            <div className="mt-0.5">
+                                                {activity.type === 'streak' && <Flame size={18} className="text-orange-500" />}
+                                                {activity.type === 'levelUp' && <Zap size={18} className="text-blue-500" />}
+                                                {activity.type === 'badge' && <Award size={18} className="text-amber-500" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                                                    {activity.type === 'streak' && `🔥 ${activity.detail.streak}日連続で学習中！`}
+                                                    {activity.type === 'levelUp' && `🎉 レベル${activity.detail.newLevel}に到達！`}
+                                                    {activity.type === 'badge' && `🏆 「${activity.detail.badgeName || activity.detail.badgeId}」を獲得！`}
+                                                </p>
+                                                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                                    {(() => {
+                                                        const diff = Date.now() - activity.createdAt;
+                                                        const minutes = Math.floor(diff / 60000);
+                                                        const hours = Math.floor(diff / 3600000);
+                                                        const days = Math.floor(diff / 86400000);
+                                                        if (minutes < 1) return 'たった今';
+                                                        if (minutes < 60) return `${minutes}分前`;
+                                                        if (hours < 24) return `${hours}時間前`;
+                                                        if (days < 7) return `${days}日前`;
+                                                        return new Date(activity.createdAt).toLocaleDateString('ja-JP');
+                                                    })()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -332,7 +378,7 @@ const ProfilePage = () => {
                         <div className="glass p-6 rounded-2xl">
                              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 mb-4">
                                 <Calendar size={18} />
-                                <span className="text-sm">2026年1月28日から利用中</span>
+                                <span className="text-sm">{createdAt ? `${new Date(createdAt).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}から利用中` : '利用開始日不明'}</span>
                              </div>
                              
                              {/* Stats Summary */}
