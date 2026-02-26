@@ -494,11 +494,26 @@ const GameView: React.FC<GameViewProps> = ({ quiz, isRandom, shuffleOptions, imm
               <CheckCircle size={20} className="mr-2 text-blue-500" />
               正解
             </h3>
-            <p className="text-lg font-bold text-gray-800 dark:text-white">
-              {Array.isArray(currentQuestion.correctAnswer)
-                ? (currentQuestion.correctAnswer as string[]).join(', ')
-                : currentQuestion.correctAnswer}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-bold text-gray-800 dark:text-white">
+                {Array.isArray(currentQuestion.correctAnswer)
+                  ? (currentQuestion.correctAnswer as string[]).join(', ')
+                  : currentQuestion.correctAnswer}
+              </p>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const answerText = Array.isArray(currentQuestion.correctAnswer)
+                    ? (currentQuestion.correctAnswer as string[]).join(', ')
+                    : String(currentQuestion.correctAnswer);
+                  speakText(answerText);
+                }}
+                className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-full transition-colors flex-shrink-0 ml-2"
+                title="答えを読み上げる"
+              >
+                <Volume2 size={20} />
+              </button>
+            </div>
           </div>
 
           {/* 解説表示 */}

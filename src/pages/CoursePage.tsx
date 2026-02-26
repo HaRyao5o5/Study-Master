@@ -43,7 +43,7 @@ const CoursePage: React.FC<CoursePageProps> = ({ wrongHistory, onCreateQuiz, onD
                 course={course}
                 onSelectQuiz={(q: Quiz) => navigate(`/course/${course.id}/quiz/${q.id}`)}
                 wrongHistory={wrongHistory}
-                onSelectReview={() => navigate(`/course/${course.id}/quiz/review-mode`)}
+                onSelectReview={(quiz: Quiz) => navigate(`/course/${course.id}/quiz/review-mode`, { state: { quiz } })}
                 onCreateQuiz={() => onCreateQuiz(course.id)}
                 onDeleteQuiz={(qid: string) => onDeleteQuiz(qid, course.id)}
                 onImportQuiz={(q: Quiz) => onImportQuiz(q, course.id)}

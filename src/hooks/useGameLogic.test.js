@@ -121,6 +121,28 @@ describe('useGameLogic', () => {
     expect(updates.wrongHistory).toContain('q2');
   });
 
+  it('finishQuiz removes correct answers from wrongHistory in normal mode', () => {
+    const propsWithWrongHistory = {
+      ...initialProps,
+      wrongHistory: ['q1', 'q2'], // Both questions are in wrongHistory
+    };
+    const { result } = renderHook(() => useGameLogic(propsWithWrongHistory));
+    
+    const userAnswers = {
+      'q1': 'A1', // Correct - should be removed from wrongHistory
+      'q2': 'Wrong' // Incorrect - should remain in wrongHistory
+    };
+
+    act(() => {
+      result.current.finishQuiz(userAnswers, 100, 'course-1', 'quiz-1');
+    });
+
+    expect(mockSaveData).toHaveBeenCalled();
+    const updates = mockSaveData.mock.calls[0][0];
+    expect(updates.wrongHistory).not.toContain('q1'); // Correct answer removed
+    expect(updates.wrongHistory).toContain('q2'); // Wrong answer kept
+  });
+
   it('handleDeleteQuiz requests confirmation and deletes', async () => {
     mockShowConfirm.mockResolvedValue(true);
     const { result } = renderHook(() => useGameLogic(initialProps));

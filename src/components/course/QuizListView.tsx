@@ -218,7 +218,9 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
               <button onClick={onCreateQuiz} className="mt-4 text-blue-500 font-bold hover:underline">最初のセットを作成する</button>
             </div>
           ) : (
-            course.quizzes.map((quiz, index) => (
+            course.quizzes.map((quiz, index) => {
+              const quizWrongCount = quiz.questions.filter(q => wrongHistory.includes(q.id)).length;
+              return (
               <div 
                 key={quiz.id} 
                 className="glass glass-hover p-4 rounded-xl shadow-sm hover:shadow-md flex justify-between items-center group cursor-pointer opacity-0 animate-slide-up active:scale-[0.99]"
@@ -230,12 +232,41 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
                     <FileText size={24} />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-bold text-gray-800 dark:text-white truncate pr-4">{quiz.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-gray-800 dark:text-white truncate pr-4">{quiz.title}</h4>
+                      {quizWrongCount > 0 && (
+                        <span className="flex-shrink-0 px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-xs font-bold rounded-full">
+                          {quizWrongCount}問 復習待ち
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{quiz.questions.length}問 • {quiz.description || '説明なし'}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-2 flex-shrink-0">
+                   {quizWrongCount > 0 && (
+                     <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         const weakQuestions = quiz.questions.filter(q => wrongHistory.includes(q.id));
+                         const reviewQuiz: Quiz = {
+                           ...quiz,
+                           id: 'review-mode',
+                           title: `${quiz.title} (復習)`,
+                           description: '間違えた問題のみ出題されます',
+                           questions: weakQuestions,
+                         };
+                         onSelectReview(reviewQuiz);
+                       }}
+                       className="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 shadow-sm active:scale-95"
+                       title="このクイズの間違えた問題を復習"
+                     >
+                       <RotateCcw size={14} />
+                       復習
+                     </button>
+                   )}
+
                    <button 
                     onClick={(e) => { 
                       e.stopPropagation(); 
@@ -257,7 +288,8 @@ const QuizListView: React.FC<QuizListViewProps> = ({ course, onSelectQuiz, wrong
                   <ChevronRight size={20} className="text-gray-300 dark:text-gray-600 transition-transform group-hover:translate-x-1" />
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

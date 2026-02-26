@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Flame, Rocket, Sparkles, ArrowRight, Zap, BrainCircuit } from 'lucide-react';
+import { Trophy, Clock, Target, RotateCcw, Home, CheckCircle, XCircle, Flame, Rocket, Sparkles, ArrowRight, Zap, BrainCircuit, Volume2 } from 'lucide-react';
 import LoadingScreen from '../common/LoadingScreen';
-import { playSound } from '../../utils/sound';
+import { playSound, speakText } from '../../utils/sound';
 import { ResultData } from '../../types';
 import AIEvaluationModal from './AIEvaluationModal';
 
@@ -197,7 +197,7 @@ const ResultView: React.FC<ResultViewProps> = ({ resultData, onRetry, onBackToMe
                 <div className="mt-1">{ans.isCorrect ? <CheckCircle size={20} className="text-green-500" /> : <XCircle size={20} className="text-red-500" />}</div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-gray-800 dark:text-white mb-2">{ans.question.text}</p>
-                  <div className="flex flex-wrap gap-2 text-xs mb-2">
+                  <div className="flex flex-wrap gap-2 text-xs mb-2 items-center">
                     <span className={`px-2 py-0.5 rounded ${
                       ans.isCorrect 
                         ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
@@ -207,12 +207,28 @@ const ResultView: React.FC<ResultViewProps> = ({ resultData, onRetry, onBackToMe
                         ? ans.selectedAnswer.join(', ') 
                         : ans.selectedAnswer}
                     </span>
+                    <button
+                      onClick={() => speakText(Array.isArray(ans.selectedAnswer) ? ans.selectedAnswer.join(', ') : String(ans.selectedAnswer))}
+                      className="p-1 text-gray-400 hover:text-blue-500 rounded-full transition-colors"
+                      title="回答を読み上げる"
+                    >
+                      <Volume2 size={14} />
+                    </button>
                     {!ans.isCorrect && (
-                      <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        正解: {Array.isArray(ans.question.correctAnswer)
-                          ? (ans.question.correctAnswer as string[]).join(', ')
-                          : ans.question.correctAnswer}
-                      </span>
+                      <>
+                        <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          正解: {Array.isArray(ans.question.correctAnswer)
+                            ? (ans.question.correctAnswer as string[]).join(', ')
+                            : ans.question.correctAnswer}
+                        </span>
+                        <button
+                          onClick={() => speakText(Array.isArray(ans.question.correctAnswer) ? (ans.question.correctAnswer as string[]).join(', ') : String(ans.question.correctAnswer))}
+                          className="p-1 text-gray-400 hover:text-blue-500 rounded-full transition-colors"
+                          title="正解を読み上げる"
+                        >
+                          <Volume2 size={14} />
+                        </button>
+                      </>
                     )}
                   </div>
                   {/* 解説表示 */}

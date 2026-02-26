@@ -71,18 +71,18 @@ const ResultPage: React.FC<ResultPageProps> = ({ resultData: propResultData, gam
     }
 
     const handleBack = () => {
-        if (isReviewMode) {
-            navigate('/review');
-        } else {
-            navigate(`/course/${courseId}`);
-        }
+        navigate(`/course/${courseId}`);
     };
 
     const handleRetry = () => {
         if (isFlashcardMode) {
             navigate(`/course/${courseId}/quiz/${quizId}/flashcards`, { state: { quiz: location.state?.quiz } });
         } else {
-            onRetry(courseId, quizId, gameSettings.randomize, gameSettings.shuffleOptions, gameSettings.immediateFeedback);
+            // プレイしたクイズのメニューページに遷移（クイズデータを引き継ぎ、モードを保持）
+            const quizData = location.state?.quizData;
+            navigate(`/course/${courseId}/quiz/${quizId}`, {
+                state: quizData ? { quiz: quizData } : undefined
+            });
         }
     };
 

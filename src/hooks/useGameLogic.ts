@@ -168,13 +168,11 @@ export function useGameLogic({
     const percentage = Math.round((score / totalQuestions) * 100);
     const passed = percentage >= 70;
 
-    // 3. XP計算
+    // 3. XP計算（正解数に応じて常に付与）
     let xpGained = 0;
-    if (passed) {
-      const baseXp = totalQuestions * 10;
-      const bonusXp = percentage === 100 ? Math.floor(baseXp * 0.5) : 0;
-      xpGained = Math.round(baseXp + bonusXp);
-    }
+    const baseXp = score * 10; // 正解1問あたり10XP
+    const bonusXp = percentage === 100 ? Math.floor(baseXp * 0.5) : 0;
+    xpGained = Math.round(baseXp + bonusXp);
     
     const calculatedResult = {
       score,
@@ -220,10 +218,17 @@ export function useGameLogic({
       }
 
     } else if (!isReviewMode && results && Array.isArray(results)) {
-      // 通常モード: 間違えた問題をwrongHistoryに追加
+      // 通常モード: 間違えた問題を追加 + 正解した問題を削除
       const wrongQuestionIds = results.filter(r => r && !r.isCorrect && r.question && r.question.id).map(r => r.question.id);
-      if (wrongQuestionIds.length > 0) {
-        const updatedWrongHistory = [...new Set([...wrongHistory, ...wrongQuestionIds])];
+      const correctQuestionIds = results.filter(r => r && r.isCorrect && r.question && r.question.id).map(r => r.question.id);
+
+      // まず正解した問題を削除し、次に不正解の問題を追加（重複排除）
+      let updatedWrongHistory = wrongHistory.filter(id => !correctQuestionIds.includes(id));
+      updatedWrongHistory = [...new Set([...updatedWrongHistory, ...wrongQuestionIds])];
+
+      // 変更がある場合のみ更新
+      if (updatedWrongHistory.length !== wrongHistory.length ||
+          !updatedWrongHistory.every(id => wrongHistory.includes(id))) {
         updates.wrongHistory = updatedWrongHistory;
       }
     }
@@ -379,7 +384,7 @@ export function useGameLogic({
 
     // 結果画面へ遷移
     navigate(`/course/${courseId}/quiz/${quizId}/result`, { 
-      state: { resultData: calculatedResult, isReviewMode, streakUpdated, streak: finalStreak } 
+      state: { resultData: calculatedResult, isReviewMode, streakUpdated, streak: finalStreak, quizData: currentQuiz } 
     });
   };
 
