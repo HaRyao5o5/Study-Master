@@ -17,8 +17,6 @@ import {
   getDoc,
   collection,
   query,
-  orderBy,
-  limit,
   getDocs
 } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -123,15 +121,11 @@ export interface LeaderboardUser {
 
 export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
   try {
-    // usersコレクションから直接取得（userStatsフィールドを使用）
+    // usersコレクションから全ユーザーを取得
+    // ※ orderByを使うとそのフィールドが存在しないドキュメントが除外されるため、
+    //    全ドキュメントを取得してクライアント側でソートする
     const usersRef = collection(db, "users");
-    
-    // userStats.totalXpでソート、上位50件を取得
-    const q = query(
-      usersRef,
-      orderBy("userStats.totalXp", "desc"),
-      limit(50)
-    );
+    const q = query(usersRef);
 
     const querySnapshot = await getDocs(q);
     const leaderboard: LeaderboardUser[] = [];
@@ -141,23 +135,25 @@ export const getLeaderboard = async (): Promise<LeaderboardUser[]> => {
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // userStatsが存在し、totalXpがある場合のみ追加
-      if (data.userStats && data.userStats.totalXp > 0) {
+      // displayNameまたはuserStatsが存在するユーザーを追加
+      if (data.userStats || data.displayName) {
         leaderboard.push({
           id: doc.id,
           displayName: data.displayName || 'Unknown Warrior',
           photoURL: data.photoURL || null,
           avatarId: data.avatarId || 'avatar-1',
-          totalXp: data.userStats.totalXp || 0,
-          level: data.userStats.level || 1,
-          streak: getEffectiveStreak(data.userStats),
+          totalXp: data.userStats?.totalXp || 0,
+          level: data.userStats?.level || 1,
+          streak: data.userStats ? getEffectiveStreak(data.userStats) : 0,
           achievementsCount: data.achievementsCount || 0,
           selectedBadgeId: data.selectedBadgeId || undefined
         });
       }
     });
 
-    return leaderboard;
+    // クライアント側でtotalXp降順ソートし、上位50件を返す
+    leaderboard.sort((a, b) => b.totalXp - a.totalXp);
+    return leaderboard.slice(0, 50);
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
     // エラー時は空の配列を返す

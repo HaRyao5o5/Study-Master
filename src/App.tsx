@@ -140,6 +140,7 @@ export default function App() {
   // Init goals for guest if null
   // Init or Upgrade goals
   useEffect(() => {
+    if (isSyncing) return; // データ同期完了まで待つ（同期中にsaveDataを呼ぶと空のcoursesで上書きされるため）
     if (!goals) {
         saveData({
             goals: {
@@ -164,7 +165,7 @@ export default function App() {
             }
         });
     }
-  }, [goals, saveData]);
+  }, [goals, saveData, isSyncing]);
 
   // Welcome Profile Check
   useEffect(() => {

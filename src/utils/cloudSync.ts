@@ -70,7 +70,10 @@ export const loadFromCloud = async (uid: string): Promise<UserAppData | null> =>
 
     const loadedCourses = courseIds
       .filter((id: string) => courseMap[id])
-      .map((id: string) => courseMap[id]);
+      .map((id: string) => {
+        const { _quizIds, ...courseData } = courseMap[id];
+        return courseData;
+      });
 
     return {
       userStats: userData.userStats || { totalXp: 1, level: 1, streak: 0, lastLogin: '' },
